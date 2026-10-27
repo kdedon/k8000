@@ -1,0 +1,550 @@
+# expected.txt -- predicted clocks for bench/c900/asm/kernels.s
+#
+# DERIVED but COMMITTED: regenerate with "go run ." in expected/gen, which
+# needs the Z8000 Go golden model.  Two numbers per kernel, and they answer
+# different questions:
+#
+#   spec  what ZILOG published for these instructions.  A hand-curated,
+#         per-opcode table inside the generator, each entry carrying the
+#         page it came from; the generator cross-checks every entry against
+#         the model's decode ROM and prints a DRIFT line where they
+#         disagree.  It never takes a figure from the model.
+#
+#   exec  what the model's CPU actually DOES: this program assembled, run
+#         in a flat-RAM Z8002 with no wait states, clocks counted between
+#         instruction fetches at the loop head in pipeline steady state.
+#
+# Where spec and exec differ, one of them is wrong about a real Z8001, and
+# the C900 is the tiebreak.  That is the entire point of these kernels: the
+# curated cycle table in vectors/k800x_cpu/cycles has no MULT, MULTL, DIV,
+# DIVL or block-move record, so nothing in k8000 has ever checked the
+# bit-serial classes against the datasheet.
+#
+# Both columns are IDEAL: no wait states, no DRAM refresh, no interrupts.
+# Measured on hardware will exceed both.  Differences BETWEEN kernels
+# cancel the per-call overhead and are the trustworthy signal.
+#
+# Loop count per call in kernels.s: 1000
+#
+
+#kernel   per_iter  spec_iter  exec_iter  spec_call    exec_call    instruction under test
+ldrr      10        40         40         40068        40068        LD R2,R1
+addrr     10        50         50         50075        50075        ADD R2,R1
+ldimm     10        80         80         80044        80044        LD R1,#0x1234
+nop       10        80         80         80027        80027        NOP
+ldind     10        80         80         80070        80070        LD R2,@R4 -- one data READ
+stind     10        90         90         90077        90077        LD @R4,R2 -- one data WRITE
+ldda      10        100        100        100044       100044       LD R2,addr -- direct address
+sla1      10        170        143        170051       143051       SLA R1,#1 [model -27]
+sla8      10        380        353        380051       353051       SLA R1,#8 [model -27]
+sla8w1    10        410        410        410068       410068       SLA R1,#8 then LD R2,R1 -- ONE-word successor
+mult1     10        780        780        780092       780092       MULT RR2,R1, multiplier 1 (+ reload)
+multff    10        780        780        780092       780092       MULT RR2,R1, 0xFFFF x 0xFFFF (+ reload)
+multl3    5         1595       1595       1595143      1595143      MULTL RQ0,RR4, multiplicand 0x0007 (n=3)
+multl5    5         1665       1665       1665143      1665143      MULTL RQ0,RR4, multiplicand 0x001F (n=5)
+div       5         615        615        615085       615085       DIV RR2,R1 (+ CLR and a reload)
+divl      3         2326       2326       2326143      2326143      DIVL RQ0,RR4 (+ four reloads)
+ldir4     1         82         82         82078        82078        LDIR of 4 words, once per iteration
+ldir64    1         622        622        622078       622078       LDIR of 64 words, once per iteration
+pushpop   5         95         95         95051        95051        PUSH @R15,R2 + POP R2,@R15
+callret   10        230        230        230027       230027       CALL + RET
+jrtaken   10        70         70         70027        70027        JR (always taken)
+
+
+# ---- per-kernel detail ---------------------------------------------
+
+# ldrr -- LD R2,R1
+#   loop body, PUBLISHED figures (30 clocks + 10 of loop control):
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 40
+#   exec per iteration: 40 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 68
+#   per call: spec 40068, model 40068
+
+# addrr -- ADD R2,R1
+#   loop body, PUBLISHED figures (40 clocks + 10 of loop control):
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x 8112         ADD    R2,R1                    4 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 50
+#   exec per iteration: 50 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 75
+#   per call: spec 50075, model 50075
+
+# ldimm -- LD R1,#0x1234
+#   loop body, PUBLISHED figures (70 clocks + 10 of loop control):
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 80
+#   exec per iteration: 80 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 44
+#   per call: spec 80044, model 80044
+
+# nop -- NOP
+#   loop body, PUBLISHED figures (70 clocks + 10 of loop control):
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x 8D07         NOP    R0                       7 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 80
+#   exec per iteration: 80 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 27
+#   per call: spec 80027, model 80027
+
+# ldind -- LD R2,@R4 -- one data READ
+#   loop body, PUBLISHED figures (70 clocks + 10 of loop control):
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x 2142         LD     R2,@R4                   7 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 80
+#   exec per iteration: 80 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 70
+#   per call: spec 80070, model 80070
+
+# stind -- LD @R4,R2 -- one data WRITE
+#   loop body, PUBLISHED figures (80 clocks + 10 of loop control):
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x 2F42         LD     @R4,R2                   8 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 90
+#   exec per iteration: 90 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 77
+#   per call: spec 90077, model 90077
+
+# ldda -- LD R2,addr -- direct address
+#   loop body, PUBLISHED figures (90 clocks + 10 of loop control):
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x 6102 0800    LD     R2,0x0800                9 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 100
+#   exec per iteration: 100 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 44
+#   per call: spec 100044, model 100044
+
+# sla1 -- SLA R1,#1
+#   loop body, PUBLISHED figures (160 clocks + 10 of loop control):
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x B319 0001    SLA    R1,1                    16 clocks   (base 13 + operand cost)
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 170
+#   exec per iteration: 143 (the model, simulated, steady state)
+#   *** the model runs -27 clocks against the published figure ***
+#   save/restore + setup, once per call: 51
+#   per call: spec 170051, model 143051
+
+# sla8 -- SLA R1,#8
+#  NOTE: spec is the ISOLATED cost, 13+3n = 37; exec is THROUGHPUT.  Nine
+#  of the ten shifts in an iteration overlap their successor's
+#  second-word fetch and cost 34; the tenth follows the loop's JR,
+#  which flushed the queue, so it pays the full 37.  9x34 + 37 + 10
+#  of loop control = 353, which is what the model executes.  The
+#  same arithmetic for sla1 is 9x13 + 16 + 10 = 143.  Hardware
+#  showing 353 confirms the overlap is real silicon behaviour;
+#  hardware showing 380 (10x37 + 10) says the published figure is
+#  the whole cost and our prefetch model is optimistic.
+#   loop body, PUBLISHED figures (370 clocks + 10 of loop control):
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 380
+#   exec per iteration: 353 (the model, simulated, steady state)
+#   *** the model runs -27 clocks against the published figure ***
+#   save/restore + setup, once per call: 51
+#   per call: spec 380051, model 353051
+
+# sla8w1 -- SLA R1,#8 then LD R2,R1 -- ONE-word successor
+#  NOTE: THE CONTROL for the shift experiment.  The 3 clocks a shift seems
+#  to save are the successor's SECOND WORD being fetched during the
+#  shifter's burn; a one-word successor has none to give, and the
+#  saving vanishes -- 37 + 3 here against 34 + 34 in sla8.  So spec
+#  and exec AGREE on this kernel under both readings, and whatever
+#  hardware reads above it is purely what the board adds.
+#   loop body, PUBLISHED figures (400 clocks + 10 of loop control):
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x B319 0008    SLA    R1,8                    37 clocks   (base 13 + operand cost)
+#     1  x A112         LD     R2,R1                    3 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 410
+#   exec per iteration: 410 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 68
+#   per call: spec 410068, model 410068
+
+# mult1 -- MULT RR2,R1, multiplier 1 (+ reload)
+#  NOTE: paired with multff.  Same instructions, same bus cycles, only the
+#  operands differ, so board overhead cancels in the difference and
+#  multff - mult1 must be ZERO if MULT is flat at 70.
+#   loop body, PUBLISHED figures (770 clocks + 10 of loop control):
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 780
+#   exec per iteration: 780 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 92
+#   per call: spec 780092, model 780092
+
+# multff -- MULT RR2,R1, 0xFFFF x 0xFFFF (+ reload)
+#  NOTE: the fullest multiplicand there is; see mult1.  A spurious per-bit
+#  term (a +17n) was a real bug in this model once, which is why the
+#  flat figure is worth confirming against silicon rather than
+#  assuming.
+#   loop body, PUBLISHED figures (770 clocks + 10 of loop control):
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x 2103 FFFF    LD     R3,#0xFFFF               7 clocks
+#     1  x 9912         MULT   RR2,R1                  70 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 780
+#   exec per iteration: 780 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 92
+#   per call: spec 780092, model 780092
+
+# multl3 -- MULTL RQ0,RR4, multiplicand 0x0007 (n=3)
+#  NOTE: paired with multl5 to measure the SLOPE of 282+7n, which is the
+#  part a structural model can get wrong.  multl5 - multl3 must be
+#  5 copies x 7 x 2 = 70 clocks an iteration; board overhead cancels.
+#   loop body, PUBLISHED figures (1585 clocks + 10 of loop control):
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 0007    LD     R3,#0x0007               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                303 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 0007    LD     R3,#0x0007               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                303 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 0007    LD     R3,#0x0007               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                303 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 0007    LD     R3,#0x0007               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                303 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 0007    LD     R3,#0x0007               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                303 clocks   (base 282 + operand cost)
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 1595
+#   exec per iteration: 1595 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 143
+#   per call: spec 1595143, model 1595143
+
+# multl5 -- MULTL RQ0,RR4, multiplicand 0x001F (n=5)
+#   loop body, PUBLISHED figures (1655 clocks + 10 of loop control):
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 001F    LD     R3,#0x001F               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                317 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 001F    LD     R3,#0x001F               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                317 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 001F    LD     R3,#0x001F               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                317 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 001F    LD     R3,#0x001F               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                317 clocks   (base 282 + operand cost)
+#     1  x 2102 0000    LD     R2,#0x0000               7 clocks
+#     1  x 2103 001F    LD     R3,#0x001F               7 clocks
+#     1  x 9842         MULTL  RQ0,RR4                317 clocks   (base 282 + operand cost)
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 1665
+#   exec per iteration: 1665 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 143
+#   per call: spec 1665143, model 1665143
+
+# div -- DIV RR2,R1 (+ CLR and a reload)
+#  NOTE: THE ONE TO WATCH.  pla says 744 for word DIV -- a stale mirror of
+#  DIVL's peak in the decode ROM (sim/cpu/cycle_pla_muldiv.go says so
+#  in as many words).  The model's divide FSM executes it in 107,
+#  which is the Zilog Reference Manual p.90 figure, so `exec` is the
+#  prediction to test.  The FSM is also DATA-DEPENDENT (0x1234/7
+#  takes 107 clocks, 0xFFFF/0xFFFF takes 25); Mar81 publishes a
+#  single operand-independent number.  Whether a real Z8001 varies
+#  with the operands is an open question this kernel cannot answer
+#  on its own -- it uses one fixed operand pair -- but a measured
+#  107 would confirm the FSM, and a measured 744 would mean the
+#  peak is real and the FSM is wrong.
+#   loop body, PUBLISHED figures (605 clocks + 10 of loop control):
+#     1  x 8D28         CLR    R2                       7 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9B12         DIV    RR2,R1                 107 clocks
+#     1  x 8D28         CLR    R2                       7 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9B12         DIV    RR2,R1                 107 clocks
+#     1  x 8D28         CLR    R2                       7 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9B12         DIV    RR2,R1                 107 clocks
+#     1  x 8D28         CLR    R2                       7 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9B12         DIV    RR2,R1                 107 clocks
+#     1  x 8D28         CLR    R2                       7 clocks
+#     1  x 2103 1234    LD     R3,#0x1234               7 clocks
+#     1  x 9B12         DIV    RR2,R1                 107 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 615
+#   exec per iteration: 615 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 85
+#   per call: spec 615085, model 615085
+
+# divl -- DIVL RQ0,RR4 (+ four reloads)
+#   loop body, PUBLISHED figures (2316 clocks + 10 of loop control):
+#     1  x 8D08         CLR    R0                       7 clocks
+#     1  x 8D18         CLR    R1                       7 clocks
+#     1  x 2102 0001    LD     R2,#0x0001               7 clocks
+#     1  x 2103 2345    LD     R3,#0x2345               7 clocks
+#     1  x 9A42         DIVL   RQ0,RR4                744 clocks
+#     1  x 8D08         CLR    R0                       7 clocks
+#     1  x 8D18         CLR    R1                       7 clocks
+#     1  x 2102 0001    LD     R2,#0x0001               7 clocks
+#     1  x 2103 2345    LD     R3,#0x2345               7 clocks
+#     1  x 9A42         DIVL   RQ0,RR4                744 clocks
+#     1  x 8D08         CLR    R0                       7 clocks
+#     1  x 8D18         CLR    R1                       7 clocks
+#     1  x 2102 0001    LD     R2,#0x0001               7 clocks
+#     1  x 2103 2345    LD     R3,#0x2345               7 clocks
+#     1  x 9A42         DIVL   RQ0,RR4                744 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 2326
+#   exec per iteration: 2326 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 143
+#   per call: spec 2326143, model 2326143
+
+# ldir4 -- LDIR of 4 words, once per iteration
+#  NOTE: the slope partner for ldir64: 60 elements apart, so the published
+#  difference is 9 x 60 = 540 clocks an iteration.  On hardware the
+#  gap is 540 PLUS 120 memory accesses' worth of wait states, which
+#  ldind and stind measure independently -- if the three disagree,
+#  a block move's accesses are not ordinary ones.
+#   loop body, PUBLISHED figures (72 clocks + 10 of loop control):
+#     1  x 6104 0800    LD     R4,0x0800                9 clocks
+#     1  x 6106 0A00    LD     R6,0x0A00                9 clocks
+#     1  x 2103 0004    LD     R3,#0x0004               7 clocks
+#     1  x BB61 0340    LDIR   @RR4,@RR6,R3            47 clocks   (base 11 + operand cost)
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 82
+#   exec per iteration: 82 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 78
+#   per call: spec 82078, model 82078
+
+# ldir64 -- LDIR of 64 words, once per iteration
+#  NOTE: the published cost is 11 + 9 per element, so 587 for these 64
+#  words; the decode ROM carries only the 11 base.  Per-word cost
+#  from hardware is (clocks_per_iter - 25 of loads - 10 of loop)/64,
+#  which should come out at 9 plus whatever the board adds.
+#   loop body, PUBLISHED figures (612 clocks + 10 of loop control):
+#     1  x 6104 0800    LD     R4,0x0800                9 clocks
+#     1  x 6106 0A00    LD     R6,0x0A00                9 clocks
+#     1  x 2103 0040    LD     R3,#0x0040               7 clocks
+#     1  x BB61 0340    LDIR   @RR4,@RR6,R3           587 clocks   (base 11 + operand cost)
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 622
+#   exec per iteration: 622 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 78
+#   per call: spec 622078, model 622078
+
+# pushpop -- PUSH @R15,R2 + POP R2,@R15
+#  NOTE: the PUSH and POP alternate in kernels.s; here they are grouped,
+#  which costs the same but leaves the stack pointer where it began.
+#   loop body, PUBLISHED figures (85 clocks + 10 of loop control):
+#     1  x 93F2         PUSH   @R15,R2                  9 clocks
+#     1  x 97F2         POP    R2,@R15                  8 clocks
+#     1  x 93F2         PUSH   @R15,R2                  9 clocks
+#     1  x 97F2         POP    R2,@R15                  8 clocks
+#     1  x 93F2         PUSH   @R15,R2                  9 clocks
+#     1  x 97F2         POP    R2,@R15                  8 clocks
+#     1  x 93F2         PUSH   @R15,R2                  9 clocks
+#     1  x 97F2         POP    R2,@R15                  8 clocks
+#     1  x 93F2         PUSH   @R15,R2                  9 clocks
+#     1  x 97F2         POP    R2,@R15                  8 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 95
+#   exec per iteration: 95 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 51
+#   per call: spec 95051, model 95051
+
+# callret -- CALL + RET
+#  NOTE: the CALL target is patched to a bare RET placed after the loop;
+#  the ten RETs it executes are counted in the published total even
+#  though they are not laid out inside the loop.
+#   loop body, PUBLISHED figures (220 clocks + 10 of loop control):
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     1  x 5F00 0000    CALL   0x0000                  12 clocks
+#     10 x 9E08         RET    T                       10 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 230
+#   exec per iteration: 230 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 27
+#   per call: spec 230027, model 230027
+
+# jrtaken -- JR (always taken)
+#  NOTE: each JR jumps to the next instruction; the displacements are
+#  patched when the program is assembled.
+#   loop body, PUBLISHED figures (60 clocks + 10 of loop control):
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x E800         JR     T,0x0102                 6 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 70
+#   exec per iteration: 70 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 27
+#   per call: spec 70027, model 70027
+
+# The driver's own per-call cost (the C loop and the CALL that reaches the
+# kernel) is NOT included above: it is the same for every kernel and
+# cancels in kernel-to-kernel differences.
