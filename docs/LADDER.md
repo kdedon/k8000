@@ -64,16 +64,21 @@ clock it decodes.
 
 ## A2. `z8000_alu.sv` -- `make test-alu`
 
-**Implement.** One `always_comb` over `op` (`ALUOP_W` bits, enum in
-`rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv`), `width` (0=byte 1=word 2=long),
+**Implement.** One `always_comb`, 16 bits wide, over `op` (`ALUOP_W` bits,
+enum in `rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv`), `width` (byte or word),
 `a`, `b`, `cin` -> `value`, `flags[15:0]`, `flags_mask[15:0]`. Plain `+`,
 not a ripple carry chain. `flags_mask` (which flags the op writes) is
-compared EXACTLY: right value, wrong mask fails.
+compared EXACTLY: right value, wrong mask fails. Only what the CPU issues:
+multi-bit shifts and EXTS live in `z8000_shift` / the EXTS class, rotates
+take a count of 1 or 2, bit numbers are 0-15. Long ADD/SUB/CP/TEST/LD are
+two word passes; the composition rule is in the module header.
 
 **Acceptance.** `make test-alu` replays `vectors/k800x_cpu/alu/random.vec`
-(123000 constrained-random cases) and `vectors/k800x_cpu/alu_from_cpu/*.vec`
-(every `alu.Execute` call the CPU suite made, 195 files). Both clean before
-rung 3.
+(78000 constrained-random cases, reachable set only) and
+`vectors/k800x_cpu/alu_from_cpu/*.vec` (every `alu.Execute` call the CPU
+suite made). Long records run as two passes and must match bit-exactly.
+Out-of-contract records (shift/EXTS unit tests, synthetic long logic ops)
+are skipped and the tally is printed. Clean before rung 3.
 
 **Watch out.** Flags C/Z/S/PV/D/H at bits 7/6/5/4/3/2. PV is overflow for
 arithmetic, parity for byte logicals; DAB and the BCD rotates read D and H.
@@ -83,24 +88,30 @@ Source of truth: Go `sim/cpu/alu/alu.go` and its `FlagWritesFor` PLA.
 
 **Implement.** Three bit-serial FSMs, one protocol: `start` pulse, second
 operand `delay` ticks later with `src_valid`, `done` after an EXACT tick
-count, `remaining` decrementing every tick (the CPU's internal-op bus
-dressing reads it, so it is contract).
+count, `remaining` decrementing every tick (recorded in the serial
+vectors, so it is contract).
 
-**Acceptance.** `make test-serial` (`vectors/k800x_cpu/serial/random.vec`,
-2800 operations). `+only=M|D|S` selects one unit.
+**Acceptance.** `make test-serial` (`vectors/k800x_cpu/serial/random.vec`).
+`+only=M|D|S` selects one unit.
 
-**Watch out.** These tick totals become the MULT/DIV/shift cycle counts,
-so they must emerge here for rung 7 and the mul/div rows of
-`make test-cpu-cycles`. Build to the ISOLATED figures: MULT 70 flat, MULTL
-282+7n (n = set bits in the low 16 of the multiplicand), DIV 107 word / 744
-long, shifts 13+3n static and 15+3n dynamic, block repeats 11+9n.
-
-The trap: `sla_8` wants 34 clocks, not the isolated 37. Static shifts are
-the only multi-word instructions with a long internal phase, so only they
-run back-to-back faster than isolated: the successor's second-word fetch
-hides inside the shift. Those 3 clocks come from the prefetch queue at
-**rung 9**, not this FSM. Don't tune the sequencer to close the gap: it
-makes one measurement agree and breaks twelve enforced cycle-audit cases.
+**Watch out.** The units step on the CPU's machine-cycle cadence: one step
+per internal cycle, its work on the cycle's last clock. MULT: setup 3, 16
+steps of 4; MULTL: setup 4, 32 steps of 8, one 7-clock add per 1 bit
+(n = set bits in the absolute value of the multiplicand's low 16 bits read
+as a signed word), finish 19; DIV: setup 2, trial 6, 16 steps of 6; DIVL:
+setup 2, trial 67, 32 steps of 21; shifts one 3-clock step per position.
+Multiplier 0 replaces the steps with 12 (MULT) / 23 (MULTL); divisor 0
+with 8 / 25, overflow with 20 / 46. An operand arriving after setup picks
+the path then, the clocks waited counting toward it while the work left
+after the arrival fits; each clock past that adds one. Every path needs
+1 clock from the arrival except overflow, N/2 + 3 (11 DIV, 19 DIVL: the
+arrival, quotient bit N, the other bits two per clock, the signs). Latest
+free arrival, in ticks: MULT 6, multiplier 0 14; MULTL 11, multiplier 0
+26; DIV trial 7, divisor 0 9, overflow 11; DIVL trial 68, divisor 0 26,
+overflow 29. Case 3 does no quotient work but shares case 4's overflow
+count and bound (one path, one program); no CPU program reaches a bound.
+With the IF1 these give the table totals: MULT 70, MULTL 282+7n, DIV 107,
+DIVL 744, shifts 13+3n static and 15+3n dynamic (ledger items 49, 50).
 
 Division outputs `dbz`, `ovf`, `wide`, `qneg`, `qzero` are each checked.
 
@@ -164,14 +175,34 @@ ladder shortens at once.
 
 ## Rung 3 -- ClsUnified register and immediate forms
 
-**Implement.** `execStart` -> regfile read -> ALU -> regfile write ->
-pipe-fill, for register/immediate modes.
+**Implement.** The sequencer walks each instruction's program from the
+generated program ROM (`rtl/k800x_cpu/z8000_mc_table.txt`); regfile read
+-> ALU -> regfile write on the program's last clocks, for
+register/immediate modes.
 
 **Acceptance.** `TestLDImmediate`, `TestLD_R_R`, `TestADD_R_R`,
-`TestLDB_IMM8`, the sweeps `TestArith*` / `TestLogic*`,
-`TestConditionCodes`, `TestBIT_SET_RES`, `TestShiftRegister` (needs A3),
-`TestBusTimingRegOnly*`. First `make test-cpu-cycles` rows: `ld_r_imm` (7),
-`ldb_r_imm` (5), `ld_r_r` (3), `add_r_r` (4), `inc_r`, `dec_r`, `cp_r_imm`.
+`TestLDB_IMM8`, `TestLogicalOps_PreserveCarry`, `TestBIT_SET_RES`,
+`TestINC_DEC_register`, `TestAddlImm`, `TestLongRegROM.*`, `TestTESTL_R`. First
+`make test-cpu-cycles` rows: `ld_r_imm` (7), `ldb_r_imm` (5), `ld_r_r` (3),
+`add_r_r` (4), `inc_r`, `dec_r`, `cp_r_imm`.
+
+Held elsewhere: `TestShiftRegister` needs the shifter driven by the
+sequencer (the MULT/DIV hookup).
+
+**Watch out.** Every instruction is its machine-cycle program (Go
+`sim/cpu` `cycle_program.go`; ledger items 41, 42, 46): the next IF1
+starts only after the last cycle, tail included, and nothing is fetched
+ahead. Long ops: the ALU is 16 bits, so a long op is two word passes, low
+then high for ADD/SUB/CP, placed in the clocks the program names: the low
+pass on the second last clock, the high pass on the last. ADDL/SUBL/CPL
+RR,RR `F1+2 I3`: the I3's second and third clocks. ADDL #imm
+`F1+1 Fn Fn+4`: the low word's fetch's fourth and fifth clocks after its
+T3 edge. LDL RR,RR `F1+2`: the two tail clocks. TESTL RR `F1+2 I8`: the
+I8's last two. LDL RR,#imm `F1+1 Fn Fn+1` is the tight case: the low word
+arrives at its fetch's T3 edge, leaving exactly its T3 clock and the
+tail. The low word always arrives last, so no long form can start sooner.
+Nothing reads the result before the next instruction's IF1 T3: the
+passes do not show on the pins, only the program's length does.
 
 ## Rung 4 -- memory operands, stores, RMW
 
@@ -181,9 +212,15 @@ WRITE puts the byte on BOTH halves (Ref Manual 9.4.2 p.234, R-CPU-513; the
 monitor checks it).
 
 **Acceptance.** `TestLD_R_IR`, `TestLD_IR_R`, `TestLD_R_ADDR`,
-`TestLD_ADDR_R`, `TestLD_ADDR_IMM`, `TestCP_ADDR_IMM`, `TestByteLane*`,
-`TestLongOps*`, `TestEA*`, `TestBusTimingMemory*`,
-`TestBusSpec_MemoryWriteStrobes`. Cycle rows: `ld_r_ind` (7), `ld_ind_r`
+`TestLD_ADDR_R`, `TestLD_ADDR_IMM`, `TestCP_ADDR_IMM`; byte lanes
+`TestLDB_ByteStore_EvenAddr`, `TestLDB_ByteStore_OddAddr`,
+`TestNEGB_OddAddr`, `TestBusSpec_ByteWriteDuplicatesData`;
+`TestADDL_ADDR`, `TestSUBL_ADDR`, `TestCPL_ADDR`, `TestTESTL_ADDR`, `TestLDL_*`,
+`TestLongRegROM.*`; addressing modes `TestLD_indexed`, `TestLD_BX`,
+`TestLDL_BX`, `TestLDB_R_BASED`, `TestLDR_PCRel_BaseIsUpdatedPC`,
+`TestALUDirectAddressROM`, `TestALUIndexedROM`,
+`TestZ8001_LD_DA_Imm_LongForm`, `TestZ8001_LDB_DA_Imm_LongForm`;
+`TestBusTimingMemory*`, `TestBusSpec_MemoryWriteStrobes`. Cycle rows: `ld_r_ind` (7), `ld_ind_r`
 (8), `ldb_r_ind`, `ldb_ind_r`, `ld_r_da` (9), `ld_da_r` (11), `add_r_ind`.
 
 ## Rung 5 -- branch, stack, call/return
@@ -193,8 +230,7 @@ monitor checks it).
 
 **Acceptance.** `TestJR`, `TestCALR_RET`, `TestPUSH_POP`, `TestNonSeg*`,
 `TestDJNZ*`, `TestCycleAuditBranch`, `TestCycleAuditStack`. Cycle rows:
-`jr_taken`, `jr_nottaken`, `djnz`, `push_ind_r`, `pop_r_ind` (tagged
-`approx`: measured single-shot, see docs/TIMING_TESTS.md).
+`jr_taken`, `jr_nottaken`, `djnz`, `push_ind_r`, `pop_r_ind`.
 
 **Watch out.** CALR SUBTRACTS its displacement (PC - 2*disp); the 1982+
 manuals misprint it as an add.
@@ -208,8 +244,9 @@ LEA, LDCTL, LDPS, IRET, Translate, LDM. Acceptance: `TestDI_EI`,
 
 ## Rung 7 -- MULT / DIV hookup
 
-Drive the A3 sequencers with the memory-operand overlap
-(`AluFetchOverlap`); the internal-op bus dressing reads `remaining`.
+Drive the A3 sequencers from the program's internal cycles. With a memory
+or immediate operand the setup and first steps run during the operand
+transactions (ledger item 49).
 
 **Acceptance.** `TestMULT*`, `TestDIV*`, `TestMultDivROM`, and
 `TestArithmeticSpecGap`, which alone gates mul/div cycles and flags
@@ -230,36 +267,26 @@ standard I/O uses AD7:0.
 **Acceptance.** The 41 tests in `cpu_block_test.go` (`TestLDIR*`,
 `TestCPIR*`, `TestCPSD*`, `TestINIR*`...), `cpu_io_bytelane_test`,
 `cpu_blockio_bytelane_test`, `TestCycleAuditBlockOps`,
-`TestCycleAuditBlockCompare`, `TestBusSpec_IOCycleDS`. Cycle rows: `inb`
-(10), `outb` (12), `ldi_1` (20), and the 11+9n slope: `ldir_n4` and
-`lddr_n4` (38), `ldir_n64` (578), `cpir_n3` (32), `cpir_n8` (77).
+`TestCycleAuditBlockCompare`, `TestBusSpec_IOCycleDS`,
+`TestMachineCycleBlock`. Cycle rows: `inb` (12), `outb` (12), `ldi_1` (20),
+and 11+9n: `ldir_n4` and `lddr_n4` (47), `ldir_n64` (587), `cpir_n3` (38),
+`cpir_n8` (83).
 
 Those five are **group records**: a repeat block instruction consumes its
 count, so the vector repeats a self-restoring group (reload dst, src,
-count, block instruction) and times the interval AFTER the block
-instruction's own IF1. That own interval is a constant 13 (the queue fills
-and stalls); the loop's clocks land in the next one. Read the record's
-hint line before concluding the RTL is a block's worth of clocks off.
+count, block instruction) and times the block instruction's own interval.
+The 11 are 7 before the first element and an `I4` after the last (ledger
+item 48).
 
-## Rung 9 -- prefetch queue and EA cadence
+## Rung 9 -- machine-cycle programs suite-wide
 
-Now the exact clock positions of overlapped IF1s matter suite-wide:
-`prefetch_test.go`, `TestFetchAlign*`, `TestLookAhead*`, and all 12
-`TestCycleAudit*` groups on Z8001 and Z8002 -- the hard gate.
+Now every machine cycle's position matters: `TestMachineCycle*`,
+`TestFetchRedirect`, `TestNoFetchAhead`, `TestCycleTableMemoryForms` and
+all `TestCycleAudit*` groups on Z8001 and Z8002 -- the hard gate. Each instruction fetches only
+its own words.
 
-**`make test-cpu-cycles` becomes meaningful in bulk here**: it measures
-IF1-to-IF1 in pipeline steady state, which needs a working look-ahead
-queue.
-
-`sla_1` (13) and `sla_8` (34) belong to this rung: 3 clocks BELOW the
-isolated 13+3n because the successor's second-word fetch hides inside the
-shift. With a correct A3 shifter they fail until the queue exists, then
-pass untouched. If they pass at A3, the sequencer bills 3 clocks too few.
-
-Hardware check: `bench/c900`'s `sla1`/`sla8` kernels read 143/353 clocks
-per iteration if the overlap is real, 170/380 if not. 170/380 would mean
-this rung's queue model is wrong, and these two rows -- not the shifter --
-show it.
+`sla_1` (16) and `sla_8` (37) are 13+3n: one 3-clock internal cycle per
+position.
 
 ## Rung 10 -- interrupts, traps, refresh, STOP, BUSREQ, VMPU
 
@@ -276,11 +303,11 @@ boundary, /BUSACK High one clock after release, CPU resumes two after),
 Green here means `make test-cpu-timing` 12/12 and `make test-cpu-cycles`
 45/45.
 
-## Skipped forever (92 files)
+## Skipped forever (`X unsupported`)
 
-`TestSaveRestore*` and `TestPrefetchSnapshotRoundTrip*` restore Go
-snapshots (`X unsupported`); they test the Go snapshot mechanism, not the
-CPU.
+`TestSaveRestore*` restore Go snapshots, and some `TestMachineCycle*`
+files set a refresh pending directly; they test the Go model's internals,
+not the CPU's pins.
 
 ---
 
@@ -423,9 +450,9 @@ Acceptance: the bulk of the vector ladder, `TestPins_TX_BackToBack`,
   it finds a misplaced strobe fastest: clock, transaction, Product Spec
   figure.
 * **`make test-cpu-cycles`** goes green in blocks (per-rung "Cycle rows").
-  `approx` records carry the measured and the Mar81/PLA number; the RTL is
-  judged against the measured one (single-shot branch/stack cases, and
-  shifts whose total is base plus per-step clocks).
+  `approx` records carry the measured number and the base total; the RTL
+  is judged against the measured one (shifts, MULTL and block repeats,
+  whose total is a base plus per-step clocks).
 
 Details and citations: `docs/TIMING_TESTS.md`.
 

@@ -291,12 +291,13 @@ int main(int argc, char** argv) {
 #if VM_TRACE
     if (tfp) { tfp->close(); delete tfp; }
 #endif
+    const bool unhandled = dut.unhandled_cycle();
     top->final();
     delete top;
 
     if (!sawEnd && !(stopFirst && firstTick >= 0)) { printf("RESULT FAIL %s: truncated vector (no END)\n", vecPath.c_str()); return 4; }
 
-    bool pass = firstTick < 0 && finalFails == 0;
+    bool pass = firstTick < 0 && finalFails == 0 && !unhandled;
     if (pass) {
         printf("RESULT PASS %s ticks=%ld clocks=%ld\n", vecPath.c_str(), tick, clock);
         return 0;
@@ -305,8 +306,10 @@ int main(int argc, char** argv) {
         printf("RESULT FAIL %s first-divergence tick=%ld clock=%ld pins=%s mismatched-ticks=%ld/%ld%s\n",
                vecPath.c_str(), firstTick, firstClock, firstPins.c_str(), mismTicks, tick,
                finalFails ? " final-state-mismatch" : "");
-    else
+    else if (finalFails)
         printf("RESULT FAIL %s pins-ok final-state-mismatch (%ld fields)\n", vecPath.c_str(), finalFails);
+    else
+        printf("RESULT FAIL %s pins-ok unhandled-machine-cycle\n", vecPath.c_str());
     if (!quiet) {
         if (!hint.empty()) printf("  program: %s\n", hint.c_str());
         if (firstTick >= 0) {

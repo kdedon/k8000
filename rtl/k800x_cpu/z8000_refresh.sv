@@ -1,39 +1,80 @@
-// z8000_refresh -- DRAM refresh unit (cpu.go Tick prescaler + REFRESH reg).
+// z8000_refresh -- DRAM refresh prescaler and row step.
 //
-// REFRESH register: bit15 RE, bits14:9 RATE (0 -> 64), bits8:0 ROW (bit0
-// always 0; +2 per refresh, 256 distinct rows). Prescaler is fed CLK/4 and
-// FREE-RUNS regardless of bus activity; underflow only LATCHES pending;
-// the refresh bus cycle (ST=0001, no DS_n) issues at the next IF1 /
-// internal-op / HALT boundary; mid-instruction refresh bookkeeping per
-// snapshot fields RefreshInFlight/RefreshStolenMark/RefreshStolen.
+// REFRESH register: bit 15 RE, bits 14:9 RATE (0 means 64), bits 8:0 ROW.
+// While enabled the prescaler is clocked at CLK/4 whatever the bus is
+// doing; reaching zero reloads it from RATE and leaves a refresh pending.
+// Writing REFRESH with RE set also reloads it.
+// The sequencer issues the refresh cycle at its next allowed boundary.
+// Each refresh cycle puts ROW on AD and steps it by two (bit 0 cleared).
 //
-// STATUS: SCAFFOLD (empty shell).
+// `pending` includes an underflow on this edge: the sequencer may issue the
+// refresh in the same clock. `take` marks the edge the sequencer commits to
+// a refresh, which on a T3 edge is one clock before its T1; `cyc_row` is
+// the row that cycle drives.
 
 module z8000_refresh (
-  input  logic        clk,
-  input  logic        reset_n,
-  input  logic        enable,        // REFRESH.RE
-  input  logic [5:0]  rate,          // REFRESH[14:9]
-  input  logic        row_step,      // a refresh cycle was issued: ROW += 2
-  input  logic        clear_pending, // refresh cycle accepted by the bus unit
-  output logic        pending,
-  output logic [8:0]  row
+  input  logic       clk,
+  input  logic       reset_n,
+  input  logic       enable,      // RE
+  input  logic [5:0] rate,
+  input  logic [8:0] row,
+  input  logic       load,        // REFRESH written with RE set
+  input  logic [5:0] load_rate,
+  input  logic       take,
+  output logic       pending,
+  output logic [8:0] row_next,    // ROW after this refresh
+  output logic [8:0] cyc_row
 );
 
-  // TODO(scaffold)
-  always_ff @(posedge clk or negedge reset_n) begin
-    if (!reset_n) begin
-      pending <= 1'b0;
-      row     <= 9'd0;
-    end else begin
-      if (clear_pending) pending <= 1'b0;
-      if (row_step)      row     <= row + 9'd2;
+  logic [1:0]  div4_q, div4_d;     // CLK/4 sub-divider
+  logic [15:0] count_q, count_d;   // prescaler
+  logic        pending_q, pending_d;
+  logic [8:0]  row_q;
+  logic        underflow;
+
+  logic [15:0] count_dec, reload;
+  logic [5:0]  rate_sel;
+  assign count_dec = count_q - 16'd1;
+  assign rate_sel  = load ? load_rate : rate;
+  assign reload    = (rate_sel == 6'd0) ? 16'd64 : {10'd0, rate_sel};
+
+  always_comb begin
+    div4_d    = div4_q;
+    count_d   = count_q;
+    underflow = 1'b0;
+    if (enable) begin
+      div4_d = div4_q + 2'd1;
+      if (div4_q == 2'd3) begin
+        count_d = count_dec;
+        if (count_dec == 16'd0) begin
+          count_d   = reload;
+          underflow = 1'b1;
+        end
+      end
     end
+    // The write lands after this edge's step; the CLK/4 phase carries on.
+    if (load) count_d = reload;
   end
 
-  // verilator lint_off UNUSEDSIGNAL
-  logic unused_ok;
-  assign unused_ok = ^{enable, rate};
-  // verilator lint_on UNUSEDSIGNAL
+  assign pending   = pending_q || underflow;
+  assign pending_d = pending && !take;
+  assign row_next  = (row + 9'd2) & 9'h1FE;
+  assign cyc_row   = take ? row : row_q;
+
+  // /RESET leaves the prescaler alone; it powers up at zero.
+  always_ff @(posedge clk) begin
+    div4_q  <= div4_d;
+    count_q <= count_d;
+  end
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      pending_q <= 1'b0;
+      row_q     <= 9'd0;
+    end else begin
+      pending_q <= pending_d;
+      row_q     <= cyc_row;
+    end
+  end
 
 endmodule

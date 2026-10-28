@@ -6,8 +6,8 @@
 // 5-stage PLA split sketched in z8000/docs/group_decode_rom.md sec 4) can
 // replace the flat table later -- tb/k800x_cpu/tb_decode.sv must still pass against
 // vectors/k800x_cpu/decode/decode.vec (all 65536 first words x the w1 nibble where it
-// matters). len_ns/len_seg/seg_addr_* are the first-word-only attributes
-// the fetch FSM consumes before words 2..3 arrive.
+// matters). An instruction's length is its machine-cycle program's, not
+// the decoder's.
 //
 // STATUS: complete via the generated table (passes tb_decode).
 

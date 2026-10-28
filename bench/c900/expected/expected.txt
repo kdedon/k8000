@@ -32,6 +32,7 @@ ldrr      10        40         40         40068        40068        LD R2,R1
 addrr     10        50         50         50075        50075        ADD R2,R1
 ldimm     10        80         80         80044        80044        LD R1,#0x1234
 nop       10        80         80         80027        80027        NOP
+neglc     3         73         73         73061        73061        NEG R2; LD R1,#0x1234; COM R2
 ldind     10        80         80         80070        80070        LD R2,@R4 -- one data READ
 stind     10        90         90         90077        90077        LD @R4,R2 -- one data WRITE
 ldda      10        100        100        100044       100044       LD R2,addr -- direct address
@@ -128,6 +129,30 @@ jrtaken   10        70         70         70027        70027        JR (always t
 #   exec per iteration: 80 (the model, simulated, steady state)
 #   save/restore + setup, once per call: 27
 #   per call: spec 80027, model 80027
+
+# neglc -- NEG R2; LD R1,#0x1234; COM R2
+#  NOTE: look-ahead check.  The published figures are back-to-back
+#  throughput: each instruction is a run of machine cycles, each from
+#  one bus transaction's start to the next (Fawcett pp.56-58, 67), so
+#  a trio is 7+7+7 = 21 and an iteration 73.  If instead a word
+#  fetched during NEG's internal clocks were not billed again, the LD
+#  would cost 4 and an iteration 64.  ldimm is the control at 80.
+#   loop body, PUBLISHED figures (63 clocks + 10 of loop control):
+#     1  x 8D22         NEG    R2                       7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 8D20         COM    R2                       7 clocks
+#     1  x 8D22         NEG    R2                       7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 8D20         COM    R2                       7 clocks
+#     1  x 8D22         NEG    R2                       7 clocks
+#     1  x 2101 1234    LD     R1,#0x1234               7 clocks
+#     1  x 8D20         COM    R2                       7 clocks
+#     1  x AB60         DEC    Rc,#1                    4 clocks
+#     1  x EExx         JR     NZ,loop                  6 clocks
+#   spec per iteration: 73
+#   exec per iteration: 73 (the model, simulated, steady state)
+#   save/restore + setup, once per call: 61
+#   per call: spec 73061, model 73061
 
 # ldind -- LD R2,@R4 -- one data READ
 #   loop body, PUBLISHED figures (70 clocks + 10 of loop control):

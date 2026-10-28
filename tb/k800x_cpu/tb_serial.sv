@@ -157,7 +157,7 @@ module tb_serial
     run_m(1, w32, dst, src, 0, src2, 1, MAXT); compare({id, " 2nd pulse +1"}, 1);
     run_m(1, w32, dst, src, 0, src2, 6, MAXT); compare({id, " 2nd pulse +6"}, 1);
     run_m(1, w32, dst, src, 5, 0, -1, MAXT); save_ref();
-    run_m(1, w32, dst, src, 5, src2, 6, MAXT); compare({id, " stalled, 2nd pulse +1"}, 1);
+    run_m(1, w32, dst, src, 5, src2, 6, MAXT); compare({id, " late, 2nd pulse +1"}, 1);
     // 3. start while busy restarts
     id = $sformatf("M w=%0d dst=%h src=%h", w32 ? 32 : 16, dst_b, src_b);
     run_m(1, w32, dst_b, src_b, 0, 0, -1, MAXT); save_ref();
@@ -166,7 +166,7 @@ module tb_serial
     run_m(1, w32, dst, src, 0, 0, -1, 12);
     run_m(0, w32, dst_b, src_b, -1, 0, -1, MAXT); compare({id, " with start, restart mid-iteration"}, 1);
     run_m(1, w32, dst, src, MAXT, 0, -1, 6);
-    run_m(0, w32, dst_b, src_b, 0, 0, -1, MAXT); compare({id, " restart from stalled setup"}, 1);
+    run_m(0, w32, dst_b, src_b, 0, 0, -1, MAXT); compare({id, " restart while waiting"}, 1);
     run_m(1, w32, dst, src, 0, 0, -1, MAXT);
     run_m(0, w32, dst_b, src_b, 0, 0, -1, MAXT); compare({id, " after another op"}, 1);
   endtask
@@ -182,7 +182,7 @@ module tb_serial
     run_d(1, l, dvd, dvr, 0, dvr2, 1, MAXT); compare({id, " 2nd pulse +1"}, res_defined());
     run_d(1, l, dvd, dvr, 0, dvr2, 6, MAXT); compare({id, " 2nd pulse +6"}, res_defined());
     run_d(1, l, dvd, dvr, 30, 0, -1, MAXT); save_ref();
-    run_d(1, l, dvd, dvr, 30, dvr2, 31, MAXT); compare({id, " stalled, 2nd pulse +1"}, res_defined());
+    run_d(1, l, dvd, dvr, 30, dvr2, 31, MAXT); compare({id, " late, 2nd pulse +1"}, res_defined());
     id = $sformatf("D n=%0d dvd=%h dvr=%h", l ? 32 : 16, dvd_b, dvr_b);
     run_d(1, l, dvd_b, dvr_b, 0, 0, -1, MAXT); save_ref();
     run_d(1, l, dvd, dvr, 0, 0, -1, 60);
@@ -190,7 +190,7 @@ module tb_serial
     run_d(1, l, dvd, dvr, 0, 0, -1, 60);
     run_d(0, l, dvd_b, dvr_b, -1, 0, -1, MAXT); compare({id, " with start, restart mid-iteration"}, res_defined());
     run_d(1, l, dvd, dvr, MAXT, 0, -1, 40);
-    run_d(0, l, dvd_b, dvr_b, 0, 0, -1, MAXT); compare({id, " restart from stalled setup"}, res_defined());
+    run_d(0, l, dvd_b, dvr_b, 0, 0, -1, MAXT); compare({id, " restart while waiting"}, res_defined());
     run_d(1, l, dvd, dvr, 0, 0, -1, MAXT);
     run_d(0, l, dvd_b, dvr_b, 0, 0, -1, MAXT); compare({id, " after another op"}, res_defined());
   endtask

@@ -32,7 +32,6 @@ module tb_decode
     if (e.exec        != g.exec)        $display("      exec        exp=%0d got=%0d", e.exec, g.exec);
     if (e.alu_op      != g.alu_op)      $display("      alu_op      exp=%0d got=%0d", e.alu_op, g.alu_op);
     if (e.width       != g.width)       $display("      width       exp=%0d got=%0d", e.width, g.width);
-    if (e.words       != g.words)       $display("      words       exp=%0d got=%0d", e.words, g.words);
     if (e.priv        != g.priv)        $display("      priv        exp=%0d got=%0d", e.priv, g.priv);
     if (e.src2        != g.src2)        $display("      src2        exp=%0d got=%0d", e.src2, g.src2);
     if (e.dst         != g.dst)         $display("      dst         exp=%0d got=%0d", e.dst, g.dst);
@@ -50,10 +49,6 @@ module tb_decode
     if (e.block_rept  != g.block_rept)  $display("      block_rept  exp=%0d got=%0d", e.block_rept, g.block_rept);
     if (e.mp_op       != g.mp_op)       $display("      mp_op       exp=%0d got=%0d", e.mp_op, g.mp_op);
     if (e.epu_kind    != g.epu_kind)    $display("      epu_kind    exp=%0d got=%0d", e.epu_kind, g.epu_kind);
-    if (e.len_ns      != g.len_ns)      $display("      len_ns      exp=%0d got=%0d", e.len_ns, g.len_ns);
-    if (e.len_seg     != g.len_seg)     $display("      len_seg     exp=%0d got=%0d", e.len_seg, g.len_seg);
-    if (e.seg_addr_w1 != g.seg_addr_w1) $display("      seg_addr_w1 exp=%0d got=%0d", e.seg_addr_w1, g.seg_addr_w1);
-    if (e.seg_addr_w2 != g.seg_addr_w2) $display("      seg_addr_w2 exp=%0d got=%0d", e.seg_addr_w2, g.seg_addr_w2);
   endfunction
 
   task automatic check_one(input logic [15:0] tw0, input logic [3:0] tw1);

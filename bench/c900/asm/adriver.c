@@ -47,7 +47,7 @@ extern int k_sla1(), k_sla8(), k_sla8w1();
 extern int k_mult1(), k_multff(), k_multl3(), k_multl5();
 extern int k_div(), k_divl();
 extern int k_ldir4(), k_ldir64();
-extern int k_pushpop(), k_callret(), k_jrtaken();
+extern int k_pushpop(), k_callret(), k_jrtaken(), k_neglc();
 
 struct akernel {
 	char *name;
@@ -60,7 +60,8 @@ struct akernel akernels[] = {
 	{"ldrr",    k_ldrr,    10, "LD R2,R1        40/iter"},
 	{"addrr",   k_addrr,   10, "ADD R2,R1       50/iter"},
 	{"ldimm",   k_ldimm,   10, "LD R1,#imm      80/iter (one extra fetched word)"},
-	{"nop",     k_nop,     10, "NOP             80/iter"},
+	{"nop",     k_nop,     10, "NOP             80/iter (50 if a NOP cost only its 4 internal clocks)"},
+	{"neglc",   k_neglc,    3, "NEG;LD #;COM    73/iter (64 if fetched-ahead words were free)"},
 	{"ldind",   k_ldind,   10, "LD R2,@R4       80/iter (one data read)"},
 	{"stind",   k_stind,   10, "LD @R4,R2       90/iter (one data write)"},
 	{"ldda",    k_ldda,    10, "LD R2,addr      100/iter (two words + a read)"},

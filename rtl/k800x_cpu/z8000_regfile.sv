@@ -6,6 +6,7 @@
 //   word  sel 0-15 = R0..R15
 //   long  sel & 0xE = RRn: R[n] is the HIGH word, R[n+1] the low word
 //   quad  sel & 0xC = RQn: R[n] high ... R[n+3] low
+// Port B reads a byte or word only.
 //
 // The testbench reads and pokes `r` by name; keep it.
 //
@@ -20,7 +21,10 @@ module z8000_regfile (
   input  logic [63:0] wdata,    // right-aligned: byte in [7:0], word [15:0], long [31:0], quad [63:0]
   input  logic [1:0]  rwidth,
   input  logic [3:0]  rsel,
-  output logic [63:0] rdata     // right-aligned like wdata; unused upper bits zero
+  output logic [63:0] rdata,    // right-aligned like wdata; unused upper bits zero
+  input  logic        rbyte_b,  // 1 = byte, 0 = word
+  input  logic [3:0]  rsel_b,
+  output logic [15:0] rdata_b
 );
 
   localparam logic [1:0] W_BYTE = 2'd0;
@@ -56,16 +60,25 @@ module z8000_regfile (
     if (we) r <= r_d;
   end
 
+  // Byte reads: RH/RL n is the high or low half of R n, n < 8.
+  logic [3:0] bsel_a, bsel_b;
+  assign bsel_a = {1'b0, rsel[2:0]};
+  assign bsel_b = {1'b0, rsel_b[2:0]};
+
   always_comb begin
     rdata = 64'd0;
     unique case (rwidth)
-      W_BYTE: rdata[7:0] = rsel[3] ? r[{1'b0, rsel[2:0]}][7:0]
-                                   : r[{1'b0, rsel[2:0]}][15:8];
+      W_BYTE: rdata[7:0] = rsel[3] ? r[bsel_a][7:0] : r[bsel_a][15:8];
       W_WORD: rdata[15:0] = r[rsel];
       W_LONG: rdata[31:0] = {r[{rsel[3:1], 1'b0}], r[{rsel[3:1], 1'b1}]};
       default: rdata = {r[{rsel[3:2], 2'b00}], r[{rsel[3:2], 2'b01}],
                         r[{rsel[3:2], 2'b10}], r[{rsel[3:2], 2'b11}]};
     endcase
+  end
+
+  always_comb begin
+    if (rbyte_b) rdata_b = {8'h00, rsel_b[3] ? r[bsel_b][7:0] : r[bsel_b][15:8]};
+    else         rdata_b = r[rsel_b];
   end
 
 endmodule

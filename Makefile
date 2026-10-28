@@ -7,9 +7,9 @@
 # targets below reach into the golden model, and only a maintainer runs them.
 #
 #   make lint       verilator -Wall on every RTL module (zero suppressions policy)
-#   make build      build every testbench (decode, alu, regfile, serial, cpu x4 variants)
+#   make build      build every testbench (decode, alu, regfile, serial, refresh, seq-words, cpu x4 variants)
 #   make test       run everything, print the pass/fail ladder
-#   make test-<x>   one bench: decode | decode-table | alu | regfile | serial | cpu
+#   make test-<x>   one bench: decode | decode-table | mc-table | alu | regfile | serial | refresh | cpu | seq-words | seq-paths | cond
 #   make test-timing        spec TIMING benches (CPU Z-Bus monitor + MMU/CIO/SCC strobes)
 #   make test-cpu-cycles    instruction CYCLE COUNTS vs Mar81 sec 6.7
 #   make cpu ONLY=TestNOP        replay one CPU vector with full divergence context
@@ -17,7 +17,7 @@
 #   make ladder     list CPU vectors shortest-first with PASS/FAIL status
 #
 #   MAINTAINER ONLY (needs ~/git/z8000 + Go; refreshes committed artifacts):
-#   make refresh-rtl        rtl/k800x_cpu/gen/*.sv + the decode vectors
+#   make refresh-rtl        rtl/k800x_cpu/gen/*.sv, the decode and program tables, the decode vectors
 #   make refresh-vectors    re-record every vectors/<device>/ from the Go suite
 #
 # Layout is BY DEVICE: rtl/k800x_cpu (the CPU, with its generated gen/ inside),
@@ -36,11 +36,15 @@ RESULTS   := results
 # ---- sources ---------------------------------------------------------------
 PKG_SRCS  := rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
 GEN_SRCS  := rtl/k800x_cpu/gen/z8000_decode_rom_gen.sv
+# The machine-cycle program ROM, for the units that walk programs.
+MC_SRCS   := rtl/k800x_cpu/gen/z8000_mc_pkg.sv rtl/k800x_cpu/gen/z8000_mc_rom_gen.sv
 RTL_UNITS := z8000_regfile z8000_alu z8000_mult z8000_div z8000_shift z8000_decode \
-             z8000_bus_unit z8000_sequencer z8000_prefetch z8000_int_unit z8000_refresh z8000_cpu
+             z8000_bus_unit z8000_sequencer z8000_cond z8000_execute z8000_int_unit z8000_refresh z8000_cpu
 # Modules the CPU top currently instantiates (extend as z8000_cpu.sv grows).
-CPU_SRCS  := $(PKG_SRCS) $(GEN_SRCS) rtl/k800x_cpu/z8000_regfile.sv rtl/k800x_cpu/z8000_bus_unit.sv \
-             rtl/k800x_cpu/z8000_sequencer.sv rtl/k800x_cpu/z8000_cpu.sv
+CPU_MODS  := rtl/k800x_cpu/z8000_regfile.sv rtl/k800x_cpu/z8000_decode.sv rtl/k800x_cpu/z8000_bus_unit.sv \
+             rtl/k800x_cpu/z8000_sequencer.sv rtl/k800x_cpu/z8000_cond.sv rtl/k800x_cpu/z8000_refresh.sv \
+             rtl/k800x_cpu/z8000_alu.sv rtl/k800x_cpu/z8000_execute.sv
+CPU_SRCS  := $(PKG_SRCS) $(MC_SRCS) $(GEN_SRCS) $(CPU_MODS) rtl/k800x_cpu/z8000_cpu.sv
 
 # ---- lint policy -----------------------------------------------------------
 # RTL: -Wall, no suppressions (FPGA_BIBLE 0.4). Testbenches: -Wall minus the
@@ -50,8 +54,8 @@ TB_W   := -Wall -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-WIDTHEXPAND -Wno-WIDTHT
 VFLAGS := --timescale 1ns/1ps -O2 --x-assign fast --x-initial fast
 
 .PHONY: all gen vectors refresh-rtl refresh-vectors require-z8000 \
-        lint build test test-decode test-decode-table test-alu test-regfile test-serial test-cpu \
-        test-cpu-timing test-cpu-cycles test-timing cpu ladder clean help
+        lint build test test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu \
+        test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond test-timing cpu ladder clean help
 all: build
 
 # Per-device fragments (k8010_mmu / k8036_cio / k8030_scc ...) live in
@@ -91,6 +95,7 @@ require-z8000:
 
 gen refresh-rtl: require-z8000 $(CHIP_GEN)
 	cd $(GEN) && go run ./cmd/decoderom -root $(CURDIR)
+	cd $(GEN) && go run ./cmd/mcrom -root $(CURDIR)
 	cd $(GEN) && go run ./cmd/aluvec -root $(CURDIR)
 	cd $(GEN) && go run ./cmd/serialvec -root $(CURDIR)
 
@@ -106,16 +111,18 @@ vectors refresh-vectors: require-z8000 $(CHIP_VECTORS)
 # ---- lint ------------------------------------------------------------------
 lint: $(CHIP_LINT)
 	@for m in $(RTL_UNITS); do \
-	  extra=""; [ $$m = z8000_cpu ] && extra="rtl/k800x_cpu/z8000_regfile.sv rtl/k800x_cpu/z8000_bus_unit.sv rtl/k800x_cpu/z8000_sequencer.sv"; \
-	  out=$$($(VERILATOR) --lint-only $(RTL_W) $(PKG_SRCS) $(GEN_SRCS) rtl/k800x_cpu/$$m.sv $$extra --top-module $$m 2>&1 | grep -v MULTITOP); \
+	  extra=""; mc=""; [ $$m = z8000_cpu ] && extra="$(CPU_MODS)"; [ $$m = z8000_execute ] && extra="rtl/k800x_cpu/z8000_alu.sv"; \
+	  { [ $$m = z8000_cpu ] || [ $$m = z8000_sequencer ]; } && mc="$(MC_SRCS)"; \
+	  out=$$($(VERILATOR) --lint-only $(RTL_W) $(PKG_SRCS) $$mc $(GEN_SRCS) rtl/k800x_cpu/$$m.sv $$extra --top-module $$m 2>&1 | grep -v MULTITOP); \
 	  if [ -z "$$out" ]; then echo "lint  $$m: clean"; else echo "lint  $$m:"; echo "$$out"; fail=1; fi; \
 	done; [ -z "$$fail" ]
 
 # ---- testbench builds ------------------------------------------------------
-build: $(CHIP_BUILD) $(OBJ)/tb_decode/tb_decode $(OBJ)/tb_decode_table/tb_decode_table $(OBJ)/tb_alu/tb_alu $(OBJ)/tb_regfile/tb_regfile $(OBJ)/tb_serial/tb_serial \
+build: $(CHIP_BUILD) $(OBJ)/tb_decode/tb_decode $(OBJ)/tb_decode_table/tb_decode_table $(OBJ)/tb_mc_table/tb_mc_table $(OBJ)/tb_alu/tb_alu $(OBJ)/tb_regfile/tb_regfile $(OBJ)/tb_serial/tb_serial $(OBJ)/tb_refresh/tb_refresh \
        $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 \
        $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004 \
-       $(OBJ)/tb_cpu_timing/tb_cpu_timing $(OBJ)/tb_cpu_cycles/tb_cpu_cycles
+       $(OBJ)/tb_cpu_timing/tb_cpu_timing $(OBJ)/tb_cpu_cycles/tb_cpu_cycles $(OBJ)/tb_seq_words/tb_seq_words \
+       $(OBJ)/tb_seq_paths/tb_seq_paths $(OBJ)/tb_cond/tb_cond
 
 $(OBJ)/tb_decode/tb_decode: $(PKG_SRCS) $(GEN_SRCS) rtl/k800x_cpu/z8000_decode.sv tb/k800x_cpu/tb_decode.sv
 	@mkdir -p $(dir $@)
@@ -129,6 +136,13 @@ $(OBJ)/tb_decode_table/tb_decode_table: $(PKG_SRCS) $(GEN_SRCS) tb/k800x_cpu/tb_
 	@mkdir -p $(dir $@)
 	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_decode_table \
 	  $(PKG_SRCS) $(GEN_SRCS) tb/k800x_cpu/tb_decode_table.sv -o tb_decode_table >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+# The machine-cycle program TABLE bench: proves the committed program ROM
+# against the committed rtl/k800x_cpu/z8000_mc_table.txt.
+$(OBJ)/tb_mc_table/tb_mc_table: $(MC_SRCS) tb/k800x_cpu/tb_mc_table.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_mc_table \
+	  $(MC_SRCS) tb/k800x_cpu/tb_mc_table.sv -o tb_mc_table >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 $(OBJ)/tb_alu/tb_alu: $(PKG_SRCS) rtl/k800x_cpu/z8000_alu.sv tb/k800x_cpu/tb_alu.sv
 	@mkdir -p $(dir $@)
@@ -145,6 +159,11 @@ $(OBJ)/tb_serial/tb_serial: $(PKG_SRCS) rtl/k800x_cpu/z8000_mult.sv rtl/k800x_cp
 	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_serial \
 	  $(PKG_SRCS) rtl/k800x_cpu/z8000_mult.sv rtl/k800x_cpu/z8000_div.sv rtl/k800x_cpu/z8000_shift.sv tb/k800x_cpu/tb_serial.sv -o tb_serial >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
+$(OBJ)/tb_refresh/tb_refresh: rtl/k800x_cpu/z8000_refresh.sv tb/k800x_cpu/tb_refresh.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_refresh \
+	  rtl/k800x_cpu/z8000_refresh.sv tb/k800x_cpu/tb_refresh.sv -o tb_refresh >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
 # Spec-timing benches: the Z-Bus protocol monitor driven by a real program,
 # and the instruction cycle-count replay.  Both are pure SystemVerilog.
 $(OBJ)/tb_cpu_timing/tb_cpu_timing: $(CPU_SRCS) tb/common/z8000_bus_monitor.sv tb/k800x_cpu/tb_cpu_timing.sv
@@ -156,6 +175,21 @@ $(OBJ)/tb_cpu_cycles/tb_cpu_cycles: $(CPU_SRCS) tb/k800x_cpu/tb_cpu_cycles.sv
 	@mkdir -p $(dir $@)
 	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_cpu_cycles \
 	  $(CPU_SRCS) tb/k800x_cpu/tb_cpu_cycles.sv -o tb_cpu_cycles >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+$(OBJ)/tb_seq_words/tb_seq_words: $(CPU_SRCS) tb/k800x_cpu/tb_seq_words.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_seq_words \
+	  $(CPU_SRCS) tb/k800x_cpu/tb_seq_words.sv -o tb_seq_words >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+$(OBJ)/tb_seq_paths/tb_seq_paths: $(CPU_SRCS) tb/k800x_cpu/tb_seq_paths.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_seq_paths \
+	  $(CPU_SRCS) tb/k800x_cpu/tb_seq_paths.sv -o tb_seq_paths >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+$(OBJ)/tb_cond/tb_cond: rtl/k800x_cpu/z8000_cond.sv tb/k800x_cpu/tb_cond.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_cond \
+	  rtl/k800x_cpu/z8000_cond.sv tb/k800x_cpu/tb_cond.sv -o tb_cond >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 # CPU replay harness: one build per variant (SEGMENTED / VMPU parameters).
 define CPU_BUILD
@@ -172,7 +206,7 @@ $(eval $(call CPU_BUILD,z8003,1,1,Z8003))
 $(eval $(call CPU_BUILD,z8004,0,1,Z8004))
 
 # ---- run -------------------------------------------------------------------
-test: test-decode test-decode-table test-alu test-regfile test-serial test-cpu test-cpu-timing test-cpu-cycles $(CHIP_TEST)
+test: test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond $(CHIP_TEST)
 
 # Spec-timing ladder: everything that checks the datasheet's timing rather than
 # equality with the Go model.
@@ -184,17 +218,25 @@ test-decode: $(OBJ)/tb_decode/tb_decode
 test-decode-table: $(OBJ)/tb_decode_table/tb_decode_table
 	@$(OBJ)/tb_decode_table/tb_decode_table +table=rtl/k800x_cpu/z8000_decode_table.txt | grep -v '\$$finish'
 
+test-mc-table: $(OBJ)/tb_mc_table/tb_mc_table
+	@$(OBJ)/tb_mc_table/tb_mc_table +table=rtl/k800x_cpu/z8000_mc_table.txt | grep -v '\$$finish'
+
 test-alu: $(OBJ)/tb_alu/tb_alu
 	@mkdir -p $(RESULTS); : > $(RESULTS)/alu.txt
 	@for v in vectors/k800x_cpu/alu/*.vec vectors/k800x_cpu/alu_from_cpu/*.vec; do \
 	  $(OBJ)/tb_alu/tb_alu +vec=$$v | grep '^RESULT' >> $(RESULTS)/alu.txt; done
 	@scripts/summarize.sh alu $(RESULTS)/alu.txt
+	@awk '{for (i = 1; i < NF; i++) { if ($$(i+1) == "checks") c += $$i; if ($$(i+1) == "two-pass),") t += substr($$i, 2); if ($$(i+1) == "out-of-contract") s += $$i }} \
+	  END {printf "   alu: %d records checked (%d long, as two word passes), %d out-of-contract skipped\n", c, t, s}' $(RESULTS)/alu.txt
 
 test-regfile: $(OBJ)/tb_regfile/tb_regfile
 	@$(OBJ)/tb_regfile/tb_regfile | grep -v '\$$finish'
 
 test-serial: $(OBJ)/tb_serial/tb_serial
 	@$(OBJ)/tb_serial/tb_serial +vec=vectors/k800x_cpu/serial/random.vec | grep -v '\$$finish' | tail -25
+
+test-refresh: $(OBJ)/tb_refresh/tb_refresh
+	@$(OBJ)/tb_refresh/tb_refresh | grep -v '\$$finish'
 
 test-cpu: $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004
 	@scripts/run_k800x_cpu_vectors.sh
@@ -203,7 +245,16 @@ test-cpu-timing: $(OBJ)/tb_cpu_timing/tb_cpu_timing
 	@$(OBJ)/tb_cpu_timing/tb_cpu_timing | grep -v '\$$finish'
 
 test-cpu-cycles: $(OBJ)/tb_cpu_cycles/tb_cpu_cycles
-	@$(OBJ)/tb_cpu_cycles/tb_cpu_cycles +vec=vectors/k800x_cpu/cycles/cycles.vec | grep -v '\$$finish' | tail -40
+	@$(OBJ)/tb_cpu_cycles/tb_cpu_cycles +vec=vectors/k800x_cpu/cycles/cycles.vec | grep -v '\$$finish' | tail -50
+
+test-seq-words: $(OBJ)/tb_seq_words/tb_seq_words
+	@$(OBJ)/tb_seq_words/tb_seq_words | grep -v '\$$finish'
+
+test-seq-paths: $(OBJ)/tb_seq_paths/tb_seq_paths
+	@$(OBJ)/tb_seq_paths/tb_seq_paths | grep -v '\$$finish'
+
+test-cond: $(OBJ)/tb_cond/tb_cond
+	@$(OBJ)/tb_cond/tb_cond | grep -v '\$$finish'
 
 ladder:
 	@scripts/run_k800x_cpu_vectors.sh --ladder

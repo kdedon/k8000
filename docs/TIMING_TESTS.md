@@ -6,7 +6,7 @@ Three questions, three kinds of bench:
 |---|---|---|
 | does it behave like the audited model, edge for edge? | `tb/<device>/tb_{cpu,mmu,scc,cio}.cpp` (vector replay) | recorded `vectors/<device>/*.vec` |
 | is what it does **legal per the datasheet**? | `tb/<device>/tb_*_timing.sv` + `tb/common/z8000_bus_monitor.sv` | Zilog product specs, cited per check |
-| does each instruction take the **documented number of clocks**? | `tb/k800x_cpu/tb_cpu_cycles.sv` | `vectors/k800x_cpu/cycles/cycles.vec` from Mar81 sec 6.7 via `cyclesPLA` |
+| does each instruction take the **documented number of clocks**? | `tb/k800x_cpu/tb_cpu_cycles.sv` | `vectors/k800x_cpu/cycles/cycles.vec`, the Go model's cited totals |
 
 `<device>` is `k800x_cpu`, `k8010_mmu`, `k8030_scc` or `k8036_cio`; bench
 modules keep the short `tb_<chip>_timing` names, like the make targets.
@@ -73,47 +73,36 @@ write landed at the address latched at `/AS`.
 
 ## 3. `tb_cpu_cycles.sv` -- instruction cycle counts
 
-Cycle counts are datasheet facts (Z8000 CPU Technical Manual Mar81 sec 6.7).
-The Go model reproduces them structurally (`cyclesPLA(ctrl)` is the only
-place a cycle figure appears), so its `hdl/gen/cmd/cyclevec` generates a
-table the RTL can be checked against from the pins alone.
+Cycle counts are datasheet facts. The Go model keeps one cited total per
+instruction form and reaches it with the form's machine-cycle program, so
+its `hdl/gen/cmd/cyclevec` generates a table the RTL can be checked against
+from the pins alone.
 
 Each record is a short program plus two PCs. The bench counts clocks from
 the IF1 (`ST=1101`) `/AS` fall at the first PC to the next IF1 `/AS` fall,
 which must land on the second PC: the only pin-observable definition of an
 instruction's length.
 
-The generator measures between two consecutive copies of an instruction,
-i.e. in **pipeline steady state**: the Z8000 prefetches (2-stage
-look-ahead), so a first execution borrows fetch clocks from its
-predecessor. It also checks that the copies SETTLE: an instruction whose
-operands drift (a `DIV` leaves its quotient in the dividend) can walk into a
-different cost path, and averaging that is meaningless, so the generator
-fails instead.
+Each instruction fetches only its own words, so an instruction's interval
+is its whole cost. The generator measures between two consecutive copies
+and checks that the copies SETTLE: an instruction whose operands drift (a
+`DIV` leaves its quotient in the dividend) can walk into a different cost
+path, and averaging that is meaningless, so the generator fails instead.
 
 Repeat block instructions (`LDIR`, `CPIR`, `LDDR`) consume their count
 register, so their records repeat a self-restoring **group** (reload
 destination, source and count, then the block instruction) and time the
-interval AFTER the block instruction's own IF1. That interval is a constant
-13 whatever the count (the queue fills and stalls); the loop's clocks land
-in the next one.
+block instruction's own interval.
 
-45 records, 34 tagged `exact` and 11 `approx`:
+Each record is tagged:
 
-* `exact` -- measured interval == Mar81/`cyclesPLA`.
-* `approx` -- they differ; the record carries both. Either way the RTL is
-  asserted against the **measured** number. Three causes:
-  - branch and stack cases are measured single-shot (repeating them changes
-    what they do);
-  - bit-serial classes cost a published base plus operand-dependent work
-    only the FSM produces -- `MULTL` is `282 + 7n` (n = set bits in the low
-    16 of the multiplicand), `LDIR`/`CPIR` are `11 + 9n`; the decode-time
-    figure is the intercept;
-  - static shifts are published as `13 + 3n` but measure three clocks less
-    back-to-back: the successor's second-word fetch hides inside the shift's
-    internal burn. They are the only multi-word instructions with a long
-    internal phase, so nothing else shows this split. `bench/c900` measures
-    whether the overlap is real silicon.
+* `exact` -- measured interval == the form's total.
+* `approx` -- the total is a published base plus per-step work only the
+  sequencer produces; the record carries both, and the RTL is asserted
+  against the **measured** number: shifts `13 + 3n`, `MULTL` `282 + 7n`
+  (n = set bits in the absolute value of the multiplicand's low 16 bits as
+  a signed word), `LDIR`/`LDDR`/`CPIR` `11 + 9n`. Each measures exactly
+  its formula.
 
 The generator refuses a record whose opcode does not decode to the claimed
 mnemonic, so a mistyped encoding fails the build.

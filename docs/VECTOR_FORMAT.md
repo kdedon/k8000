@@ -25,7 +25,10 @@ the Go model runs the whole suite. Refresh them with the maintainer targets
 `make refresh-vectors` (test-suite dumps) and `make refresh-rtl` (codegen),
 then commit the diff. `make refresh-vectors` first runs `vecverify`, which
 replays every CPU vector into a fresh Go CPU: if the model fails its own
-vectors, the RTL never will pass them.
+vectors, the RTL never will pass them. Before committing a refresh,
+`hdl/gen/cmd/vecdiff <committed vectors> <fresh vectors>` classifies every
+changed file (length, machine-cycle boundaries, other pins, final state)
+and names the cause; a change it cannot explain exits 1.
 
 ASCII text, one record per line. Hex is upper-case, unprefixed. `#` starts
 a comment; `END` ends the file.
@@ -53,9 +56,15 @@ F TICKS 46                    number of T records -- informational
 END
 ```
 
-`X unsupported <reason>` before the first `T` means the test restored a Go
-snapshot (micro-architectural state the RTL cannot be poked with); the
-harness reports SKIP.
+The Go tests that sweep every form, column or snapshot point
+(`TestCycleTotalsMatchModel`, `TestMachineCyclePins`,
+`TestSnapshotMidProgram*`, `TestFetchSnapshotRoundTrip`,
+`TestEPADirections`) are not recorded (`vecNotRecorded` in the recorder);
+they stay checks of the model.
+
+`X unsupported <reason>` means the test restored a Go snapshot or set a
+refresh pending directly (micro-architectural state the RTL cannot be
+poked with); the harness reports SKIP.
 
 ### `T` record
 
@@ -123,16 +132,16 @@ Emitted by the Go model's `hdl/gen/cmd/cyclevec`, replayed by `tb_cpu_cycles.sv`
 N <name>                                    record name
 W <hex> <hex> ...                           program words, loaded at byte 0x0100
 T <from_pc> <to_pc> <clocks> <pla> <exact|approx>
-# hint: <disassembly>  (Mar81 6.7 / cyclesPLA: N cycles; measured ...)
+# hint: <disassembly>  (Mar81 6.7 / totals: N cycles; measured ...)
 E
 ```
 
 `T` is the measurement: count clocks from the IF1 (`ST=1101`) `/AS` fall at
 `<from_pc>` to the next IF1 `/AS` fall, which must be at `<to_pc>`.
-`<clocks>` is what the Go model does; `<pla>` is the decode-time figure from
-`cyclesPLA(ctrl)` == Mar81 sec 6.7. `exact`: they agree (the usual case, in
-pipeline steady state). `approx`: they differ -- single-shot branch/stack
-cases, and shifts, whose total is base + per-step clocks. The bench always
+`<clocks>` is what the Go model does; `<pla>` is the decode ROM's base
+total (Go `Decode().Cycles`, from the cited totals file).
+`exact`: they agree. `approx`: the total is a base plus per-step clocks
+(shifts 13+3n, MULTL 282+7n, block repeats 11+9n). The bench always
 asserts `<clocks>`.
 
 The header is `variant Z8002`: non-segmented, so plain `@Rn` addressing

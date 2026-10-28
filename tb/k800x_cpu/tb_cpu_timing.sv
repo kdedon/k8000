@@ -87,6 +87,9 @@ module tb_cpu_timing
   int io_wait_left;
 
   always @(posedge clk) begin
+    // The /DS-rise teardown goes first: a back-to-back /AS fall on the same
+    // edge must win.
+    if (!ds_q && ds_n) lat_valid <= 1'b0;
     // Address latch at the /AS fall (the external latch point is the /AS rise;
     // the address is stable for the whole of T1 either way).
     if (as_q && !as_n && ad_drive) begin
@@ -126,7 +129,6 @@ module tb_cpu_timing
         lat_st != ST_INSTR_FETCH_FIRST && lat_st != ST_PROG_SPACE)
       n_mem_rd <= n_mem_rd + 1;
 
-    if (!ds_q && ds_n) lat_valid <= 1'b0;
     if (io_wait_left > 0 && !ds_n) io_wait_left <= io_wait_left - 1;
 
     as_q <= as_n;

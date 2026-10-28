@@ -1,250 +1,240 @@
 K8000VEC 1 cycles
 variant Z8002
-# cycle counts from cpu.Decode().Cycles == cyclesPLA(ctrl)
+# cycle counts from cpu.Decode().Cycles (the totals file)
 # (Z8000 CPU Technical Manual Mar81 sec 6.7; docs/CYCLE_ACCURACY_PLAN.md)
 # measured = clocks between this instruction's IF1 /AS fall and the next IF1 /AS fall
 N ld_r_imm
 W 2101 0200 2101 0200 2101 0200 2101 0200 2101 0200 2101 0200 2101 0200 2101 0200 8D07
 T 0118 011C 7 7 exact
-# hint: LD R1,#0x0200  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: LD R1,#0x0200  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N ldb_r_imm
 W C15A C15A C15A C15A C15A C15A C15A C15A 8D07
 T 010C 010E 5 5 exact
-# hint: LDB RH1,0x5A  (Mar81 6.7 / cyclesPLA: 5 cycles; measured IF1-to-IF1 5, steady state)
+# hint: LDB RH1,0x5A  (Mar81 6.7 / totals: 5 cycles; measured IF1-to-IF1 5)
 E
 N ld_r_r
 W 2101 0200 A112 A112 A112 A112 A112 A112 A112 A112 8D07
 T 0110 0112 3 3 exact
-# hint: LD R2,R1  (Mar81 6.7 / cyclesPLA: 3 cycles; measured IF1-to-IF1 3, steady state)
+# hint: LD R2,R1  (Mar81 6.7 / totals: 3 cycles; measured IF1-to-IF1 3)
 E
 N ld_r_ind
 W 2101 0200 2112 2112 2112 2112 2112 2112 2112 2112 8D07
 T 0110 0112 7 7 exact
-# hint: LD R2,@R1  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: LD R2,@R1  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N ld_ind_r
 W 2101 0200 2F12 2F12 2F12 2F12 2F12 2F12 2F12 2F12 8D07
 T 0110 0112 8 8 exact
-# hint: LD @R1,R2  (Mar81 6.7 / cyclesPLA: 8 cycles; measured IF1-to-IF1 8, steady state)
+# hint: LD @R1,R2  (Mar81 6.7 / totals: 8 cycles; measured IF1-to-IF1 8)
 E
 N ldb_r_ind
 W 2101 0200 201A 201A 201A 201A 201A 201A 201A 201A 8D07
 T 0110 0112 7 7 exact
-# hint: LDB RL2,@R1  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: LDB RL2,@R1  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N ldb_ind_r
 W 2101 0200 2E1A 2E1A 2E1A 2E1A 2E1A 2E1A 2E1A 2E1A 8D07
 T 0110 0112 8 8 exact
-# hint: LDB @R1,RL2  (Mar81 6.7 / cyclesPLA: 8 cycles; measured IF1-to-IF1 8, steady state)
+# hint: LDB @R1,RL2  (Mar81 6.7 / totals: 8 cycles; measured IF1-to-IF1 8)
 E
 N ld_r_da
 W 6102 0200 6102 0200 6102 0200 6102 0200 6102 0200 6102 0200 6102 0200 6102 0200 8D07
 T 0118 011C 9 9 exact
-# hint: LD R2,0x0200  (Mar81 6.7 / cyclesPLA: 9 cycles; measured IF1-to-IF1 9, steady state)
+# hint: LD R2,0x0200  (Mar81 6.7 / totals: 9 cycles; measured IF1-to-IF1 9)
 E
 N ld_da_r
 W 6F02 0200 6F02 0200 6F02 0200 6F02 0200 6F02 0200 6F02 0200 6F02 0200 6F02 0200 8D07
 T 0118 011C 11 11 exact
-# hint: LD 0x0200,R2  (Mar81 6.7 / cyclesPLA: 11 cycles; measured IF1-to-IF1 11, steady state)
+# hint: LD 0x0200,R2  (Mar81 6.7 / totals: 11 cycles; measured IF1-to-IF1 11)
 E
 N add_r_r
 W 8112 8112 8112 8112 8112 8112 8112 8112 8D07
 T 010C 010E 4 4 exact
-# hint: ADD R2,R1  (Mar81 6.7 / cyclesPLA: 4 cycles; measured IF1-to-IF1 4, steady state)
+# hint: ADD R2,R1  (Mar81 6.7 / totals: 4 cycles; measured IF1-to-IF1 4)
 E
 N add_r_imm
 W 0101 1234 0101 1234 0101 1234 0101 1234 0101 1234 0101 1234 0101 1234 0101 1234 8D07
 T 0118 011C 7 7 exact
-# hint: ADD R1,#0x1234  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: ADD R1,#0x1234  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N sub_r_r
 W 8312 8312 8312 8312 8312 8312 8312 8312 8D07
 T 010C 010E 4 4 exact
-# hint: SUB R2,R1  (Mar81 6.7 / cyclesPLA: 4 cycles; measured IF1-to-IF1 4, steady state)
+# hint: SUB R2,R1  (Mar81 6.7 / totals: 4 cycles; measured IF1-to-IF1 4)
 E
 N and_r_imm
 W 0701 00FF 0701 00FF 0701 00FF 0701 00FF 0701 00FF 0701 00FF 0701 00FF 0701 00FF 8D07
 T 0118 011C 7 7 exact
-# hint: AND R1,#0x00FF  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: AND R1,#0x00FF  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N or_r_r
 W 8512 8512 8512 8512 8512 8512 8512 8512 8D07
 T 010C 010E 4 4 exact
-# hint: OR R2,R1  (Mar81 6.7 / cyclesPLA: 4 cycles; measured IF1-to-IF1 4, steady state)
+# hint: OR R2,R1  (Mar81 6.7 / totals: 4 cycles; measured IF1-to-IF1 4)
 E
 N xor_r_r
 W 8912 8912 8912 8912 8912 8912 8912 8912 8D07
 T 010C 010E 4 4 exact
-# hint: XOR R2,R1  (Mar81 6.7 / cyclesPLA: 4 cycles; measured IF1-to-IF1 4, steady state)
+# hint: XOR R2,R1  (Mar81 6.7 / totals: 4 cycles; measured IF1-to-IF1 4)
 E
 N cp_r_imm
 W 0B01 00FF 0B01 00FF 0B01 00FF 0B01 00FF 0B01 00FF 0B01 00FF 0B01 00FF 0B01 00FF 8D07
 T 0118 011C 7 7 exact
-# hint: CP R1,#0x00FF  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: CP R1,#0x00FF  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N inc_r
 W A910 A910 A910 A910 A910 A910 A910 A910 8D07
 T 010C 010E 4 4 exact
-# hint: INC R1,#1  (Mar81 6.7 / cyclesPLA: 4 cycles; measured IF1-to-IF1 4, steady state)
+# hint: INC R1,#1  (Mar81 6.7 / totals: 4 cycles; measured IF1-to-IF1 4)
 E
 N dec_r
 W AB10 AB10 AB10 AB10 AB10 AB10 AB10 AB10 8D07
 T 010C 010E 4 4 exact
-# hint: DEC R1,#1  (Mar81 6.7 / cyclesPLA: 4 cycles; measured IF1-to-IF1 4, steady state)
+# hint: DEC R1,#1  (Mar81 6.7 / totals: 4 cycles; measured IF1-to-IF1 4)
 E
 N neg_r
 W 8D12 8D12 8D12 8D12 8D12 8D12 8D12 8D12 8D07
 T 010C 010E 7 7 exact
-# hint: NEG R1  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: NEG R1  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N com_r
 W 8D10 8D10 8D10 8D10 8D10 8D10 8D10 8D10 8D07
 T 010C 010E 7 7 exact
-# hint: COM R1  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: COM R1  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N clr_r
 W 8D18 8D18 8D18 8D18 8D18 8D18 8D18 8D18 8D07
 T 010C 010E 7 7 exact
-# hint: CLR R1  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: CLR R1  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N test_r
 W 8D14 8D14 8D14 8D14 8D14 8D14 8D14 8D14 8D07
 T 010C 010E 7 7 exact
-# hint: TEST R1  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: TEST R1  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N add_r_ind
 W 2101 0200 0112 0112 0112 0112 0112 0112 0112 0112 8D07
 T 0110 0112 7 7 exact
-# hint: ADD R2,@R1  (Mar81 6.7 / cyclesPLA: 7 cycles; measured IF1-to-IF1 7, steady state)
+# hint: ADD R2,@R1  (Mar81 6.7 / totals: 7 cycles; measured IF1-to-IF1 7)
 E
 N jr_taken
 W E800 8D07
 T 0100 0102 6 6 exact
-# hint: JR T,0x0102  (Mar81 6.7 / cyclesPLA: 6 cycles; measured IF1-to-IF1 6, single-shot)
+# hint: JR T,0x0102  (Mar81 6.7 / totals: 6 cycles; measured IF1-to-IF1 6, single-shot)
 E
 N jr_nottaken
 W 8D14 E600 8D07
-T 0102 0104 10 6 approx
-# hint: JR EQ,0x0104  (Mar81 6.7 / cyclesPLA: 6 cycles; measured IF1-to-IF1 10, single-shot)
+T 0102 0104 6 6 exact
+# hint: JR EQ,0x0104  (Mar81 6.7 / totals: 6 cycles; measured IF1-to-IF1 6, single-shot)
 E
 N djnz
 W 2101 0002 F110 8D07
 T 0104 00E6 11 11 exact
-# hint: DJNZ RH1,0x00E6  (Mar81 6.7 / cyclesPLA: 11 cycles; measured IF1-to-IF1 11, single-shot)
+# hint: DJNZ RH1,0x00E6  (Mar81 6.7 / totals: 11 cycles; measured IF1-to-IF1 11, single-shot)
 E
 N push_ind_r
 W 210F 0400 93F2 8D07
-T 0104 0106 6 9 approx
-# hint: PUSH @R15,R2  (Mar81 6.7 / cyclesPLA: 9 cycles; measured IF1-to-IF1 6, single-shot)
+T 0104 0106 9 9 exact
+# hint: PUSH @R15,R2  (Mar81 6.7 / totals: 9 cycles; measured IF1-to-IF1 9, single-shot)
 E
 N pop_r_ind
 W 210F 0400 93F2 97F3 8D07
 T 0106 0108 8 8 exact
-# hint: POP R3,@R15  (Mar81 6.7 / cyclesPLA: 8 cycles; measured IF1-to-IF1 8, single-shot)
+# hint: POP R3,@R15  (Mar81 6.7 / totals: 8 cycles; measured IF1-to-IF1 8, single-shot)
 E
 N inb
 W 3A94 0010 3A94 0010 3A94 0010 3A94 0010 3A94 0010 3A94 0010 3A94 0010 3A94 0010 8D07
-T 0118 011C 10 10 exact
-# hint: INB RL1,0x0010  (Mar81 6.7 / cyclesPLA: 10 cycles; measured IF1-to-IF1 10, steady state)
+T 0118 011C 12 12 exact
+# hint: INB RL1,0x0010  (Mar81 6.7 / totals: 12 cycles; measured IF1-to-IF1 12)
 E
 N outb
 W 3A96 0010 3A96 0010 3A96 0010 3A96 0010 3A96 0010 3A96 0010 3A96 0010 3A96 0010 8D07
 T 0118 011C 12 12 exact
-# hint: OUTB 0x0010,RL1  (Mar81 6.7 / cyclesPLA: 12 cycles; measured IF1-to-IF1 12, steady state)
+# hint: OUTB 0x0010,RL1  (Mar81 6.7 / totals: 12 cycles; measured IF1-to-IF1 12)
 E
 N sla_1
 W B319 0001 B319 0001 B319 0001 B319 0001 B319 0001 B319 0001 B319 0001 B319 0001 8D07
-T 0118 011C 13 13 exact
-# hint: SLA R1,1  (Mar81 6.7 / cyclesPLA: 13 cycles; measured IF1-to-IF1 13, steady state)
+T 0118 011C 16 13 approx
+# hint: SLA R1,1  (Mar81 6.7 / totals: 13 cycles; measured IF1-to-IF1 16)
 E
 N sla_8
 W B319 0008 B319 0008 B319 0008 B319 0008 B319 0008 B319 0008 B319 0008 B319 0008 8D07
-T 0118 011C 34 13 approx
-# hint: SLA R1,8  (Mar81 6.7 / cyclesPLA: 13 cycles; measured IF1-to-IF1 34, steady state)
+T 0118 011C 37 13 approx
+# hint: SLA R1,8  (Mar81 6.7 / totals: 13 cycles; measured IF1-to-IF1 37)
 E
 N sla_neg4
 W B319 FFFC B319 FFFC B319 FFFC B319 FFFC B319 FFFC B319 FFFC B319 FFFC B319 FFFC 8D07
-T 0118 011C 22 13 approx
-# hint: SLA R1,-4  (Mar81 6.7 / cyclesPLA: 13 cycles; measured IF1-to-IF1 22, steady state)
+T 0118 011C 25 13 approx
+# hint: SLA R1,-4  (Mar81 6.7 / totals: 13 cycles; measured IF1-to-IF1 25)
 E
 N mult_r_r_x1
 W 2101 0001 2102 0000 2103 1234 9912 9912 9912 9912 9912 9912 9912 9912 8D07
 T 0118 011A 70 70 exact
-# hint: MULT RR2,R1  (Mar81 6.7 / cyclesPLA: 70 cycles; measured IF1-to-IF1 70, steady state)
+# hint: MULT RR2,R1  (Mar81 6.7 / totals: 70 cycles; measured IF1-to-IF1 70)
 E
 N mult_r_r_xffff
 W 2101 FFFF 2102 0000 2103 FFFF 9912 9912 9912 9912 9912 9912 9912 9912 8D07
 T 0118 011A 70 70 exact
-# hint: MULT RR2,R1  (Mar81 6.7 / cyclesPLA: 70 cycles; measured IF1-to-IF1 70, steady state)
+# hint: MULT RR2,R1  (Mar81 6.7 / totals: 70 cycles; measured IF1-to-IF1 70)
 E
 N multl_rq_rr_n3
 W 2104 0000 2105 0001 2102 0000 2103 0007 9842 9842 9842 9842 9842 9842 9842 9842 8D07
 T 011C 011E 303 282 approx
-# hint: MULTL RQ0,RR4  (Mar81 6.7 / cyclesPLA: 282 cycles; measured IF1-to-IF1 303, steady state)
+# hint: MULTL RQ0,RR4  (Mar81 6.7 / totals: 282 cycles; measured IF1-to-IF1 303)
 E
 N multl_rq_rr_n5
 W 2104 0000 2105 0001 2102 0000 2103 001F 9842 9842 9842 9842 9842 9842 9842 9842 8D07
 T 011C 011E 317 282 approx
-# hint: MULTL RQ0,RR4  (Mar81 6.7 / cyclesPLA: 282 cycles; measured IF1-to-IF1 317, steady state)
+# hint: MULTL RQ0,RR4  (Mar81 6.7 / totals: 282 cycles; measured IF1-to-IF1 317)
 E
 N div_r_r_by1
 W 2101 0001 2102 0000 2103 1234 9B12 9B12 9B12 9B12 9B12 9B12 9B12 9B12 8D07
 T 0118 011A 107 107 exact
-# hint: DIV RR2,R1  (Mar81 6.7 / cyclesPLA: 107 cycles; measured IF1-to-IF1 107, steady state)
+# hint: DIV RR2,R1  (Mar81 6.7 / totals: 107 cycles; measured IF1-to-IF1 107)
 E
 N divl_rq_rr_by1
 W 2104 0000 2105 0001 2100 0000 2101 0000 2102 0001 2103 2345 9A42 9A42 9A42 9A42 9A42 9A42 9A42 9A42 8D07
-T 011E 0120 744 744 exact
-# hint: DIVL RQ0,RR4  (Mar81 6.7 / cyclesPLA: 744 cycles; measured IF1-to-IF1 744, steady state)
+T 011C 011E 744 744 exact
+# hint: DIVL RQ0,RR4  (Mar81 6.7 / totals: 744 cycles; measured IF1-to-IF1 744)
 E
 N ldi_1
 W 2101 0400 2102 0500 2103 00FF BB21 0318 BB21 0318 BB21 0318 BB21 0318 BB21 0318 BB21 0318 BB21 0318 BB21 0318 8D07
 T 0124 0128 20 20 exact
-# hint: LDI @RR0,@RR2,R3  (Mar81 6.7 / cyclesPLA: 20 cycles; measured IF1-to-IF1 20, steady state)
+# hint: LDI @RR0,@RR2,R3  (Mar81 6.7 / totals: 20 cycles; measured IF1-to-IF1 20)
 E
 N ldir_n4
 W 2101 0400 2102 0500 2103 0004 BB21 0310 2101 0400 2102 0500 2103 0004 BB21 0310 2101 0400 2102 0500 2103 0004 BB21 0310 2101 0400 2102 0500 2103 0004 BB21 0310 2101 0400 2102 0500 2103 0004 BB21 0310 2101 0400 2102 0500 2103 0004 BB21 0310 2101 0400 2102 0500 2103 0004 BB21 0310 2101 0400 2102 0500 2103 0004 BB21 0310 8D07
-T 0170 0174 38 11 approx
-# hint: group-repeat record for LDIR @RR0,@RR2,R3 (11+9n slope: n=4).  This interval is the
-#   one the block loop's clocks land in -- see the group-record note in
-#   cyclevec -- not the block instruction's own IF1 spacing, which is a
-#   constant 13 whatever the count.  cyclesPLA carries only the base 11;
-#   measured IF1-to-IF1 38, steady state.
+T 017C 0180 47 11 approx
+# hint: group-repeat record for LDIR @RR0,@RR2,R3 (11+9n slope: n=4): the block
+#   instruction's own IF1 to its successor's.  The totals carry only the
+#   base 11; measured IF1-to-IF1 47.
 E
 N ldir_n64
 W 2101 0400 2102 0500 2103 0040 BB21 0310 2101 0400 2102 0500 2103 0040 BB21 0310 2101 0400 2102 0500 2103 0040 BB21 0310 2101 0400 2102 0500 2103 0040 BB21 0310 2101 0400 2102 0500 2103 0040 BB21 0310 2101 0400 2102 0500 2103 0040 BB21 0310 2101 0400 2102 0500 2103 0040 BB21 0310 2101 0400 2102 0500 2103 0040 BB21 0310 8D07
-T 0140 0144 578 11 approx
-# hint: group-repeat record for LDIR @RR0,@RR2,R3 (11+9n slope: n=64, so 9*60 = 540 above the n=4 record).  This interval is the
-#   one the block loop's clocks land in -- see the group-record note in
-#   cyclevec -- not the block instruction's own IF1 spacing, which is a
-#   constant 13 whatever the count.  cyclesPLA carries only the base 11;
-#   measured IF1-to-IF1 578, steady state.
+T 013C 0140 587 11 approx
+# hint: group-repeat record for LDIR @RR0,@RR2,R3 (11+9n slope: n=64, so 9*60 = 540 above the n=4 record): the block
+#   instruction's own IF1 to its successor's.  The totals carry only the
+#   base 11; measured IF1-to-IF1 587.
 E
 N lddr_n4
 W 2101 0400 2102 0500 2103 0004 BB29 0310 2101 0400 2102 0500 2103 0004 BB29 0310 2101 0400 2102 0500 2103 0004 BB29 0310 2101 0400 2102 0500 2103 0004 BB29 0310 2101 0400 2102 0500 2103 0004 BB29 0310 2101 0400 2102 0500 2103 0004 BB29 0310 2101 0400 2102 0500 2103 0004 BB29 0310 2101 0400 2102 0500 2103 0004 BB29 0310 8D07
-T 0170 0174 38 11 approx
-# hint: group-repeat record for LDDR @RR0,@RR2,R3 (11+9n slope: n=4).  This interval is the
-#   one the block loop's clocks land in -- see the group-record note in
-#   cyclevec -- not the block instruction's own IF1 spacing, which is a
-#   constant 13 whatever the count.  cyclesPLA carries only the base 11;
-#   measured IF1-to-IF1 38, steady state.
+T 017C 0180 47 11 approx
+# hint: group-repeat record for LDDR @RR0,@RR2,R3 (11+9n slope: n=4): the block
+#   instruction's own IF1 to its successor's.  The totals carry only the
+#   base 11; measured IF1-to-IF1 47.
 E
 N cpir_n3
 W 2101 0500 2102 0000 2103 0003 BB14 0320 2101 0500 2102 0000 2103 0003 BB14 0320 2101 0500 2102 0000 2103 0003 BB14 0320 2101 0500 2102 0000 2103 0003 BB14 0320 2101 0500 2102 0000 2103 0003 BB14 0320 2101 0500 2102 0000 2103 0003 BB14 0320 2101 0500 2102 0000 2103 0003 BB14 0320 2101 0500 2102 0000 2103 0003 BB14 0320 8D07
-T 0170 0174 32 11 approx
-# hint: group-repeat record for CPIR @RR2,@RR0,R3 (11+9n slope: n=3).  This interval is the
-#   one the block loop's clocks land in -- see the group-record note in
-#   cyclevec -- not the block instruction's own IF1 spacing, which is a
-#   constant 13 whatever the count.  cyclesPLA carries only the base 11;
-#   measured IF1-to-IF1 32, steady state.
+T 017C 0180 38 11 approx
+# hint: group-repeat record for CPIR @RR2,@RR0,R3 (11+9n slope: n=3): the block
+#   instruction's own IF1 to its successor's.  The totals carry only the
+#   base 11; measured IF1-to-IF1 38.
 E
 N cpir_n8
 W 2101 0500 2102 0000 2103 0008 BB14 0320 2101 0500 2102 0000 2103 0008 BB14 0320 2101 0500 2102 0000 2103 0008 BB14 0320 2101 0500 2102 0000 2103 0008 BB14 0320 2101 0500 2102 0000 2103 0008 BB14 0320 2101 0500 2102 0000 2103 0008 BB14 0320 2101 0500 2102 0000 2103 0008 BB14 0320 2101 0500 2102 0000 2103 0008 BB14 0320 8D07
-T 0170 0174 77 11 approx
-# hint: group-repeat record for CPIR @RR2,@RR0,R3 (11+9n slope: n=8, so 9*5 = 45 above the n=3 record).  This interval is the
-#   one the block loop's clocks land in -- see the group-record note in
-#   cyclevec -- not the block instruction's own IF1 spacing, which is a
-#   constant 13 whatever the count.  cyclesPLA carries only the base 11;
-#   measured IF1-to-IF1 77, steady state.
+T 017C 0180 83 11 approx
+# hint: group-repeat record for CPIR @RR2,@RR0,R3 (11+9n slope: n=8, so 9*5 = 45 above the n=3 record): the block
+#   instruction's own IF1 to its successor's.  The totals carry only the
+#   base 11; measured IF1-to-IF1 83.
 E

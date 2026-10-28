@@ -9,7 +9,7 @@
 //
 // z8000_ctrl_pkg: the decode-ROM control word (Go CtrlWord, sim/cpu/decode.go)
 // as a packed struct, plus every enum it references. Field order below is
-// MSB first; CTRL_W = 80 bits. The .vec files and the generated decoder
+// MSB first; CTRL_W = 69 bits. The .vec files and the generated decoder
 // use exactly this packing.
 
 // A constants package is a library: most members are unused by any one
@@ -17,7 +17,7 @@
 /* verilator lint_off UNUSEDPARAM */
 package z8000_ctrl_pkg;
 
-  localparam int CTRL_W = 80;
+  localparam int CTRL_W = 69;
 
   // ---- InstrClass (28 values, 5 bits) ----
   localparam int CLS_W = 5;
@@ -179,7 +179,6 @@ package z8000_ctrl_pkg;
     logic [4:0]  exec;         // InstrClass: execute-phase FSM variant
     logic [4:0]  alu_op;       // alu.Op
     logic [1:0]  width;        // operand width: 0=none 1=byte 2=word 3=long
-    logic [2:0]  words;        // CtrlWord.Words: instruction length in words (0 when the class ignores it)
     logic        priv;         // privileged instruction
     logic [4:0]  src2;         // SrcSel: second source operand select
     logic [3:0]  dst;          // DstSel: result destination select
@@ -197,39 +196,30 @@ package z8000_ctrl_pkg;
     logic        block_rept;   // block op: repeat
     logic [1:0]  mp_op;        // MPOpKind (ClsMultiProc)
     logic [1:0]  epu_kind;     // EPUKindSel (ClsEPU)
-    logic [2:0]  len_ns;       // decodeLength(w0) in non-segmented mode (first-word attribute)
-    logic [2:0]  len_seg;      // decodeLength(w0) in segmented mode (before short-address reduction)
-    logic        seg_addr_w1;  // word 1 is a segmented address (short form drops a word)
-    logic        seg_addr_w2;  // word 2 is a segmented address (LDM 0x5C / EPA 4E,4F)
   } ctrl_word_t;
 
   // LSB position of each field inside the packed word (for tb/tools):
-  localparam int CTRL_POS_VALID = 79;
-  localparam int CTRL_POS_EXEC = 74;
-  localparam int CTRL_POS_ALU_OP = 69;
-  localparam int CTRL_POS_WIDTH = 67;
-  localparam int CTRL_POS_WORDS = 64;
-  localparam int CTRL_POS_PRIV = 63;
-  localparam int CTRL_POS_SRC2 = 58;
-  localparam int CTRL_POS_DST = 54;
-  localparam int CTRL_POS_COUNT = 49;
-  localparam int CTRL_POS_SRC1_NIB = 47;
-  localparam int CTRL_POS_SRC2_NIB = 45;
-  localparam int CTRL_POS_DST_NIB = 43;
-  localparam int CTRL_POS_FCW_OP = 40;
-  localparam int CTRL_POS_FCW_MASK = 24;
-  localparam int CTRL_POS_STK_MODE = 20;
-  localparam int CTRL_POS_BR_MODE = 16;
-  localparam int CTRL_POS_IO_WRITE = 15;
-  localparam int CTRL_POS_IO_SPEC = 14;
-  localparam int CTRL_POS_BLOCK_DECR = 13;
-  localparam int CTRL_POS_BLOCK_REPT = 12;
-  localparam int CTRL_POS_MP_OP = 10;
-  localparam int CTRL_POS_EPU_KIND = 8;
-  localparam int CTRL_POS_LEN_NS = 5;
-  localparam int CTRL_POS_LEN_SEG = 2;
-  localparam int CTRL_POS_SEG_ADDR_W1 = 1;
-  localparam int CTRL_POS_SEG_ADDR_W2 = 0;
+  localparam int CTRL_POS_VALID = 68;
+  localparam int CTRL_POS_EXEC = 63;
+  localparam int CTRL_POS_ALU_OP = 58;
+  localparam int CTRL_POS_WIDTH = 56;
+  localparam int CTRL_POS_PRIV = 55;
+  localparam int CTRL_POS_SRC2 = 50;
+  localparam int CTRL_POS_DST = 46;
+  localparam int CTRL_POS_COUNT = 41;
+  localparam int CTRL_POS_SRC1_NIB = 39;
+  localparam int CTRL_POS_SRC2_NIB = 37;
+  localparam int CTRL_POS_DST_NIB = 35;
+  localparam int CTRL_POS_FCW_OP = 32;
+  localparam int CTRL_POS_FCW_MASK = 16;
+  localparam int CTRL_POS_STK_MODE = 12;
+  localparam int CTRL_POS_BR_MODE = 8;
+  localparam int CTRL_POS_IO_WRITE = 7;
+  localparam int CTRL_POS_IO_SPEC = 6;
+  localparam int CTRL_POS_BLOCK_DECR = 5;
+  localparam int CTRL_POS_BLOCK_REPT = 4;
+  localparam int CTRL_POS_MP_OP = 2;
+  localparam int CTRL_POS_EPU_KIND = 0;
 
 endpackage
 /* verilator lint_on UNUSEDPARAM */

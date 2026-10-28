@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fit one unit on Cyclone V and summarize area and timing.
-#   quartus/build.sh <unit> [period_ns]     unit: regfile | alu | mult | div | shift
+#   quartus/build.sh <unit> [period_ns]     unit: regfile | alu | mult | div | shift | execute | cpu
 # Default period is 48 MHz, an exact multiple of every C900 clock.
 # Uses quartus_sh on PATH, else the pinned Quartus Lite 17.0.2 image.
 set -euo pipefail
@@ -16,6 +16,11 @@ case "${unit}" in
   mult)    srcs=(rtl/k800x_cpu/z8000_mult.sv) ;;
   div)     srcs=(rtl/k800x_cpu/z8000_div.sv) ;;
   shift)   srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/z8000_shift.sv) ;;
+  execute) srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv
+                 rtl/k800x_cpu/z8000_{regfile,alu,execute}.sv) ;;
+  cpu)     srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
+                 rtl/k800x_cpu/gen/z8000_mc_pkg.sv rtl/k800x_cpu/gen/z8000_decode_rom_gen.sv rtl/k800x_cpu/gen/z8000_mc_rom_gen.sv
+                 rtl/k800x_cpu/z8000_{regfile,decode,bus_unit,sequencer,cond,refresh,alu,execute,cpu}.sv) ;;
   *) echo "unknown unit: ${unit}" >&2; exit 2 ;;
 esac
 top="z8000_${unit}_measure"
@@ -47,13 +52,33 @@ set_false_path -from [get_ports {in_i[*]}]
 set_false_path -to   [get_ports {out_o[*]}]
 EOF
 
-if command -v quartus_sh >/dev/null 2>&1; then
-  (cd "${repo}/${work}" && quartus_sh --flow compile unit -c unit) > "${repo}/${work}/flow.log" 2>&1
-else
-  docker run --rm --user "$(id -u):$(id -g)" --volume "${repo}:/work" --workdir "/work/${work}" \
-    "${image}" /opt/intelFPGA_lite/quartus/bin/quartus_sh --flow compile unit -c unit \
-    > "${repo}/${work}/flow.log" 2>&1
-fi || { tail -40 "${repo}/${work}/flow.log"; exit 1; }
+# The three worst setup paths in each slow corner, cell by cell.
+cat > "${repo}/${work}/paths.tcl" <<'EOF'
+project_open unit
+create_timing_netlist
+read_sdc
+foreach cond [get_available_operating_conditions] {
+  if {![string match *slow* $cond]} { continue }
+  set_operating_conditions $cond
+  update_timing_netlist
+  report_timing -setup -npaths 3 -detail full_path -append -file paths.txt
+}
+EOF
+
+# quartus <tool> <args...>: run a Quartus tool in the unit's work directory.
+quartus() {
+  if command -v "$1" >/dev/null 2>&1; then
+    (cd "${repo}/${work}" && "$@")
+  else
+    docker run --rm --user "$(id -u):$(id -g)" --volume "${repo}:/work" --workdir "/work/${work}" \
+      "${image}" "/opt/intelFPGA_lite/quartus/bin/$1" "${@:2}"
+  fi
+}
+
+quartus quartus_sh --flow compile unit -c unit > "${repo}/${work}/flow.log" 2>&1 ||
+  { tail -40 "${repo}/${work}/flow.log"; exit 1; }
+quartus quartus_sta -t paths.tcl > "${repo}/${work}/paths.log" 2>&1 ||
+  { tail -20 "${repo}/${work}/paths.log"; exit 1; }
 
 out="${repo}/${work}/output_files"
 if ! grep -Eq 'Implemented 1 input pins' "${out}/unit.map.rpt" ||
@@ -68,5 +93,10 @@ summary="${repo}/results/quartus/${unit}.txt"
   grep -E 'Worst-case (setup|hold) slack|Timing requirements (not )?met' "${out}/unit.sta.rpt" | sort -u
   grep -A3 '; Fmax' "${out}/unit.sta.rpt" | grep -E '^; [0-9]' | head -4
   grep -E '^(Critical )?Warning' "${out}"/unit.{map,fit,sta}.rpt | sed 's/^/  /'
+  echo "worst setup paths (slack from -> to; detail in ${unit}_paths.txt):"
+  grep -E '^; -?[0-9.]+ +; ' "${repo}/${work}/paths.txt" |
+    awk -F';' 'NF >= 10 && $5 ~ /[a-z]/ {gsub(/ +/, "", $2); gsub(/ +/, "", $3); gsub(/ +/, "", $4); print $2, $3, "->", $4}' |
+    sort -n | head -3 | sed 's/^/  /'
 } > "${summary}"
+cp "${repo}/${work}/paths.txt" "${repo}/results/quartus/${unit}_paths.txt"
 cat "${summary}"

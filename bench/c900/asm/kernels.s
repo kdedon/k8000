@@ -51,13 +51,13 @@
 	.globl	_k_sla8, _k_sla8w1, _k_mult1, _k_multff
 	.globl	_k_multl3, _k_multl5, _k_div, _k_divl
 	.globl	_k_ldir4, _k_ldir64, _k_pushpop, _k_callret
-	.globl	_k_jrtaken
+	.globl	_k_jrtaken, _k_neglc
 	.globl	k_ldrr, k_addrr, k_ldimm, k_nop
 	.globl	k_ldind, k_stind, k_ldda, k_sla1
 	.globl	k_sla8, k_sla8w1, k_mult1, k_multff
 	.globl	k_multl3, k_multl5, k_div, k_divl
 	.globl	k_ldir4, k_ldir64, k_pushpop, k_callret
-	.globl	k_jrtaken
+	.globl	k_jrtaken, k_neglc
 
 	.text
 
@@ -162,6 +162,34 @@ l_nop:
 	dec	r6,#1
 	jr	nz,l_nop
 	pop	r6,@r15
+	ret
+
+! ------------------------------------ NEG R2; LD R1,#0x1234; COM R2
+! 8D22, 2101 1234, 8D20: 7 clocks each.  The LD follows NEG, whose
+! internal clocks overlap the LD's first fetch.  Three trios per
+! iteration: 73 clocks if the published figures are throughput, as the
+! model reads them; 64 if a word fetched ahead were not billed again.
+k_neglc:
+_k_neglc:
+	push	@r15,r1
+	push	@r15,r2
+	push	@r15,r6
+	ld	r6,#1000
+l_neglc:
+	neg	r2		! 8D22
+	ld	r1,#0x1234	! 2101 1234
+	com	r2		! 8D20
+	neg	r2
+	ld	r1,#0x1234
+	com	r2
+	neg	r2
+	ld	r1,#0x1234
+	com	r2
+	dec	r6,#1
+	jr	nz,l_neglc
+	pop	r6,@r15
+	pop	r2,@r15
+	pop	r1,@r15
 	ret
 
 ! ------------------------------------------------------------ LD R2,@R4

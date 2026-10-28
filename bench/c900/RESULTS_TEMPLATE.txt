@@ -34,9 +34,9 @@ syntax errors, which tell us exactly how to write the next version.)
 
 
 --- abench.out --------------------------------------------------------
-(If you only have time for part of this, the four lines that matter most
-are sla8w1, sla8, multl3 and multl5 -- they are the two experiments whose
-results cannot be predicted from the datasheet alone.)
+(If you only have time for part of this, the lines that matter most
+are sla8w1, sla8, multl3 and multl5, then ldimm, nop and neglc -- the
+experiments whose results cannot be predicted from the datasheet alone.)
 
 
 

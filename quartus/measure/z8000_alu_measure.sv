@@ -2,13 +2,13 @@
 // flop to flop. Ports are virtual pins.
 
 module z8000_alu_measure (
-  input  logic         clk,
-  input  logic [135:0] in_i,
-  output logic [95:0]  out_o
+  input  logic        clk,
+  input  logic [39:0] in_i,
+  output logic [47:0] out_o
 );
 
-  logic [135:0] in_q;
-  logic [95:0]  res;
+  logic [39:0] in_q;
+  logic [47:0] res;
 
   always_ff @(posedge clk) begin
     in_q  <= in_i;
@@ -16,12 +16,12 @@ module z8000_alu_measure (
   end
 
   z8000_alu dut (
-    .op         (in_q[135:131]),
-    .width      (in_q[130:129]),
-    .a          (in_q[128:65]),
-    .b          (in_q[64:1]),
+    .op         (in_q[39:35]),
+    .width      (in_q[34:33]),
+    .a          (in_q[32:17]),
+    .b          (in_q[16:1]),
     .cin        (in_q[0]),
-    .value      (res[95:32]),
+    .value      (res[47:32]),
     .flags      (res[31:16]),
     .flags_mask (res[15:0])
   );

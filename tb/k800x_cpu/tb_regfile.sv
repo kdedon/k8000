@@ -11,9 +11,13 @@ module tb_regfile;
   logic [1:0]  wwidth, rwidth;
   logic [3:0]  wsel, rsel;
   logic [63:0] wdata, rdata;
+  logic        rbyte_b;
+  logic [3:0]  rsel_b;
+  logic [15:0] rdata_b;
 
   z8000_regfile dut (.clk(clk), .we(we), .wwidth(wwidth), .wsel(wsel), .wdata(wdata),
-                     .rwidth(rwidth), .rsel(rsel), .rdata(rdata));
+                     .rwidth(rwidth), .rsel(rsel), .rdata(rdata),
+                     .rbyte_b(rbyte_b), .rsel_b(rsel_b), .rdata_b(rdata_b));
 
   int fails = 0, checks = 0;
 
@@ -31,11 +35,17 @@ module tb_regfile;
   // read then check: settle the combinational read port, compare.
   task automatic chk_rd(input string name, input logic [1:0] w, input logic [3:0] sel, input logic [63:0] want);
     rwidth = w; rsel = sel;
+    rbyte_b = (w == 2'd0); rsel_b = sel;
     #1;
     checks++;
     if (rdata !== want) begin
       fails++;
       if (fails <= 20) $display("  FAIL %s: got %h want %h", name, rdata, want);
+    end
+    // Port B serves the byte and word views.
+    if (w <= 2'd1 && rdata_b !== want[15:0]) begin
+      fails++;
+      if (fails <= 20) $display("  FAIL %s port B: got %h want %h", name, rdata_b, want[15:0]);
     end
   endtask
 
@@ -86,7 +96,7 @@ module tb_regfile;
   int seed = 32'h8000;
   logic [1:0]  rw; logic [3:0] rs; logic [63:0] rdat; logic ren;
   initial begin
-    we = 0; wwidth = 0; wsel = 0; wdata = 0; rwidth = 0; rsel = 0;
+    we = 0; wwidth = 0; wsel = 0; wdata = 0; rwidth = 0; rsel = 0; rbyte_b = 0; rsel_b = 0;
     for (int i = 0; i < 16; i++) begin wr(2'd1, i[3:0], 64'd0); ref_r[i] = 0; end
 
     // TestWordReadWrite

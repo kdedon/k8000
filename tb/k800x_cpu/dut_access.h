@@ -10,6 +10,7 @@
 // change -- nothing else in the harness knows the hierarchy.
 //
 //   u_regfile.r[16]  fcw  pc  psap  refresh  nspoff  nspseg  refresh_en  halted
+//   u_sequencer.unhandled_q
 
 #pragma once
 #include <cstdint>
@@ -45,4 +46,7 @@ struct DutAccess {
     void     set_refresh_en(bool v)      { top->rootp->z8000_cpu__DOT__refresh_en = v; }
 
     bool     halted() const              { return top->rootp->z8000_cpu__DOT__halted; }
+
+    // A program reached a machine-cycle kind the CPU does not run yet.
+    bool     unhandled_cycle() const     { return top->rootp->z8000_cpu__DOT__u_sequencer__DOT__unhandled_q; }
 };

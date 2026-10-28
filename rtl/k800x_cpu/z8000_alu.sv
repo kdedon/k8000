@@ -1,24 +1,35 @@
-// z8000_alu -- combinational ALU.
+// z8000_alu -- combinational 16-bit ALU.
 //
-// One adder serves ADD/ADC/SUB/SBC/CP/INC/DEC/NEG: subtraction is
-// a + ~b + 1 (or + ~C for SBC), so C is the inverted carry-out. Carries the
-// flags need are recovered from operand and sum bits:
-//   carry into bit k = a[k] ^ b[k] ^ sum[k]   (H uses k = 4)
-//   V = ~(a[msb] ^ b[msb]) & (a[msb] ^ sum[msb])
+// Implements what the CPU issues to it: ADD/ADC/SUB/SBC/CP, AND/OR/XOR/COM/
+// NEG/TEST, INC/DEC by 1-16, RL/RR/RLC/RRC by 1 or 2 (b[1] selects 2),
+// BIT/SET/RES on bit b[3:0], TSET, LD and DAB, at byte or word width.
+// Multi-bit shifts and sign extension run in their own units. Operands
+// arrive already masked to the operation width (byte ops get the byte).
+//
+// A long ADD/SUB/CP/TEST/LD is two word passes, low word first:
+//   low  pass: the op itself (CP runs as SUB), cin = C flag
+//   high pass: ADD/ADC -> ADC, SUB/SBC/CP -> SBC, TEST/LD unchanged,
+//              cin = C from the low pass
+//   result {high, low}; Z = Z_low & Z_high; every other flag and the mask
+//   come from the high pass. TEST and LD passes are independent of order.
+//
+// One adder serves the arithmetic: subtraction is a + ~b + 1 (or + ~C for
+// SBC), so C is the inverted carry-out. Carry into bit k is
+// a[k] ^ b[k] ^ sum[k] (H uses k = 4); V = ~(a[msb] ^ b[msb]) & (a[msb] ^ sum[msb]).
 //
 // Flag bit positions == FCW: C=bit7 Z=6 S=5 P/V=4 D=3 H=2. flags_mask is the
-// set of flags the op writes; flags outside it are don't-care. Width/op pairs
-// the CPU never issues (long rotates, INCL/DECL, ...) return all zeros.
+// set of flags the op writes; flags outside it are don't-care. Width is
+// byte when WIDTH_BYTE, word otherwise.
 
 module z8000_alu
   import z8000_ctrl_pkg::*;
 (
   input  logic [ALUOP_W-1:0] op,
-  input  logic [1:0]         width,   // WIDTH_BYTE / WIDTH_WORD / WIDTH_LONG
-  input  logic [63:0]        a,       // destination / first operand
-  input  logic [63:0]        b,       // source / second operand (count, bit number, ...)
-  input  logic               cin,     // incoming C flag (ADC/SBC/RLC/RRC/DAB)
-  output logic [63:0]        value,
+  input  logic [1:0]         width,   // WIDTH_BYTE / WIDTH_WORD
+  input  logic [15:0]        a,       // destination / first operand
+  input  logic [15:0]        b,       // source / second operand (count, bit number, ...)
+  input  logic               cin,     // incoming C flag (ADC/SBC/RLC/RRC/DAB, long high pass)
+  output logic [15:0]        value,
   output logic [15:0]        flags,
   output logic [15:0]        flags_mask
 );
@@ -30,115 +41,74 @@ module z8000_alu
   localparam logic [15:0] F_D = 16'h0008;
   localparam logic [15:0] F_H = 16'h0004;
 
-  // ---- width ----------------------------------------------------------------
-  logic [31:0] wmask, sign;
-  logic [6:0]  nbits;
-  logic        is_byte, is_short, w_ok;
+  logic        is_byte;
+  logic [15:0] wmask, sign, x;
 
-  always_comb begin
-    unique case (width)
-      WIDTH_BYTE: begin wmask = 32'h0000_00FF; nbits = 7'd8;  end
-      WIDTH_WORD: begin wmask = 32'h0000_FFFF; nbits = 7'd16; end
-      WIDTH_LONG: begin wmask = 32'hFFFF_FFFF; nbits = 7'd32; end
-      default:    begin wmask = 32'h0;         nbits = 7'd0;  end
-    endcase
-    sign     = wmask & ~(wmask >> 1);
-    is_byte  = (width == WIDTH_BYTE);
-    is_short = (width == WIDTH_BYTE) || (width == WIDTH_WORD);
-    w_ok     = (width != WIDTH_NONE);
-  end
+  assign is_byte = (width == WIDTH_BYTE);
+  assign wmask   = is_byte ? 16'h00FF : 16'hFFFF;
+  assign sign    = is_byte ? 16'h0080 : 16'h8000;
+  assign x       = a & wmask;
 
   // m selects the sign bit.
-  function automatic logic msb(input logic [31:0] v, input logic [31:0] m);
+  function automatic logic msb(input logic [15:0] v, input logic [15:0] m);
     return |(v & m);
   endfunction
 
   // Z and S of a masked result; P is the parity of its low byte.
-  function automatic logic [15:0] zsp(input logic [31:0] v, input logic [31:0] m);
-    return ((v == 32'd0) ? F_Z : 16'h0) | (msb(v, m) ? F_S : 16'h0)
-         | ((~^v[7:0]) ? F_V : 16'h0);
+  function automatic logic [15:0] zsp(input logic [15:0] v, input logic [15:0] m);
+    return ((v == 16'h0000) ? F_Z : 16'h0000) | (msb(v, m) ? F_S : 16'h0000)
+         | ((~^v[7:0]) ? F_V : 16'h0000);
   endfunction
 
-  logic [31:0] x;
-  assign x = a[31:0] & wmask;
-
   // ---- adder ----------------------------------------------------------------
-  logic        sub_op;
-  logic [31:0] add_a, add_b, sum_v;
-  logic        add_cin;
-  logic [32:0] sum;
-  logic        cout, half, ovf;
+  logic        sub_op, add_cin, cout, half, ovf;
+  logic [15:0] add_a, add_b, sum_v;
+  logic [16:0] sum;
 
   always_comb begin
-    sub_op  = (op == OP_SUB) || (op == OP_SBC) || (op == OP_CP) || (op == OP_DEC) || (op == OP_NEG);
-    add_a   = (op == OP_NEG) ? 32'd0 : x;
-    add_b   = ((op == OP_NEG) ? ~a[31:0] : sub_op ? ~b[31:0] : b[31:0]) & wmask;
+    sub_op = (op == OP_SUB) || (op == OP_SBC) || (op == OP_CP) || (op == OP_DEC) || (op == OP_NEG);
+    add_a  = (op == OP_NEG) ? 16'h0000 : x;
+    add_b  = ((op == OP_NEG) ? ~a : sub_op ? ~b : b) & wmask;
     unique case (op)
       OP_ADC:  add_cin = cin;
       OP_SBC:  add_cin = ~cin;
       default: add_cin = sub_op;
     endcase
-    sum   = {1'b0, add_a} + {1'b0, add_b} + {32'd0, add_cin};
-    sum_v = sum[31:0] & wmask;
-    unique case (width)
-      WIDTH_BYTE: cout = sum[8];
-      WIDTH_WORD: cout = sum[16];
-      default:    cout = sum[32];
-    endcase
-    half = add_a[4] ^ add_b[4] ^ sum[4];
-    ovf  = ~(msb(add_a, sign) ^ msb(add_b, sign)) & (msb(add_a, sign) ^ msb(sum_v, sign));
+    sum   = {1'b0, add_a} + {1'b0, add_b} + {16'h0000, add_cin};
+    sum_v = sum[15:0] & wmask;
+    cout  = is_byte ? sum[8] : sum[16];
+    half  = add_a[4] ^ add_b[4] ^ sum[4];
+    ovf   = ~(msb(add_a, sign) ^ msb(add_b, sign)) & (msb(add_a, sign) ^ msb(sum_v, sign));
   end
 
-  // ---- shifts (count 0-63) --------------------------------------------------
-  // C is the last bit shifted out, which lands just beyond the result:
-  // shl[N] for left shifts, bit 0 of the right shifters (x enters at bit 1).
-  logic [5:0]         n;
-  logic [32:0]        shl, shr;
-  logic [31:0]        x_sx;
-  logic signed [32:0] sar;
-  logic [31:0]        shl_v, shr_v, sar_v;
-  logic               shl_c, sla_v;
+  // ---- rotates by 1 or 2 ----------------------------------------------------
+  // RLC/RRC rotate through C; each step returns {carry out, value}.
+  function automatic logic [16:0] rot1(input logic [15:0] v, input logic c,
+                                       input logic byt, input logic lft, input logic thr);
+    logic co, in_bit;
+    logic [15:0] o;
+    if (lft) begin
+      co     = byt ? v[7] : v[15];
+      in_bit = thr ? c : co;
+      o      = byt ? {8'h00, v[6:0], in_bit} : {v[14:0], in_bit};
+    end else begin
+      co     = v[0];
+      in_bit = thr ? c : co;
+      o      = byt ? {8'h00, in_bit, v[7:1]} : {in_bit, v[15:1]};
+    end
+    return {co, o};
+  endfunction
+
+  logic        left, thru, rc1, rc2, rc;
+  logic [15:0] r1, r2, rv;
 
   always_comb begin
-    n   = b[5:0];
-    shl = {1'b0, x} << n;
-    shr = {x, 1'b0} >> n;
-    unique case (width)
-      WIDTH_BYTE: x_sx = {{24{x[7]}},  x[7:0]};
-      WIDTH_WORD: x_sx = {{16{x[15]}}, x[15:0]};
-      default:    x_sx = x;
-    endcase
-    sar   = $signed({x_sx, 1'b0}) >>> n;
-    shl_v = shl[31:0] & wmask;
-    shr_v = shr[32:1];
-    sar_v = sar[32:1] & wmask;
-    unique case (width)
-      WIDTH_BYTE: shl_c = shl[8];
-      WIDTH_WORD: shl_c = shl[16];
-      default:    shl_c = shl[32];
-    endcase
-    // SLA overflows if any bit that passes through the sign position differs
-    // from the original sign: bits [N-2 : N-1-n] of x, then zeros once n >= N.
-    sla_v = |((x ^ {32{msb(x, sign)}}) & (wmask >> 1) & ~((wmask >> 1) >> n))
-          | ({1'b0, n} >= nbits && msb(x, sign));
-  end
-
-  // ---- rotates (byte/word, count 0 means 1) ---------------------------------
-  // RLC/RRC rotate the N+1-bit ring {C, x}.
-  logic [5:0]  n1;
-  logic [4:0]  k, kc;
-  logic [31:0] ring, ring_mask, rl_v, rr_v, rlc_r, rrc_r;
-
-  always_comb begin
-    n1        = (n == 6'd0) ? 6'd1 : n;
-    k         = is_byte ? {2'b0, n1[2:0]} : {1'b0, n1[3:0]};
-    kc        = is_byte ? 5'(n1 % 6'd9) : 5'(n1 % 6'd17);
-    ring      = x | (cin ? (32'd1 << nbits) : 32'd0);
-    ring_mask = {wmask[30:0], 1'b1};
-    rl_v      = ((x << k) | (x >> (nbits - 7'(k)))) & wmask;
-    rr_v      = ((x >> k) | (x << (nbits - 7'(k)))) & wmask;
-    rlc_r     = ((ring << kc) | (ring >> (nbits + 7'd1 - 7'(kc)))) & ring_mask;
-    rrc_r     = ((ring >> kc) | (ring << (nbits + 7'd1 - 7'(kc)))) & ring_mask;
+    left      = (op == OP_RL) || (op == OP_RLC);
+    thru      = (op == OP_RLC) || (op == OP_RRC);
+    {rc1, r1} = rot1(x, cin, is_byte, left, thru);
+    {rc2, r2} = rot1(r1, rc1, is_byte, left, thru);
+    rv        = b[1] ? r2 : r1;
+    rc        = b[1] ? rc2 : rc1;
   end
 
   // ---- DAB ------------------------------------------------------------------
@@ -164,106 +134,76 @@ module z8000_alu
   end
 
   // ---- bit ops --------------------------------------------------------------
-  logic [63:0] bitm;
-  assign bitm = (b[63:6] == 58'd0) ? (64'd1 << b[5:0]) : 64'd0;
+  logic [15:0] bitm;
+  assign bitm = 16'h0001 << b[3:0];
 
   // ---- result select --------------------------------------------------------
-  logic [31:0] lv;
-  logic [15:0] arith_f;
+  logic [15:0] lv, arith_f;
 
   always_comb begin
-    value      = 64'd0;
+    value      = 16'h0000;
     flags      = 16'h0000;
     flags_mask = 16'h0000;
-    lv         = 32'd0;
-    arith_f    = (zsp(sum_v, sign) & ~F_V) | (ovf ? F_V : 16'h0)
-               | ((cout ^ sub_op) ? F_C : 16'h0) | ((half ^ sub_op) ? F_H : 16'h0)
-               | (sub_op ? F_D : 16'h0);
+    lv         = 16'h0000;
+    arith_f    = (zsp(sum_v, sign) & ~F_V) | (ovf ? F_V : 16'h0000)
+               | ((cout ^ sub_op) ? F_C : 16'h0000) | ((half ^ sub_op) ? F_H : 16'h0000)
+               | (sub_op ? F_D : 16'h0000);
 
     unique case (op)
-      OP_ADD, OP_ADC, OP_SUB, OP_SBC: if (w_ok) begin
-        value      = {32'd0, sum_v};
+      OP_ADD, OP_ADC, OP_SUB, OP_SBC: begin
+        value      = sum_v;
         flags      = arith_f;
-        flags_mask = F_C | F_Z | F_S | F_V | (is_byte ? (F_D | F_H) : 16'h0);
+        flags_mask = F_C | F_Z | F_S | F_V | (is_byte ? (F_D | F_H) : 16'h0000);
       end
-      OP_CP: if (w_ok) begin
-        value      = {32'd0, sum_v};
+      OP_CP: begin
+        value      = sum_v;
         flags      = arith_f & ~(F_D | F_H);
         flags_mask = F_C | F_Z | F_S | F_V;
       end
-      OP_NEG: if (w_ok) begin
-        value      = {32'd0, sum_v};
+      OP_NEG: begin
+        value      = sum_v;
         flags      = arith_f;
         flags_mask = F_C | F_Z | F_S | F_V;
       end
-      OP_INC, OP_DEC: if (is_short) begin
-        value      = {32'd0, sum_v};
+      OP_INC, OP_DEC: begin
+        value      = sum_v;
         flags      = arith_f;
         flags_mask = F_Z | F_S | F_V;
       end
-      OP_AND, OP_OR, OP_XOR, OP_COM, OP_TEST: if (w_ok) begin
+      OP_AND, OP_OR, OP_XOR, OP_COM, OP_TEST: begin
         unique case (op)
-          OP_AND:  lv = x & b[31:0];
-          OP_OR:   lv = x | (b[31:0] & wmask);
-          OP_XOR:  lv = x ^ (b[31:0] & wmask);
+          OP_AND:  lv = x & b;
+          OP_OR:   lv = x | (b & wmask);
+          OP_XOR:  lv = x ^ (b & wmask);
           OP_COM:  lv = ~x & wmask;
           default: lv = x;
         endcase
-        value      = {32'd0, lv};
+        value      = lv;
         flags      = zsp(lv, sign);
-        flags_mask = F_Z | F_S | (is_byte ? F_V : 16'h0);
+        flags_mask = F_Z | F_S | (is_byte ? F_V : 16'h0000);
       end
-      OP_SLA, OP_SLL: if (w_ok) begin
-        value      = {32'd0, shl_v};
-        flags      = (zsp(shl_v, sign) & ~F_V) | (shl_c ? F_C : 16'h0)
-                   | ((op == OP_SLA && sla_v) ? F_V : 16'h0);
-        flags_mask = F_Z | F_S | ((n != 6'd0) ? F_C : 16'h0) | ((op == OP_SLA) ? F_V : 16'h0);
-      end
-      OP_SRA: if (w_ok) begin
-        value      = {32'd0, sar_v};
-        flags      = (zsp(sar_v, sign) & ~F_V) | (sar[0] ? F_C : 16'h0);
-        flags_mask = F_Z | F_S | F_V | ((n != 6'd0) ? F_C : 16'h0);
-      end
-      OP_SRL: if (w_ok) begin
-        value      = {32'd0, shr_v};
-        flags      = zsp(shr_v, sign) | (shr[0] ? F_C : 16'h0);
-        flags_mask = F_Z | F_S | ((n != 6'd0) ? F_C : 16'h0);
-      end
-      OP_RL, OP_RR, OP_RLC, OP_RRC: if (is_short) begin
-        unique case (op)
-          OP_RL:   begin lv = rl_v;            flags = rl_v[0] ? F_C : 16'h0; end
-          OP_RR:   begin lv = rr_v;            flags = msb(rr_v, sign) ? F_C : 16'h0; end
-          OP_RLC:  begin lv = rlc_r & wmask;   flags = rlc_r[nbits[4:0]] ? F_C : 16'h0; end
-          default: begin lv = rrc_r & wmask;   flags = rrc_r[nbits[4:0]] ? F_C : 16'h0; end
-        endcase
-        value      = {32'd0, lv};
-        flags      = flags | (zsp(lv, sign) & ~F_V) | (msb(lv ^ x, sign) ? F_V : 16'h0);
+      OP_RL, OP_RR, OP_RLC, OP_RRC: begin
+        value      = rv;
+        flags      = (rc ? F_C : 16'h0000) | (zsp(rv, sign) & ~F_V)
+                   | (msb(rv ^ x, sign) ? F_V : 16'h0000);
         flags_mask = F_C | F_Z | F_S | F_V;
       end
       OP_DAB: begin
-        value      = {56'd0, dab_v};
-        flags      = (zsp({24'd0, dab_v}, 32'h0000_0080) & ~F_V) | (dab_c ? F_C : 16'h0);
+        value      = {8'h00, dab_v};
+        flags      = (zsp({8'h00, dab_v}, 16'h0080) & ~F_V) | (dab_c ? F_C : 16'h0000);
         flags_mask = F_C | F_Z | F_S;
-      end
-      OP_EXTS: begin
-        unique case (width)
-          WIDTH_BYTE: begin value = {48'd0, {8{a[7]}}, a[7:0]};  flags = zsp(value[31:0], 32'h0000_8000); end
-          WIDTH_WORD: begin value = {32'd0, {16{a[15]}}, a[15:0]}; flags = zsp(value[31:0], 32'h8000_0000); end
-          default: ;
-        endcase
-        flags = flags & (F_Z | F_S);
       end
       OP_LD:   value = b;
       OP_BIT: begin
         value      = a;
-        flags      = ((a & bitm) == 64'd0) ? F_Z : 16'h0;
+        flags      = ((a & bitm) == 16'h0000) ? F_Z : 16'h0000;
         flags_mask = F_Z;
       end
       OP_SET:  value = a | bitm;
       OP_RES:  value = a & ~bitm;
       OP_TSET: begin
-        value = is_byte ? 64'h00FF : 64'hFFFF;
-        flags = (is_byte ? a[7] : a[15]) ? F_S : 16'h0;
+        value      = wmask;
+        flags      = msb(a, sign) ? F_S : 16'h0000;
         flags_mask = F_S;
       end
       default: ;

@@ -17,8 +17,9 @@ bit-serial sequencer can be wrong by fifty clocks rather than one.
 | question | which test answers it |
 |---|---|
 | **The one open question, with a control.** `SLA` is published as `13 + 3n`, so a shift by 8 costs 37 in isolation; our CPU runs it in 34 back-to-back, fetching the successor's *second word* while the shifter runs. With a one-word successor the saving vanishes. Is that overlap real silicon? | `sla8w1` is the control: **410 per iteration under both readings**, so it measures board overhead alone. `sla8` then reads **353 if the overlap is real, 380 if not** |
+| **Look-ahead.** The published cycle counts are read as back-to-back throughput: an instruction is a run of machine cycles, each from one bus transaction's start to the next (Fawcett pp.56-58, 67). A word fetched during the previous instruction's internal clocks is still billed. | `neglc` **73 per iteration**; 64 would mean such words are free. `nop` **80**; 50 would mean a NOP costs only its 4 internal clocks. `ldimm` is the control at 80 |
 | `MULT` is a flat 70 with no per-bit term. | `multff - mult1` **must be 0**: same code, emptiest against fullest operand |
-| `MULTL` is `282 + 7n`, n = set bits in the low 16 of the multiplicand. A pair measures the *slope*, the part a structural model gets wrong. | `multl5 - multl3` **must be 70** (5 copies x 7 x 2) |
+| `MULTL` is `282 + 7n`, n = set bits in the absolute value of the multiplicand's low 16 bits as a signed word. A pair measures the *slope*, the part a structural model gets wrong. | `multl5 - multl3` **must be 70** (5 copies x 7 x 2) |
 | `LDIR` is `11 + 9n`. | `ldir64 - ldir4` **must be 540**, plus 120 accesses' worth of wait states that `ldind`/`stind` measure independently |
 | Word `DIV` is 107 clocks (1988 data book, for R, IM and IR), as our CPU executes. Never checked on hardware. | `abench` line `div` |
 | `DIVL` is 744, published and in our CPU. A control: if hardware disagrees *here*, everything above is moot. | `abench` line `divl` |
@@ -74,7 +75,7 @@ make abench
 ./abench > abench.out
 ```
 
-About five minutes (21 kernels).
+About five minutes (22 kernels).
 
 ## What to send back
 
@@ -101,7 +102,7 @@ has two predictions per kernel:
 * `exec` -- what the model's CPU does, measured in a simulated flat-RAM
   Z8002 as clocks between instruction fetches at the loop head.
 
-Nineteen of the twenty-one kernels agree on both; they are the controls
+Twenty of the twenty-two kernels agree on both; they are the controls
 that let board overhead be measured and subtracted. `sla1` and `sla8` differ
 by 27 clocks each: nine of the ten shifts per iteration overlap their
 successor's fetch and save 3 clocks apiece, while the tenth follows the
@@ -138,7 +139,7 @@ bench.c        step 2: 31 C-level kernels -- arithmetic, memory, control
                flow, block copy, calls
 asm/probe.s    step 3a: ten lines, does the assembler take our syntax
 asm/aprobe.c     and does C reach the routine
-asm/kernels.s  step 3b: 21 per-instruction kernels, 1000 iterations of a
+asm/kernels.s  step 3b: 22 per-instruction kernels, 1000 iterations of a
                ten-copy body each, every register saved and restored; six of
                them are three matched PAIRS whose difference cancels the
                board's overhead, plus one control

@@ -122,6 +122,18 @@ var kernels = []kernel{
 		save: saves(6), group: []insn{one(0x8D07)}, copies: 10, counter: 6, perIter: 10,
 	},
 	{
+		name: "neglc", note: "NEG R2; LD R1,#0x1234; COM R2",
+		save:   saves(1, 2, 6),
+		group:  []insn{one(0x8D22), one(0x2101, 0x1234), one(0x8D20)},
+		copies: 3, counter: 6, perIter: 3,
+		caveat: "look-ahead check.  The published figures are back-to-back\n" +
+			"#  throughput: each instruction is a run of machine cycles, each from\n" +
+			"#  one bus transaction's start to the next (Fawcett pp.56-58, 67), so\n" +
+			"#  a trio is 7+7+7 = 21 and an iteration 73.  If instead a word\n" +
+			"#  fetched during NEG's internal clocks were not billed again, the LD\n" +
+			"#  would cost 4 and an iteration 64.  ldimm is the control at 80.",
+	},
+	{
 		name: "ldind", note: "LD R2,@R4 -- one data READ",
 		save: saves(2, 4, 6), setup: []insn{ldDA(4, dataAddr)},
 		group: []insn{one(0x2142)}, copies: 10, counter: 6, perIter: 10,
@@ -379,6 +391,8 @@ var zilog = map[string]spec{
 	"2103 001F": {7, 7, "Mar81 6.7 LD R,IM"},
 	"2103 FFFF": {7, 7, "Mar81 6.7 LD R,IM"},
 	"8D07":      {7, 7, "Mar81 6.7 NOP"},
+	"8D20":      {7, 7, "Mar81 6.7 COM R"},
+	"8D22":      {7, 7, "Mar81 6.7 NEG R"},
 	"8D08":      {7, 7, "Mar81 6.7 CLR R"},
 	"8D18":      {7, 7, "Mar81 6.7 CLR R"},
 	"8D28":      {7, 7, "Mar81 6.7 CLR R"},

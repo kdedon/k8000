@@ -29,24 +29,28 @@ rtl/k800x_cpu/        the CPU -- Z8001/2/3/4 in one core
   z8000_div.sv          bit-serial divider (alu.DivState)
   z8000_shift.sv        bit-serial shifter (alu.ShiftState)
   z8000_decode.sv       decode wrapper around the generated ROM
-  z8000_decode_table.txt  the decode ROM symbolically: 479 control words,
-                        every field NAMED, over 8495 first-word ranges.
+  z8000_decode_table.txt  the decode ROM symbolically: 476 control words,
+                        every field NAMED, over 8446 first-word ranges.
                         Review decoder diffs here (make test-decode-table)
-  z8000_bus_unit.sv     Z-Bus T-state FSM
-  z8000_sequencer.sv    phase FSM + execStep FSM + class dispatch
-  z8000_prefetch.sv     2-deep look-ahead queue + EA unit
+  z8000_mc_table.txt    the machine-cycle program ROM: every form's program
+                        per column and path (make test-mc-table)
+  z8000_bus_unit.sv     Z-Bus machine cycles: T-states, tails, internal operations
+  z8000_sequencer.sv    reset sequence, then each instruction's program
+  z8000_execute.sv      operand select and the ALU passes
   z8000_int_unit.sv     interrupt/trap unit
   z8000_refresh.sv      refresh prescaler / row counter
   gen/                  DERIVED, COMMITTED -- do not hand-edit (make refresh-rtl)
     z8000_ctrl_pkg.sv       ctrl_word_t + every enum (InstrClass, SrcSel, alu.Op ...)
     z8000_zbus_pkg.sv       the 16 ST codes
     z8000_decode_rom_gen.sv reference decoder f(w0, w1[3:0]) -> ctrl_word_t
+    z8000_mc_pkg.sv         machine-cycle program ROM types
+    z8000_mc_rom_gen.sv     program ROM: first word -> form -> program -> cycles
 rtl/k8010_mmu/        z8010_mmu.sv           memory management unit
 rtl/k8030_scc/        z8030_scc[_channel].sv serial communications controller
 rtl/k8036_cio/        z8036_cio.sv           counter/timer + parallel I/O
 
 tb/k800x_cpu/         tb_cpu.cpp (per-edge pin replay) + dut_access.h (the harness
-                      contract), tb_decode/alu/regfile/serial.sv, tb_cpu_timing.sv,
+                      contract), tb_decode/decode_table/mc_table/alu/regfile/serial.sv, tb_cpu_timing.sv,
                       tb_cpu_cycles.sv
 tb/k8010_mmu/         tb_mmu.cpp + mmu_access.h, tb_mmu_timing.sv
 tb/k8030_scc/         tb_scc.cpp + scc_access.h, tb_scc_timing.sv
@@ -82,7 +86,7 @@ make test       # decode, alu, regfile, serial, then the CPU ladder
 make cpu ONLY=TestNOP [VCD=1] [CONTEXT=20]   # one vector, full divergence report
 make ladder     # every CPU vector, shortest first, with PASS/FAIL/SKIP
 make test-mmu | test-cio | test-scc          # peripherals (also: mmu/cio/scc ONLY=..., ladder-<chip>)
-quartus/build.sh regfile|alu|mult|div|shift [period_ns]  # area and Fmax; Docker if no quartus_sh
+quartus/build.sh regfile|alu|mult|div|shift|execute|cpu [period_ns]  # area and Fmax; Docker if no quartus_sh
 ```
 
 Only two maintainer targets leave the repo. They refresh the committed

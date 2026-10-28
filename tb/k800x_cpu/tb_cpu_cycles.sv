@@ -69,7 +69,10 @@ module tb_cpu_cycles
   logic        lat_rw, lat_bw, lat_valid;
   logic        as_q, ds_q;
 
+  // The /DS-rise teardown goes first: a back-to-back /AS fall on the same
+  // edge must win.
   always @(posedge clk) begin
+    if (!ds_q && ds_n) lat_valid <= 1'b0;
     if (as_q && !as_n && ad_drive) begin
       lat_addr  <= ad_out;
       lat_st    <= st;
@@ -85,7 +88,6 @@ module tb_cpu_cycles
         mem[lat_addr[15:1]] <= ad_out;
       end
     end
-    if (!ds_q && ds_n) lat_valid <= 1'b0;
     as_q <= as_n;
     ds_q <= ds_n;
   end
@@ -98,8 +100,8 @@ module tb_cpu_cycles
 
   // ---- IF1 observation --------------------------------------------------------
   int unsigned clk_no;
-  logic        if1_now;
-  logic [15:0] if1_pc;
+  logic        if1_now = 1'b0;
+  logic [15:0] if1_pc  = 16'h0000;
   always @(posedge clk) begin
     clk_no <= clk_no + 1;
     if1_now <= 1'b0;
@@ -171,7 +173,7 @@ module tb_cpu_cycles
     n_rec = 0; passed = 0; failed = 0; notrun = 0; n_total = 0;
     clk_no = 0; lat_valid = 1'b0; as_q = 1'b1; ds_q = 1'b1;
     lat_addr = 16'h0; lat_st = 4'h0; lat_rw = 1'b1; lat_bw = 1'b0;
-    if1_now = 1'b0; if1_pc = 16'h0; reset_n = 1'b0;
+    reset_n = 1'b0;
 
     if (!$value$plusargs("vec=%s", vecfile)) vecfile = "vectors/k800x_cpu/cycles/cycles.vec";
     fd = $fopen(vecfile, "r");
