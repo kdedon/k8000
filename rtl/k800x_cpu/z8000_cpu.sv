@@ -83,19 +83,26 @@ module z8000_cpu
   assign rf_wdata = {48'd0, ex_wdata};
 
   // ---- control and bus ------------------------------------------------------
-  logic        fcw_we, pc_we;
+  logic        fcw_we, pc_we, ex_fcw_we, ctl_we, ref_we;
+  logic [15:0] ex_fcw_d, ctl_rdata, ctl_wd;
+  logic [2:0]  ctl_rsel, ctl_sel;
   logic [15:0] fcw_d;
   logic [31:0] pc_d;
   logic [15:0] dec_w0;
   logic [3:0]  dec_w1_lo;
   ctrl_word_t  ctrl, ctrl_q;
-  logic        ex_handles, ex_last, ex_last2, ex_flags_we;
+  logic        ex_handles, ex_first, ex_last, ex_last2, ex_last_nx, ex_last2_nx, ex_to_last, ex_flags_we, ex_pc_we;
+  logic [22:0] ex_pc_d;
   logic [15:0] ir_w0, ir_w1, ir_w2;
   logic [22:0] ir_ea;
   logic [15:0] ex_flags, ex_flags_mask;
   logic        rf_pending, rf_take;
   logic [8:0]  rf_row_next, rf_cyc_row;
   logic [22:0] rf_addr;
+  logic        bus_mem, bus_write, mem_take, int_take, opnd_take, ex_mem_byte;
+  logic [22:0] ex_mem_addr;
+  logic [3:0]  ex_mem_st;
+  logic [15:0] ex_mem_wdata;
   logic        bus_req, bus_internal, bus_normal, bus_cyc_end, bus_cyc_end3, bus_done;
   logic [22:0] bus_addr;
   logic [3:0]  bus_st, bus_len;
@@ -123,7 +130,6 @@ module z8000_cpu
   assign md_take   = 1'b0;             // multiply/divide operand: zero, overflow
   assign md_path   = MC_PATH_DEFAULT;
   assign rf_count  = 16'h0000;         // SDA/SDL count register read
-  assign blk_more  = 1'b0;             // block count register and compare
   assign mult_more = 1'b0;             // MULTL extra adds
   assign mreq_more = 1'b0;             // MREQ's MI handshake
   assign halt_exit = 1'b0;             // HALT's exit on an interrupt
@@ -149,12 +155,21 @@ module z8000_cpu
     .more         (more),
     .iter         (iter),
     .ex_handles   (ex_handles),
+    .ex_first     (ex_first),
+    .ex_to_last   (ex_to_last),
     .ex_last2     (ex_last2),
     .ex_last      (ex_last),
+    .ex_last2_nx  (ex_last2_nx),
+    .ex_last_nx   (ex_last_nx),
     .ir_w0        (ir_w0),
     .ir_w1        (ir_w1),
     .ir_w2        (ir_w2),
     .ir_ea        (ir_ea),
+    .mem_addr     (ex_mem_addr),
+    .mem_st       (ex_mem_st),
+    .mem_take     (mem_take),
+    .int_take     (int_take),
+    .opnd_take    (opnd_take),
     .rf_pending   (rf_pending),
     .rf_addr      (rf_addr),
     .rf_take      (rf_take),
@@ -163,6 +178,8 @@ module z8000_cpu
     .bus_addr     (bus_addr),
     .bus_st       (bus_st),
     .bus_normal   (bus_normal),
+    .bus_mem      (bus_mem),
+    .bus_write    (bus_write),
     .bus_len      (bus_len),
     .bus_tail     (bus_tail),
     .bus_cyc_end  (bus_cyc_end),
@@ -206,15 +223,16 @@ module z8000_cpu
     endcase
   end
 
-  z8000_execute u_execute (
+  z8000_execute #(.SEGMENTED(SEGMENTED), .VMPU(VMPU)) u_execute (
     .clk        (clk),
     .reset_n    (reset_n),
     .w0         (ir_w0[11:0]),
-    .valid      (ctrl_q.valid),
-    .exec       (ctrl_q.exec),
+    .ctrl_nx    (ctrl),
+    .w0_nx      (dec_w0[11:0]),
     .alu_op     (ctrl_q.alu_op),
     .width      (ctrl_q.width),
     .src2       (ctrl_q.src2),
+    .count      (ctrl_q.count),
     .dst        (ctrl_q.dst),
     .src1_nib   (ctrl_q.src1_nib),
     .src2_nib   (ctrl_q.src2_nib),
@@ -222,11 +240,33 @@ module z8000_cpu
     .w1         (ir_w1),
     .w2         (ir_w2),
     .handles    (ex_handles),
+    .block_decr (ctrl_q.block_decr),
+    .block_rept (ctrl_q.block_rept),
+    .blk_more   (blk_more),
+    .fcw_op     (ctrl_q.fcw_op),
+    .fcw_mask   (ctrl_q.fcw_mask),
+    .first      (ex_first),
+    .to_last    (ex_to_last),
     .last2      (ex_last2),
     .last       (ex_last),
+    .last2_nx   (ex_last2_nx),
+    .last_nx    (ex_last_nx),
+    .seg_mode   (SEGMENTED && fcw[15]),
+    .pc_seg     (SEGMENTED ? pc[22:16] : 7'd0),
+    .pc_off     (pc[15:0]),
+    .cyc_end    (bus_cyc_end),
+    .ea_word    (ir_ea),
+    .mem_take   (mem_take),
+    .int_take   (int_take),
+    .opnd_take  (opnd_take),
+    .rdata      (bus_rdata),
+    .mem_addr   (ex_mem_addr),
+    .mem_st     (ex_mem_st),
+    .mem_byte   (ex_mem_byte),
+    .mem_wdata  (ex_mem_wdata),
     .rf_rwidth  (rf_rwidth),
     .rf_rsel    (rf_rsel),
-    .rf_rdata   (rf_rdata[15:0]),
+    .rf_rdata   (rf_rdata[31:0]),
     .rf_rbyte_b (rf_rbyte_b),
     .rf_rsel_b  (rf_rsel_b),
     .rf_rdata_b (rf_rdata_b),
@@ -234,17 +274,39 @@ module z8000_cpu
     .rf_wwidth  (rf_wwidth),
     .rf_wsel    (rf_wsel),
     .rf_wdata   (ex_wdata),
+    .pc_we      (ex_pc_we),
+    .pc_d       (ex_pc_d),
     .fcw_c      (fcw[7]),
+    .fcw_zsv    ({fcw[6], fcw[5], fcw[4]}),
+    .fcw_lo     (fcw[10:0]),
+    .fcw_sn     (fcw[14]),
+    .fcw_we     (ex_fcw_we),
+    .fcw_d      (ex_fcw_d),
+    .ctl_rsel   (ctl_rsel),
+    .ctl_rdata  (ctl_rdata),
+    .ctl_we     (ctl_we),
+    .ctl_sel    (ctl_sel),
+    .ctl_wd     (ctl_wd),
     .flags_we   (ex_flags_we),
     .flags      (ex_flags),
     .flags_mask (ex_flags_mask)
   );
 
-  // Control-register loads (LDCTL and friends) have no source yet.
-  logic        ctl_we;
-  logic [31:0] ctl_d;
-  assign ctl_we = 1'b0;
-  assign ctl_d  = 32'h0;
+  // Control registers by LDCTL number: 2 FCW, 3 REFRESH, 4 PSAP segment,
+  // 5 PSAP offset, 6 NSP segment, 7 NSP offset.
+  always_comb begin
+    unique case (ctl_rsel)
+      3'd2:    ctl_rdata = fcw;
+      3'd3:    ctl_rdata = refresh;
+      3'd4:    ctl_rdata = {1'b0, psap[22:16], 8'h00};
+      3'd5:    ctl_rdata = psap[15:0];
+      3'd6:    ctl_rdata = nspseg;
+      3'd7:    ctl_rdata = nspoff;
+      default: ctl_rdata = 16'h0000;
+    endcase
+  end
+
+  assign ref_we = ctl_we && ctl_sel == 3'd3;
 
   z8000_refresh u_refresh (
     .clk      (clk),
@@ -252,8 +314,8 @@ module z8000_cpu
     .enable   (refresh_en),
     .rate     (refresh[14:9]),
     .row      (refresh[8:0]),
-    .load     (ctl_we && ctl_d[15]),
-    .load_rate(ctl_d[14:9]),
+    .load     (ref_we && ctl_wd[15]),
+    .load_rate(ctl_wd[14:9]),
     .take     (rf_take),
     .pending  (rf_pending),
     .row_next (rf_row_next),
@@ -263,17 +325,18 @@ module z8000_cpu
   // Refresh addresses take the PC segment in nonsegmented mode.
   assign rf_addr = {(SEGMENTED && !fcw[15]) ? pc[22:16] : 7'd0, 7'd0, rf_cyc_row};
 
-  // Memory data and EPU transfers have no requester yet.
+  // EPU transfers have no requester yet.
   z8000_bus_unit #(.SEGMENTED(SEGMENTED)) u_bus (
     .clk            (clk),
     .reset_n        (reset_n),
     .req            (bus_req),
     .req_internal   (bus_internal),
     .req_addr       (bus_addr),
-    .req_wdata      (16'h0000),
+    .req_wdata      (ex_mem_wdata),
     .req_st         (bus_st),
-    .req_write      (1'b0),
-    .req_byte       (1'b0),
+    .req_write      (bus_write),
+    .req_byte       (bus_mem && ex_mem_byte),
+    .req_odd        (ex_mem_addr[0]),
     .req_epu_drives (1'b0),
     .req_normal     (bus_normal),
     .req_len        (bus_len),
@@ -305,16 +368,18 @@ module z8000_cpu
       pc  <= 32'h0;
     end else begin
       if (fcw_we)           fcw <= fcw_d;
+      else if (ex_fcw_we)   fcw <= ex_fcw_d;
       else if (ex_flags_we) fcw <= (fcw & ~ex_flags_mask) | (ex_flags & ex_flags_mask);
-      if (pc_we)            pc  <= pc_d;
+      if (ex_pc_we)         pc  <= {9'd0, ex_pc_d};
+      else if (pc_we)       pc  <= pc_d;
     end
   end
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       refresh <= 16'h0;
-    end else if (ctl_we) begin
-      refresh <= ctl_d[15:0];
+    end else if (ref_we) begin
+      refresh <= ctl_wd;
     end else if (rf_take) begin
       refresh <= {refresh[15:9], rf_row_next};
     end
@@ -327,10 +392,14 @@ module z8000_cpu
       nspseg     <= 16'h0;
       refresh_en <= 1'b0;
     end else if (ctl_we) begin
-      psap       <= ctl_d;
-      nspoff     <= ctl_d[15:0];
-      nspseg     <= ctl_d[31:16];
-      refresh_en <= ctl_d[15];
+      unique case (ctl_sel)
+        3'd3:    refresh_en <= ctl_wd[15];
+        3'd4:    psap[31:16] <= {9'd0, ctl_wd[14:8]};
+        3'd5:    psap[15:0]  <= ctl_wd;
+        3'd6:    nspseg      <= ctl_wd;
+        3'd7:    nspoff      <= ctl_wd;
+        default: ;
+      endcase
     end
   end
 
@@ -338,11 +407,10 @@ module z8000_cpu
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
   assign unused_ok = ^{stop_n, busreq_n, nmi_n, nvi_n, vi_n, segt_n, abort_n, mi_n,
-                       rf_rdata[63:16], fcw[13:8], fcw[3:0], psap, refresh[15], nspoff, nspseg,
-                       halted, VMPU, ir_w0[15:12], ir_ea, sh_cnt[14:6],
+                       rf_rdata[63:32], fcw[13:8], fcw[3:0], psap, refresh[15], nspoff, nspseg,
+                       halted, ir_w0[15:12], sh_cnt[14:6],
                        ctrl_q.priv, ctrl_q.fcw_op, ctrl_q.fcw_mask, ctrl_q.stk_mode,
-                       ctrl_q.br_mode, ctrl_q.io_write, ctrl_q.io_spec, ctrl_q.block_decr,
-                       ctrl_q.block_rept, ctrl_q.mp_op};
+                       ctrl_q.br_mode, ctrl_q.io_write, ctrl_q.io_spec, ctrl_q.mp_op};
   // verilator lint_on UNUSEDSIGNAL
 
 endmodule

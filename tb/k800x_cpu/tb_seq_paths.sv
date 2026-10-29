@@ -3,10 +3,9 @@
 // Runs one instruction per case on a Z8002 with the sequencer forced to walk
 // its program, and checks its length in clocks, IF1 T1 to the next IF1 T1,
 // against the Mar81 Technical Manual cycle counts (Appendix C): JP cc,@Rd 10
-// taken / 7 not taken, RET cc 7 not taken, SLA/SRA Rd,#b 13+3b. A zero
-// shift count costs one position. Memory cycles are not run yet: a taken RET
-// stops at its stack read with the default path, and LDM Rd,@Rs,#n stops at
-// its first read, where the repeated part is asked for n times in all.
+// taken / 7 not taken, RET cc 7 not taken, SLA/SRA Rd,#b 13+3b; and the
+// program ROM's RET cc taken (10) and LDM Rd,@Rs,#n (11+3n), whose repeated
+// part is asked for n times in all. A zero shift count costs one position.
 //
 // Run: make test-seq-paths
 
@@ -90,7 +89,7 @@ module tb_seq_paths
   // iter < n.
   task automatic ldm(input string name, input logic [15:0] w1, input int n);
     int k, bad;
-    run(name, FCW, 16'h1C21, w1, 0, MC_PATH_NOT_TAKEN);   // cc field 1: LT, false
+    run(name, FCW, 16'h1C21, w1, 11 + 3 * n);
     bad = 0;
     for (k = 0; k <= 17; k++) begin
       force dut.u_sequencer.iter_q = 6'(k);
@@ -124,8 +123,8 @@ module tb_seq_paths
     run("JP UGT,@R1 Z=1", FCW_Z, 16'h1E1B, 16'h0000, 7);
     run("JP UGT,@R1",     FCW,   16'h1E1B, 16'h0000, 10);
     run("RET F",          FCW,   16'h9E00, 16'h0000, 7);
-    run("RET T",          FCW,   16'h9E08, 16'h0000, 0);
-    run("RET ULE C=1",    FCW_C, 16'h9E03, 16'h0000, 0);
+    run("RET T",          FCW,   16'h9E08, 16'h0000, 10);
+    run("RET ULE C=1",    FCW_C, 16'h9E03, 16'h0000, 10);
     ldm("LDM R3,@R2,#1",  16'h0300, 1);
     ldm("LDM R3,@R2,#3",  16'h0302, 3);
     ldm("LDM R0,@R2,#16", 16'h000F, 16);

@@ -111,7 +111,7 @@ vectors refresh-vectors: require-z8000 $(CHIP_VECTORS)
 # ---- lint ------------------------------------------------------------------
 lint: $(CHIP_LINT)
 	@for m in $(RTL_UNITS); do \
-	  extra=""; mc=""; [ $$m = z8000_cpu ] && extra="$(CPU_MODS)"; [ $$m = z8000_execute ] && extra="rtl/k800x_cpu/z8000_alu.sv"; \
+	  extra=""; mc=""; [ $$m = z8000_cpu ] && extra="$(CPU_MODS)"; [ $$m = z8000_execute ] && extra="rtl/k800x_cpu/z8000_alu.sv rtl/k800x_cpu/z8000_cond.sv"; \
 	  { [ $$m = z8000_cpu ] || [ $$m = z8000_sequencer ]; } && mc="$(MC_SRCS)"; \
 	  out=$$($(VERILATOR) --lint-only $(RTL_W) $(PKG_SRCS) $$mc $(GEN_SRCS) rtl/k800x_cpu/$$m.sv $$extra --top-module $$m 2>&1 | grep -v MULTITOP); \
 	  if [ -z "$$out" ]; then echo "lint  $$m: clean"; else echo "lint  $$m:"; echo "$$out"; fail=1; fi; \

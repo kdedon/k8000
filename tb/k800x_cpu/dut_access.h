@@ -10,7 +10,7 @@
 // change -- nothing else in the harness knows the hierarchy.
 //
 //   u_regfile.r[16]  fcw  pc  psap  refresh  nspoff  nspseg  refresh_en  halted
-//   u_sequencer.unhandled_q
+//   u_sequencer.unhandled_q  u_execute.sp_we_q/sp_sel_q/sp_d_q
 
 #pragma once
 #include <cstdint>
@@ -21,7 +21,14 @@ struct DutAccess {
     Vz8000_cpu* top;
     explicit DutAccess(Vz8000_cpu* t) : top(t) {}
 
-    uint16_t reg(int i) const            { return top->rootp->z8000_cpu__DOT__u_regfile__DOT__r[i]; }
+    // The stack pointer's write lands a clock after its cycle is taken; a
+    // vector may end on that take, so a pending write counts.
+    uint16_t reg(int i) const {
+        auto* r = top->rootp;
+        if (r->z8000_cpu__DOT__u_execute__DOT__sp_we_q && r->z8000_cpu__DOT__u_execute__DOT__sp_sel_q == i)
+            return r->z8000_cpu__DOT__u_execute__DOT__sp_d_q;
+        return r->z8000_cpu__DOT__u_regfile__DOT__r[i];
+    }
     void     set_reg(int i, uint16_t v)  { top->rootp->z8000_cpu__DOT__u_regfile__DOT__r[i] = v; }
 
     uint16_t fcw() const                 { return top->rootp->z8000_cpu__DOT__fcw; }
@@ -49,4 +56,7 @@ struct DutAccess {
 
     // A program reached a machine-cycle kind the CPU does not run yet.
     bool     unhandled_cycle() const     { return top->rootp->z8000_cpu__DOT__u_sequencer__DOT__unhandled_q; }
+
+    // A simulation-only execute check failed.
+    bool     execute_check() const       { return top->rootp->z8000_cpu__DOT__u_execute__DOT__check_q || top->rootp->z8000_cpu__DOT__u_sequencer__DOT__check_q; }
 };

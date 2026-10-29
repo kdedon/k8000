@@ -16,7 +16,7 @@ case "${unit}" in
   mult)    srcs=(rtl/k800x_cpu/z8000_mult.sv) ;;
   div)     srcs=(rtl/k800x_cpu/z8000_div.sv) ;;
   shift)   srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/z8000_shift.sv) ;;
-  execute) srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv
+  execute) srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
                  rtl/k800x_cpu/z8000_{regfile,alu,execute}.sv) ;;
   cpu)     srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
                  rtl/k800x_cpu/gen/z8000_mc_pkg.sv rtl/k800x_cpu/gen/z8000_decode_rom_gen.sv rtl/k800x_cpu/gen/z8000_mc_rom_gen.sv

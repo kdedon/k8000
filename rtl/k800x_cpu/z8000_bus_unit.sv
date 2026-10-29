@@ -46,6 +46,7 @@ module z8000_bus_unit
   input  logic [3:0]  req_st,
   input  logic        req_write,
   input  logic        req_byte,
+  input  logic        req_odd,        // a byte write's address bit 0, ahead of the address select
   input  logic        req_epu_drives, // the EPU supplies the write data
   input  logic        req_normal,     // N/S for the cycle (1 = normal)
   input  logic [3:0]  req_len,        // internal operation length
@@ -132,7 +133,7 @@ module z8000_bus_unit
   // the lane from A0. I/O byte lanes are architectural and pass through.
   logic [7:0]  wbyte;
   logic [15:0] wdata_bus;
-  assign wbyte     = req_addr[0] ? req_wdata[7:0] : req_wdata[15:8];
+  assign wbyte     = req_odd ? req_wdata[7:0] : req_wdata[15:8];
   assign wdata_bus = (req_write && req_byte && !req_io) ? {wbyte, wbyte} : req_wdata;
 
   assign done  = state_q == BUS_T3 && wait_n;
