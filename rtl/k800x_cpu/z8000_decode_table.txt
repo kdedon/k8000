@@ -137,20 +137,20 @@ ctrl STACK_IR_4                         118000c00000005000
 #    valid=1 exec=CLS_STACK dst=DST_IR stk_mode=STACK_POP_DST
 ctrl MUL_IMM                            1a0308000000000000
 #    valid=1 exec=CLS_MUL width=WIDTH_LONG src2=SRC_IMM
-ctrl MUL_IR                             1a030c000000000000
-#    valid=1 exec=CLS_MUL width=WIDTH_LONG src2=SRC_IR
+ctrl MUL_IR                             1a030c002000000000
+#    valid=1 exec=CLS_MUL width=WIDTH_LONG src2=SRC_IR src2_nib=REG_NIB2
 ctrl MUL_IMM_2                          1a0208000000000000
 #    valid=1 exec=CLS_MUL width=WIDTH_WORD src2=SRC_IMM
-ctrl MUL_IR_2                           1a020c000000000000
-#    valid=1 exec=CLS_MUL width=WIDTH_WORD src2=SRC_IR
+ctrl MUL_IR_2                           1a020c002000000000
+#    valid=1 exec=CLS_MUL width=WIDTH_WORD src2=SRC_IR src2_nib=REG_NIB2
 ctrl DIV_IMM                            1a8308000000000000
 #    valid=1 exec=CLS_DIV width=WIDTH_LONG src2=SRC_IMM
-ctrl DIV_IR                             1a830c000000000000
-#    valid=1 exec=CLS_DIV width=WIDTH_LONG src2=SRC_IR
+ctrl DIV_IR                             1a830c002000000000
+#    valid=1 exec=CLS_DIV width=WIDTH_LONG src2=SRC_IR src2_nib=REG_NIB2
 ctrl DIV_IMM_2                          1a8208000000000000
 #    valid=1 exec=CLS_DIV width=WIDTH_WORD src2=SRC_IMM
-ctrl DIV_IR_2                           1a820c000000000000
-#    valid=1 exec=CLS_DIV width=WIDTH_WORD src2=SRC_IR
+ctrl DIV_IR_2                           1a820c002000000000
+#    valid=1 exec=CLS_DIV width=WIDTH_WORD src2=SRC_IR src2_nib=REG_NIB2
 ctrl LDM_IR                             19000c000000000000
 #    valid=1 exec=CLS_LDM src2=SRC_IR
 ctrl UNIFIED_TEST_FLAGS_ONLY_IR_3       10270c802000000000
@@ -787,14 +787,14 @@ ctrl UNIFIED_REG_3                      100304002000000000
 #    valid=1 width=WIDTH_LONG src2=SRC_REG src2_nib=REG_NIB2
 ctrl STACK_5                            118000000000001000
 #    valid=1 exec=CLS_STACK stk_mode=STACK_POP
-ctrl MUL_REG                            1a0304000000000000
-#    valid=1 exec=CLS_MUL width=WIDTH_LONG src2=SRC_REG
-ctrl MUL_REG_2                          1a0204000000000000
-#    valid=1 exec=CLS_MUL width=WIDTH_WORD src2=SRC_REG
-ctrl DIV_REG                            1a8304000000000000
-#    valid=1 exec=CLS_DIV width=WIDTH_LONG src2=SRC_REG
-ctrl DIV_REG_2                          1a8204000000000000
-#    valid=1 exec=CLS_DIV width=WIDTH_WORD src2=SRC_REG
+ctrl MUL_REG                            1a0304002000000000
+#    valid=1 exec=CLS_MUL width=WIDTH_LONG src2=SRC_REG src2_nib=REG_NIB2
+ctrl MUL_REG_2                          1a0204002000000000
+#    valid=1 exec=CLS_MUL width=WIDTH_WORD src2=SRC_REG src2_nib=REG_NIB2
+ctrl DIV_REG                            1a8304002000000000
+#    valid=1 exec=CLS_DIV width=WIDTH_LONG src2=SRC_REG src2_nib=REG_NIB2
+ctrl DIV_REG_2                          1a8204002000000000
+#    valid=1 exec=CLS_DIV width=WIDTH_WORD src2=SRC_REG src2_nib=REG_NIB2
 ctrl UNIFIED_TEST_NONE_3                102700408000000000
 #    valid=1 alu_op=OP_TEST width=WIDTH_LONG dst=DST_NONE src1_nib=REG_NIB2
 ctrl BRANCH_7                           120000000000000900

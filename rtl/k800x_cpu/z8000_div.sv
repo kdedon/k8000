@@ -15,10 +15,14 @@
 // the clocks that wide quotient needs after the arrival. Outputs are valid
 // when done; the quotient rounds toward zero and the remainder takes the
 // dividend's sign.
+//
+// Nothing moves on a clock without `tick`. `pick_zero` and `pick_ovf` are
+// the path a divisor picks (the arriving one, else the one held).
 
 module z8000_div (
   input  logic        clk,
   input  logic        reset_n,
+  input  logic        tick,
   input  logic        start,
   input  logic        n32,         // 0 = DIV (32/16), 1 = DIVL (64/32)
   input  logic [63:0] dividend,
@@ -32,7 +36,9 @@ module z8000_div (
   output logic        quot_zero,
   output logic [31:0] quotient,
   output logic [31:0] remainder,
-  output logic [9:0]  remaining
+  output logic [9:0]  remaining,
+  output logic        pick_zero,
+  output logic        pick_ovf
 );
 
   // Clocks per phase.
@@ -258,7 +264,7 @@ module z8000_div (
       state_q <= ST_IDLE;
       rem_q   <= 7'd0;
       spent_q <= 7'd0;
-    end else begin
+    end else if (tick) begin
       state_q <= state_d;
       rem_q   <= rem_d;
       spent_q <= spent_d;
@@ -270,7 +276,7 @@ module z8000_div (
     if (!reset_n) begin
       long_q    <= 1'b0;
       dvd_neg_q <= 1'b0;
-    end else if (start) begin
+    end else if (tick && start) begin
       long_q    <= n32;
       dvd_neg_q <= dvd_neg_in;
     end
@@ -283,12 +289,12 @@ module z8000_div (
       dvr_neg_q <= 1'b0;
       dbz_q     <= 1'b0;
       dvr_q     <= 32'd0;
-    end else if (arrive) begin
+    end else if (tick && arrive) begin
       have_op_q <= 1'b1;
       dvr_neg_q <= dvr_neg_in;
       dbz_q     <= dbz_in;
       dvr_q     <= dvr_abs_in;
-    end else if (start) begin
+    end else if (tick && start) begin
       have_op_q <= 1'b0;
       dvr_neg_q <= 1'b0;
       dbz_q     <= 1'b0;
@@ -301,10 +307,10 @@ module z8000_div (
     if (!reset_n) begin
       ovf_q  <= 1'b0;
       wide_q <= 1'b0;
-    end else if (start) begin
+    end else if (tick && start) begin
       ovf_q  <= 1'b0;
       wide_q <= 1'b0;
-    end else if (pick && !cmp_dbz) begin
+    end else if (tick && pick && !cmp_dbz) begin
       ovf_q  <= ovf_far;
       wide_q <= ovf_any && !ovf_far;
     end
@@ -312,6 +318,8 @@ module z8000_div (
 
   // ---- datapath -------------------------------------------------------------------
   logic [32:0] quo_mag;
+  logic [31:0] prem_mag;
+  assign prem_mag = step ? prem_a : prem_q;   // store never comes with seed or step2
 
   always_comb begin
     prem_d = prem_q;
@@ -341,7 +349,7 @@ module z8000_div (
     // The signs are applied with the last step or on a clock of their own.
     quo_mag = step ? {quo_q[31:0], fit_a} : quo_q;
     if (store) begin
-      prem_d = dvd_neg_q ? 32'd0 - prem_d : prem_d;
+      prem_d = dvd_neg_q ? 32'd0 - prem_mag : prem_mag;
       quo_d  = res_neg ? 33'd0 - quo_mag : quo_mag;
     end
   end
@@ -352,7 +360,7 @@ module z8000_div (
       dlo_q  <= 33'd0;
       quo_q  <= 33'd0;
       cnt_q  <= 6'd0;
-    end else begin
+    end else if (tick) begin
       prem_q <= prem_d;
       dlo_q  <= dlo_d;
       quo_q  <= quo_d;
@@ -366,11 +374,11 @@ module z8000_div (
       stored_q <= 1'b0;
       qneg_q   <= 1'b0;
       qzero_q  <= 1'b0;
-    end else if (start) begin
+    end else if (tick && start) begin
       stored_q <= 1'b0;
       qneg_q   <= 1'b0;
       qzero_q  <= 1'b0;
-    end else if (store) begin
+    end else if (tick && store) begin
       stored_q <= 1'b1;
       qneg_q   <= res_neg && (quo_mag != 33'd0);
       qzero_q  <= (quo_mag == 33'd0);
@@ -393,6 +401,8 @@ module z8000_div (
     remaining   = 10'd0;
     if (state_q != ST_DONE && state_q != ST_IDLE)
       remaining = (rem_q == 7'd0) ? 10'd1 : {3'd0, rem_q};
+    pick_zero   = cmp_dbz;
+    pick_ovf    = ovf_any;
   end
 
 endmodule

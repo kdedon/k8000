@@ -13,10 +13,15 @@
 // count toward the phase it selects; if they cover it, that phase ends on the
 // arrival clock. `remaining` is a lower bound on clocks still needed: the
 // current phase's count, 1 while waiting, 0 when done.
+//
+// Nothing moves on a clock without `tick`. `pick_zero` is the path a
+// multiplier picks (the arriving one, else the one held); `adds_more` says
+// whether a MULTL extra add follows the step or add in progress.
 
 module z8000_mult (
   input  logic        clk,
   input  logic        reset_n,
+  input  logic        tick,
   input  logic        start,
   input  logic        width32,     // 0 = MULT (16x16), 1 = MULTL (32x32)
   input  logic [31:0] dst,         // multiplicand (low half of the destination pair/quad)
@@ -24,7 +29,9 @@ module z8000_mult (
   input  logic [31:0] src,         // multiplier
   output logic        done,
   output logic [63:0] product,
-  output logic [9:0]  remaining
+  output logic [9:0]  remaining,
+  output logic        pick_zero,
+  output logic        adds_more
 );
 
   // Clocks per phase. MULT has no finish.
@@ -202,7 +209,7 @@ module z8000_mult (
       spent_q   <= 5'd0;
       adds_q    <= 5'd0;
       have_op_q <= 1'b0;
-    end else begin
+    end else if (tick) begin
       state_q   <= state_d;
       rem_q     <= rem_d;
       spent_q   <= spent_d;
@@ -215,7 +222,7 @@ module z8000_mult (
     if (!reset_n) begin
       wide_q     <= 1'b0;
       cand_neg_q <= 1'b0;
-    end else if (start) begin
+    end else if (tick && start) begin
       wide_q     <= width32;
       cand_neg_q <= dst[15];
     end
@@ -252,7 +259,7 @@ module z8000_mult (
       acc_q     <= 64'd0;
       bit_q     <= 6'd0;
       low_one_q <= 1'b0;
-    end else begin
+    end else if (tick) begin
       cand_q    <= cand_d;
       addend_q  <= addend_d;
       acc_q     <= acc_d;
@@ -268,6 +275,8 @@ module z8000_mult (
     remaining = 10'd0;
     if (state_q != ST_DONE && state_q != ST_IDLE)
       remaining = (rem_q == 5'd0) ? 10'd1 : {5'd0, rem_q};
+    pick_zero = path_zero;
+    adds_more = (state_q == ST_ADD) ? (adds_q > 5'd1) : (adds_q != 5'd0);
   end
 
 endmodule

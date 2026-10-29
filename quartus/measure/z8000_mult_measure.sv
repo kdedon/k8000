@@ -18,6 +18,7 @@ module z8000_mult_measure (
   z8000_mult dut (
     .clk       (clk),
     .reset_n   (in_q[67]),
+    .tick      (1'b1),
     .start     (in_q[66]),
     .width32   (in_q[65]),
     .dst       (in_q[64:33]),

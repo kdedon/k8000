@@ -61,6 +61,7 @@ module z8000_sequencer
   // datapath decisions
   input  logic        cc_met,
   input  logic        md_take,
+  input  logic        md_zero,      // a memory or immediate operand arrives as zero
   input  mc_path_e    md_path,
   input  logic        more,
   output logic [5:0]  iter,         // repetitions started
@@ -82,6 +83,9 @@ module z8000_sequencer
   output logic        mem_take,     // an operand cycle is taken on this edge
   output logic        int_take,     // an internal operation is taken on this edge
   output logic        opnd_take,    // a read operand is in on this edge
+  output logic        imm_take,     // an Fn word is in on this edge
+  output logic        in_rf,        // a refresh is in flight
+  output mc_col_e     col_nx,       // the column as of the next edge
 
   // refresh
   input  logic        rf_pending,
@@ -137,7 +141,7 @@ module z8000_sequencer
 
   // ---- program ROM ------------------------------------------------------------------
   logic [MC_FORM_W-1:0] form_n, form_s;
-  logic [MC_PROG_W-1:0] prog_d, prog_q, prog_n, prog_s;
+  logic [MC_PROG_W-1:0] prog_d, prog_q, prog_n, prog_s, prog_m;
   logic [MC_POS_W-1:0]  npos;
   mc_cycle_t            cur_q, cur_d, cur_n, cur_s, nxt;
   mc_link_t             link, link_d, link_n, link_s;
@@ -146,16 +150,19 @@ module z8000_sequencer
   // cycle in flight is registered; `_d` lookups see a word taken this edge.
   // Both outcomes of the edge are looked up, with no word in (`_n`) and as
   // if the word in flight is in (`_s`), and bus_done picks after the ROMs.
+  // A multiply or divide path is taken as its operand arrives, in the held
+  // program (`_m`). A zero operand from the bus also steers the in-flight
+  // lookup, as its cycle's tail may differ on the zero path; the other
+  // paths share the arriving cycle.
   logic [15:0] w0_s;
   logic [3:0]  w1_s;
   mc_col_e     col_s;
-  mc_path_e    path_n, path_s;
-  assign path_n = md_take ? md_path : path_q;
+  mc_path_e    path_s;
   always_comb begin
     w0_s   = ir0_q;
     w1_s   = ir1_q[3:0];
     col_s  = col_q;
-    path_s = path_n;
+    path_s = path_q;
     if (state_q == SEQ_IF1) begin
       w0_s   = bus_rdata;
       w1_s   = 4'h0;
@@ -166,17 +173,19 @@ module z8000_sequencer
     end else if (prog_on && cur_q.kind == MC_FA && col_q == MC_COL_SS && bus_rdata[15]) begin
       col_s  = MC_COL_SL;
     end
+    if (md_zero) path_s = MC_PATH_ZERO;
   end
 
   z8000_mc_index_gen u_index  (.w0(ir0_q), .w1_lo(ir1_q[3:0]), .form(form_n));
-  z8000_mc_prog_gen  u_prog   (.form(form_n), .col(col_q), .path(path_n), .prog(prog_n));
+  z8000_mc_prog_gen  u_prog   (.form(form_n), .col(col_q), .path(path_q), .prog(prog_n));
   z8000_mc_cycle_gen u_cur    (.prog(prog_n), .pos(pos_q), .cyc(cur_n));
   z8000_mc_link_gen  u_link_n (.prog(prog_n), .pos(pos_q), .link(link_n));
   z8000_mc_index_gen u_index_s(.w0(w0_s), .w1_lo(w1_s), .form(form_s));
   z8000_mc_prog_gen  u_prog_s (.form(form_s), .col(col_s), .path(path_s), .prog(prog_s));
   z8000_mc_cycle_gen u_cur_s  (.prog(prog_s), .pos(pos_q), .cyc(cur_s));
   z8000_mc_link_gen  u_link_s (.prog(prog_s), .pos(pos_q), .link(link_s));
-  assign prog_d = bus_done ? prog_s : prog_n;
+  z8000_mc_prog_gen  u_prog_m (.form(form_s), .col(col_s), .path(md_path), .prog(prog_m));
+  assign prog_d = md_take ? prog_m : bus_done ? prog_s : prog_n;
   assign cur_d  = bus_done ? cur_s  : cur_n;
   assign link_d = bus_done ? link_s : link_n;
   z8000_mc_link_gen  u_link   (.prog(prog_q), .pos(pos_q), .link(link));
@@ -362,6 +371,7 @@ module z8000_sequencer
   logic word_if1, word_more, word_addr;
   assign word_if1  = state_q == SEQ_IF1 && bus_done;
   assign word_more = prog_on && bus_done && (cur_q.kind == MC_FN || cur_q.kind == MC_FA);
+  assign imm_take  = word_more && cur_q.kind == MC_FN;
   assign word_addr = word_more && cur_q.kind == MC_FA;
 
   // FCW and PC writes: the PSA loads, then +2 per instruction word taken.
@@ -507,6 +517,8 @@ module z8000_sequencer
   assign ir_w2     = ir2_q;
   assign ir_ea     = ea_q;
   assign iter      = iter_q;
+  assign in_rf     = in_rf_q;
+  assign col_nx    = col_d;
   assign halted    = state_q == SEQ_PROG && run_ok && dec_exec == CLS_HALT;
 
   // synthesis translate_off
@@ -518,14 +530,26 @@ module z8000_sequencer
   mc_cycle_t            cur_o;
   mc_link_t             link_o;
   logic                 check_q = 1'b0;
+  mc_cycle_t            cur_h;
   // verilator lint_on UNUSEDSIGNAL
   z8000_mc_index_gen u_index_o(.w0(ir0_d), .w1_lo(ir1_d[3:0]), .form(form_o));
   z8000_mc_prog_gen  u_prog_o (.form(form_o), .col(col_d), .path(path_d), .prog(prog_o));
   z8000_mc_cycle_gen u_cur_o  (.prog(prog_o), .pos(pos_q), .cyc(cur_o));
   z8000_mc_link_gen  u_link_o (.prog(prog_o), .pos(pos_q), .link(link_o));
+  z8000_mc_cycle_gen u_cur_h  (.prog(prog_q), .pos(pos_q), .cyc(cur_h));
   always_ff @(posedge clk) begin
-    if ((prog_o != prog_d || cur_o != cur_d || link_o != link_d)) begin
+    if ((prog_o != prog_d || link_o != link_d || cur_o != cur_d)) begin
       $display("%%Error: %m: split program lookup differs");
+      check_q <= 1'b1;
+    end
+    // The registered cycle is the held program's.
+    if (prog_on && cur_h != cur_q) begin
+      $display("%%Error: %m: held program cycle differs");
+      check_q <= 1'b1;
+    end
+    // A path taken as a cycle starts would start it from the old program.
+    if (md_take && take) begin
+      $display("%%Error: %m: path taken as a cycle starts");
       check_q <= 1'b1;
     end
   end

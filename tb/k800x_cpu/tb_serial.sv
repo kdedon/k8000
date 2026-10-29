@@ -21,17 +21,21 @@ module tb_serial
   logic [31:0] m_dst, m_src;
   logic [63:0] m_product;
   logic [9:0]  m_remaining;
-  z8000_mult u_mult (.clk(clk), .reset_n(reset_n), .start(m_start), .width32(m_width32), .dst(m_dst),
-                     .src_valid(m_src_valid), .src(m_src), .done(m_done), .product(m_product), .remaining(m_remaining));
+  logic        m_pick_zero, m_adds_more;  // CPU hookup only
+  z8000_mult u_mult (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(m_start), .width32(m_width32), .dst(m_dst),
+                     .src_valid(m_src_valid), .src(m_src), .done(m_done), .product(m_product), .remaining(m_remaining),
+                     .pick_zero(m_pick_zero), .adds_more(m_adds_more));
   // ---- div ----
   logic        d_start, d_n32, d_src_valid, d_done, d_dbz, d_ovf, d_wide, d_qneg, d_qzero;
   logic [63:0] d_dividend;
   logic [31:0] d_divisor, d_quot, d_rem;
   logic [9:0]  d_remaining;
-  z8000_div u_div (.clk(clk), .reset_n(reset_n), .start(d_start), .n32(d_n32), .dividend(d_dividend),
+  logic        d_pick_zero, d_pick_ovf;   // CPU hookup only
+  z8000_div u_div (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(d_start), .n32(d_n32), .dividend(d_dividend),
                    .src_valid(d_src_valid), .divisor(d_divisor), .done(d_done), .div_by_zero(d_dbz),
                    .overflow(d_ovf), .wide_quot(d_wide), .quot_neg(d_qneg), .quot_zero(d_qzero),
-                   .quotient(d_quot), .remainder(d_rem), .remaining(d_remaining));
+                   .quotient(d_quot), .remainder(d_rem), .remaining(d_remaining),
+                   .pick_zero(d_pick_zero), .pick_ovf(d_pick_ovf));
   // ---- shift ----
   logic        s_start, s_done;
   logic [1:0]  s_width;

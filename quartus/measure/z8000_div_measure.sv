@@ -18,6 +18,7 @@ module z8000_div_measure (
   z8000_div dut (
     .clk         (clk),
     .reset_n     (in_q[99]),
+    .tick        (1'b1),
     .start       (in_q[98]),
     .n32         (in_q[97]),
     .dividend    (in_q[96:33]),

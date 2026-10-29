@@ -44,6 +44,9 @@
 // a high-word latch. A long load writes its high word in the clock after
 // the first read's T3 and its low word on the program's last clock. A long
 // store gives the high register first.
+//
+// MULT, MULTL, DIV and DIVL only have their memory operand read here (the
+// pointer or index from w0[7:4]); the CPU top runs the work.
 
 module z8000_execute
   import z8000_ctrl_pkg::*, z8000_zbus_pkg::*;
@@ -145,7 +148,7 @@ module z8000_execute
           br_jr, br_dj, br_rel, br_call, br_ret, stk, stk_push, stk_long, stk_opnd,
           stk_imm, stk_pop_r, fop, tcc, dab, exts, sm, sm_byte, xr, xm, bcd, lea, ldctl,
           ctl_wr, ctl_fcw, ldps, iret, ps_ld, ldps_ir, ldps_x, chg_fcw, ldm, ldm_st, tr,
-          tr_test, handles, is_long, is_byte, hi_first;
+          tr_test, md, md_reg, handles, is_long, is_byte, hi_first;
   } cls_t;
   /* verilator lint_off UNUSEDSIGNAL */
   function automatic cls_t cls_of(input ctrl_word_t c, input logic [11:0] w);
@@ -204,7 +207,9 @@ module z8000_execute
     k.ldm_st = k.ldm && c.io_write;
     k.tr = c.valid && c.exec == CLS_TRANSLATE;
     k.tr_test = k.tr && !c.io_write;
-    k.handles = k.uni || k.br || k.stk || k.sm || k.xr || k.xm || k.bcd || k.lea || k.ldctl || k.ps_ld || k.ldm || k.tr;
+    k.md = c.valid && (c.exec == CLS_MUL || c.exec == CLS_DIV);
+    k.md_reg = k.md && c.src2 == SRC_REG;
+    k.handles = k.md || k.uni || k.br || k.stk || k.sm || k.xr || k.xm || k.bcd || k.lea || k.ldctl || k.ps_ld || k.ldm || k.tr;
     k.is_long = c.width == WIDTH_LONG;
     k.is_byte = c.width == WIDTH_BYTE || (k.br_dj && !w[7]);
     k.hi_first = k.is_long && k.mem_read && c.alu_op == OP_LD;
@@ -506,7 +511,10 @@ module z8000_execute
   end
   assign rf_rbyte_b = (is_byte || bcd) && !idx_read;
   always_comb begin
-    if (idx_read)       rf_rsel_b = w1[11:8];
+    // A multiply or divide register source: a long's high word as the
+    // unit starts, its low word the clock after.
+    if (k_q.md_reg)     rf_rsel_b = is_long ? {rb[3:1], !first} : rb;
+    else if (idx_read)  rf_rsel_b = w1[11:8];
     else if (ldctl || ldps) rf_rsel_b = w0[7:4];
     else if (ldm)       rf_rsel_b = w1[11:8] + ldm_k_q;
     else if (xr || xm || bcd) rf_rsel_b = w0[3:0];
@@ -703,7 +711,7 @@ module z8000_execute
       if (ldps_idx) idx_q <= rf_rdata_b + {14'd0, seg_mode, 1'b0};
       if (opnd_take && mcnt_q == (iret ? 2'd2 : 2'd1)) nfcw_q <= rdata;
       if (opnd_take && mcnt_q == (iret ? 2'd3 : 2'd2)) pcs_q  <= rdata[14:8];
-      if (mem_take) nxt2_q <= ((uni && is_long) || stk_long) && !nxt2_q;
+      if (mem_take) nxt2_q <= (((uni || k_q.md) && is_long) || stk_long) && !nxt2_q;
       if (opnd_take && nxt2_q) opnd_hi_q <= rdata;
       if (mem_take) begin
         ea0_q  <= mem_addr[0];

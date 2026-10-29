@@ -6,7 +6,7 @@
 //   word  sel 0-15 = R0..R15
 //   long  sel & 0xE = RRn: R[n] is the HIGH word, R[n+1] the low word
 //   quad  sel & 0xC = RQn: R[n] high ... R[n+3] low
-// Port B reads a byte or word only.
+// Port A reads any width; port B a byte or word only.
 //
 // The testbench reads and pokes `r` by name; keep it.
 //

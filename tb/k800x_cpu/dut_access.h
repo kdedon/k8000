@@ -58,5 +58,5 @@ struct DutAccess {
     bool     unhandled_cycle() const     { return top->rootp->z8000_cpu__DOT__u_sequencer__DOT__unhandled_q; }
 
     // A simulation-only execute check failed.
-    bool     execute_check() const       { return top->rootp->z8000_cpu__DOT__u_execute__DOT__check_q || top->rootp->z8000_cpu__DOT__u_sequencer__DOT__check_q; }
+    bool     execute_check() const       { return top->rootp->z8000_cpu__DOT__u_execute__DOT__check_q || top->rootp->z8000_cpu__DOT__u_sequencer__DOT__check_q || top->rootp->z8000_cpu__DOT__check_q; }
 };

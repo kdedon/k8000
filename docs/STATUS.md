@@ -8,15 +8,15 @@
 | decode ROM vs table | `make test-decode-table` | PASS, 1048576 checks |
 | program ROM vs table | `make test-mc-table` | PASS, 1054835 checks (434 forms, 236 programs) |
 | register file | `make test-regfile` | PASS, 4056 checks (port B on the byte and word cases) |
-| ALU | `make test-alu` | PASS, 270 of 270 vector files (79862 records, 10546 long as two word passes, 39 out-of-contract skipped) |
+| ALU | `make test-alu` | PASS, 324 of 324 vector files (80050 records, 10546 long as two word passes, 39 out-of-contract skipped) |
 | MULT/DIV/SHIFT | `make test-serial` | PASS, 3030 operations |
 | Refresh prescaler | `make test-refresh` | PASS, 7 checks |
 | Instruction word capture | `make test-seq-words` | PASS, 17 cases (address register and words 1, 2) |
 | Program paths and repeats | `make test-seq-paths` | PASS, 20 cases (JP/RET cc taken and not taken, shift counts, LDM counts and lengths) |
 | Condition codes | `make test-cond` | PASS, 256 checks (16 codes, every C Z S P/V) |
-| CPU vectors | `make test-cpu` | 846 pass, 335 fail, 17 skip |
+| CPU vectors | `make test-cpu` | 975 pass, 246 fail, 17 skip |
 | CPU Z-Bus timing | `make test-cpu-timing` | 11 of 12 (monitor clean; I/O not run) |
-| CPU cycle counts | `make test-cpu-cycles` | 28 of 45 pass (register, immediate, byte/word IR and DA, branch and stack rows), 17 not run |
+| CPU cycle counts | `make test-cpu-cycles` | 34 of 45 pass (register, immediate, byte/word IR and DA, branch, stack and MULT/DIV rows), 11 not run |
 | MMU vectors | `make test-mmu` | 6 of 71 |
 | MMU timing | `make test-mmu-timing` | 6 of 12 |
 | CIO vectors | `make test-cio` | 1 of 110 (52 partial) |
@@ -37,7 +37,7 @@
 | divider | 779 | 62.4 MHz |
 | shifter | 136 | 175 MHz |
 | execute unit + register file + ALU | 524 | 63.5 MHz |
-| CPU, Z8001 (the program ROMs drive the bus; FCW flags reach it through the condition code, so the ALU and register file stay) | 3680 | 53.9 MHz (worst: instruction word to a unified op's pass flag through the program ROMs) |
+| CPU, Z8001 (the program ROMs drive the bus; FCW flags reach it through the condition code, so the ALU and register file stay; multiplier and divider included; divider 768, multiplier 166, register file 374, CPU glue 357) | 4853 | 51.2 MHz (worst: the cycle in flight's kind to a register write) |
 
 ## Next
 
@@ -52,9 +52,15 @@
   included, and so do DI/EI, the flag ops, LDCTLB, TCC, DAB, EXTS, EX, RLDB/RRDB,
   LDA and LDAR, LDCTL, LDPS, IRET, LDM and translate (single and repeat), with
   the stack pointer swap on a mode change (R14 and R15 on a Z8001). The two
-  failing new vectors are round trips through SC, which is not built. Privileged instructions are not trapped
-  in normal mode yet. Next: MULT/DIV, then block ops and IN/OUT. Interrupt sampling,
+  failing new vectors are round trips through SC, which is not built. MULT, MULTL,
+  DIV and DIVL run in every operand form, segmented included, with the serial units
+  stepping on the program's clocks and their operands read on ports A and B. Privileged instructions are not trapped
+  in normal mode yet. Next: block ops and IN/OUT. Interrupt sampling,
   abort and BUSREQ are not wired.
+- CPU rework after the last rung: put the program ROMs in M10K/MLAB (the sequencer is
+  2125 of 4853 ALMs, ROMs in logic, the lookup doubled for timing; a registered read
+  needs the lookup re-pipelined), and negate the divider's operands over its setup
+  clocks with a high-half compare (768 ALMs; the path is still picked on clock 3).
 - MMU: passes are the "chip does nothing" cases (TestReset.001,
   TestMasterEnableDisabled, TestMMU_URS_SingleMMU.001/.003, TestSegTrapAcknowledge_NotOurs.001,
   TestCmd_UnlistedOpcodeWriteIsNoOp). TestReset.000 fails on one final-state field.
@@ -66,7 +72,7 @@
 
 | device | files | notes |
 |---|---|---|
-| CPU | 1192 | 17 skipped (restore Go snapshots, or set a refresh pending directly) |
+| CPU | 1202 | 17 skipped (restore Go snapshots, or set a refresh pending directly) |
 | CPU cycle counts | 45 | 35 `exact`, 10 `approx` |
 | MMU | 71 | from 48 of 49 Go tests |
 | CIO | 110 | 52 `X partial` |

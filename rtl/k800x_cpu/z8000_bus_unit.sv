@@ -55,6 +55,7 @@ module z8000_bus_unit
   output logic        cyc_end,        // the next edge ends the machine cycle
   output logic        cyc_end3,       // ... the third edge from now does
   output logic        done,           // T3 opens on this edge
+  output logic        twait,          // this clock is a wait state
   output logic [15:0] rdata,          // read data, valid with done
 
   // pins
@@ -137,6 +138,7 @@ module z8000_bus_unit
   assign wdata_bus = (req_write && req_byte && !req_io) ? {wbyte, wbyte} : req_wdata;
 
   assign done  = state_q == BUS_T3 && wait_n;
+  assign twait = state_q == BUS_T3 && !wait_n;
   assign rdata = ad_in;
 
   logic [2:0] taw_dec;

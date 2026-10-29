@@ -65,6 +65,11 @@ module z8000_cpu
   logic        rf_rbyte_b;
   logic [3:0]  rf_rsel_b;
   logic [15:0] rf_rdata_b, ex_wdata;
+  logic        ex_rf_we;
+  logic [1:0]  ex_rf_wwidth;
+  logic [3:0]  ex_rf_wsel;
+  logic [1:0]  ex_rf_rwidth_a;
+  logic [3:0]  ex_rf_rsel;
 
   z8000_regfile u_regfile (
     .clk     (clk),
@@ -79,8 +84,6 @@ module z8000_cpu
     .rsel_b  (rf_rsel_b),
     .rdata_b (rf_rdata_b)
   );
-
-  assign rf_wdata = {48'd0, ex_wdata};
 
   // ---- control and bus ------------------------------------------------------
   logic        fcw_we, pc_we, ex_fcw_we, ctl_we, ref_we;
@@ -127,12 +130,178 @@ module z8000_cpu
   logic        md_take, blk_more, mult_more, mreq_more, halt_exit;
   mc_path_e    md_path;
   logic [15:0] rf_count;
-  assign md_take   = 1'b0;             // multiply/divide operand: zero, overflow
-  assign md_path   = MC_PATH_DEFAULT;
   assign rf_count  = 16'h0000;         // SDA/SDL count register read
-  assign mult_more = 1'b0;             // MULTL extra adds
   assign mreq_more = 1'b0;             // MREQ's MI handshake
   assign halt_exit = 1'b0;             // HALT's exit on an interrupt
+
+  // ---- multiply and divide --------------------------------------------------
+  // The units move on the program's clocks (not a wait or a refresh) and
+  // end with its last one, so the work starts as many clocks before the
+  // end as it takes: on the IF1's T3 for a register, immediate or IR source;
+  // later by the DA/X address cycles' clocks. The destination quad is read
+  // on port A as the unit starts. A register source is read on port B: a
+  // word the clock after the start, a long's high word as it starts and its
+  // low word the clock after; it is given and picks the program's path
+  // there. A memory or immediate source is given on the edge its last word
+  // arrives. The result and flags go in from the units' registers the
+  // clock after the last.
+  logic        imm_take, seq_in_rf, bus_twait;
+  mc_col_e     col_nx;
+  logic        md_mul, md_div, md_on, md_long, md_reg, md_imm, md_x, md_dax, md_tick;
+  logic        md_start, md_lda, md_data, md_arrive, md_src_valid, md_pick_q, md_seen_q;
+  logic        md_pend_q, md_mul_q, md_long_q, md_wb, md_rf_we;
+  logic [3:0]  md_clk_q, md_at, md_dst_q, md_flags;
+  logic [15:0] md_hi_q;
+  logic [31:0] md_dst_w, md_src;
+  logic [63:0] md_wdata, m_product;
+  logic [31:0] d_quot, d_rem;
+  logic        m_done, m_zero, d_done, d_dbz, d_ovf, d_wide, d_qneg, d_qzero, d_zero, d_ovf_now;
+
+  assign md_mul  = ctrl_q.valid && ctrl_q.exec == CLS_MUL;
+  assign md_div  = ctrl_q.valid && ctrl_q.exec == CLS_DIV;
+  assign md_on   = md_mul || md_div;
+  assign md_long = ctrl_q.width == WIDTH_LONG;
+  assign md_reg  = ctrl_q.src2 == SRC_REG;
+  assign md_imm  = ctrl_q.src2 == SRC_IMM;
+  assign md_x    = ctrl_q.src2 == SRC_X;
+  assign md_dax  = md_x || ctrl_q.src2 == SRC_DA;
+  assign md_tick = !seq_in_rf && !bus_twait;
+
+  localparam logic [1:0] RF_LONG = 2'd2, RF_QUAD = 2'd3;   // register file widths
+
+  // Program clocks: the IF1's T3 is clock 2.
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n)                            md_clk_q <= 4'd0;
+    else if (ex_first)                       md_clk_q <= 4'd3;
+    else if (md_tick && md_clk_q != 4'hF)    md_clk_q <= md_clk_q + 4'd1;
+  end
+
+  // DA/X: the clock before the R cycle's T1 less two; the address cycles
+  // are Fa (+1 for X or SS), with a long offset Fn and Fa.
+  assign md_at    = 4'd3 + {3'd0, md_x || col_nx == MC_COL_SS} + (col_nx == MC_COL_SL ? 4'd3 : 4'd0);
+  assign md_lda   = md_on && (md_dax ? !ex_first && md_clk_q == md_at : ex_first);
+  assign md_start = md_lda && md_tick;
+
+  // Port A reads the destination quad as the unit starts.
+  assign rf_rwidth = md_lda ? RF_QUAD : ex_rf_rwidth_a;
+  assign rf_rsel   = md_lda ? {ir_w0[3:2], 2'b00} : ex_rf_rsel;
+
+  // Operand words: immediate words, or the memory reads; a long's first
+  // is its high word.
+  assign md_data      = md_on && (md_imm ? imm_take : opnd_take && !md_reg);
+  assign md_arrive    = md_data && (!md_long || md_seen_q);
+  assign md_src_valid = md_reg ? md_pick_q : md_arrive;
+  assign md_src = {md_long ? md_hi_q : 16'h0000, md_reg ? rf_rdata_b : bus_rdata};
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      md_pick_q <= 1'b0;
+      md_seen_q <= 1'b0;
+      md_hi_q   <= 16'h0000;
+    end else begin
+      md_pick_q <= md_start && md_reg;
+      if (ex_first)     md_seen_q <= 1'b0;
+      else if (md_data) md_seen_q <= 1'b1;
+      if (md_start && md_reg) md_hi_q <= rf_rdata_b;
+      else if (md_data)       md_hi_q <= bus_rdata;
+    end
+  end
+
+  // A register source's pick lands in the IF1's tail (clock 3), where no
+  // refresh or wait runs, and no cycle starts on its edge.
+  assign md_take = md_pick_q || md_arrive;
+  always_comb begin
+    md_path = MC_PATH_DEFAULT;
+    if (md_mul ? m_zero : d_zero) md_path = MC_PATH_ZERO;
+    // A quotient one bit too wide is also an overflow compare: it takes
+    // the overflow program, which forms its bits.
+    else if (md_div && d_ovf_now) md_path = MC_PATH_OVERFLOW;
+  end
+
+  // MULT: Rd+1 (RQ's low long for MULTL). DIV: RRd (RQd for DIVL).
+  always_comb begin
+    if (md_mul) md_dst_w = md_long ? rf_rdata[31:0] : {16'h0000, ir_w0[1] ? rf_rdata[15:0] : rf_rdata[47:32]};
+    else        md_dst_w = ir_w0[1] ? rf_rdata[31:0] : rf_rdata[63:32];
+  end
+
+  z8000_mult u_mult (
+    .clk       (clk),
+    .reset_n   (reset_n),
+    .tick      (md_tick),
+    .start     (md_start && md_mul),
+    .width32   (md_long),
+    .dst       (md_dst_w),
+    .src_valid (md_src_valid && md_mul),
+    .src       (md_src),
+    .done      (m_done),
+    .product   (m_product),
+    /* verilator lint_off PINCONNECTEMPTY */
+    .remaining (),
+    /* verilator lint_on PINCONNECTEMPTY */
+    .pick_zero (m_zero),
+    .adds_more (mult_more)
+  );
+
+  z8000_div u_div (
+    .clk         (clk),
+    .reset_n     (reset_n),
+    .tick        (md_tick),
+    .start       (md_start && md_div),
+    .n32         (md_long),
+    .dividend    (md_long ? rf_rdata : {32'd0, md_dst_w}),
+    .src_valid   (md_src_valid && md_div),
+    .divisor     (md_src),
+    .done        (d_done),
+    .div_by_zero (d_dbz),
+    .overflow    (d_ovf),
+    .wide_quot   (d_wide),
+    .quot_neg    (d_qneg),
+    .quot_zero   (d_qzero),
+    .quotient    (d_quot),
+    .remainder   (d_rem),
+    /* verilator lint_off PINCONNECTEMPTY */
+    .remaining   (),
+    /* verilator lint_on PINCONNECTEMPTY */
+    .pick_zero   (d_zero),
+    .pick_ovf    (d_ovf_now)
+  );
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      md_pend_q <= 1'b0;
+      md_mul_q  <= 1'b0;
+      md_long_q <= 1'b0;
+      md_dst_q  <= 4'd0;
+    end else if (md_start) begin
+      md_pend_q <= 1'b1;
+      md_mul_q  <= md_mul;
+      md_long_q <= md_long;
+      md_dst_q  <= ir_w0[3:0];
+    end else if (md_wb) begin
+      md_pend_q <= 1'b0;
+    end
+  end
+
+  // Divide by zero and overflow leave the destination.
+  assign md_wb    = md_pend_q && (md_mul_q ? m_done : d_done);
+  assign md_rf_we = md_wb && (md_mul_q || !(d_dbz || d_ovf));
+  always_comb begin
+    if (md_mul_q) begin
+      md_wdata = m_product;
+      if (md_long_q) md_flags = {m_product[63:31] != {33{m_product[63]}}, m_product == 64'd0, m_product[63], 1'b0};
+      else           md_flags = {m_product[31:15] != {17{m_product[31]}}, m_product[31:0] == 32'd0, m_product[31], 1'b0};
+    end else begin
+      md_wdata = md_long_q ? {d_rem, d_quot} : {32'd0, d_rem[15:0], d_quot[15:0]};
+      if (d_dbz)      md_flags = 4'b0101;
+      else if (d_ovf) md_flags = 4'b0001;
+      else            md_flags = {d_wide, d_qzero, d_qneg, d_wide};
+    end
+  end
+
+  assign rf_we     = md_rf_we || ex_rf_we;
+  assign rf_wwidth = md_rf_we ? (md_long_q ? RF_QUAD : RF_LONG) : ex_rf_wwidth;
+  assign rf_wsel   = md_rf_we ? md_dst_q : ex_rf_wsel;
+  assign rf_wdata  = md_rf_we ? md_wdata : {48'd0, ex_wdata};
 
   z8000_sequencer #(.SEGMENTED(SEGMENTED)) u_sequencer (
     .clk          (clk),
@@ -151,6 +320,7 @@ module z8000_cpu
     .dec_exec     (ctrl_q.exec),
     .cc_met       (cc_met),
     .md_take      (md_take),
+    .md_zero      (md_arrive && bus_rdata == 16'h0000 && (!md_long || md_hi_q == 16'h0000)),
     .md_path      (md_path),
     .more         (more),
     .iter         (iter),
@@ -170,6 +340,9 @@ module z8000_cpu
     .mem_take     (mem_take),
     .int_take     (int_take),
     .opnd_take    (opnd_take),
+    .imm_take     (imm_take),
+    .in_rf        (seq_in_rf),
+    .col_nx       (col_nx),
     .rf_pending   (rf_pending),
     .rf_addr      (rf_addr),
     .rf_take      (rf_take),
@@ -264,15 +437,15 @@ module z8000_cpu
     .mem_st     (ex_mem_st),
     .mem_byte   (ex_mem_byte),
     .mem_wdata  (ex_mem_wdata),
-    .rf_rwidth  (rf_rwidth),
-    .rf_rsel    (rf_rsel),
+    .rf_rwidth  (ex_rf_rwidth_a),
+    .rf_rsel    (ex_rf_rsel),
     .rf_rdata   (rf_rdata[31:0]),
     .rf_rbyte_b (rf_rbyte_b),
     .rf_rsel_b  (rf_rsel_b),
     .rf_rdata_b (rf_rdata_b),
-    .rf_we      (rf_we),
-    .rf_wwidth  (rf_wwidth),
-    .rf_wsel    (rf_wsel),
+    .rf_we      (ex_rf_we),
+    .rf_wwidth  (ex_rf_wwidth),
+    .rf_wsel    (ex_rf_wsel),
     .rf_wdata   (ex_wdata),
     .pc_we      (ex_pc_we),
     .pc_d       (ex_pc_d),
@@ -343,6 +516,7 @@ module z8000_cpu
     .tail           (bus_tail),
     .cyc_end        (bus_cyc_end),
     .cyc_end3       (bus_cyc_end3),
+    .twait          (bus_twait),
     .done           (bus_done),
     .rdata          (bus_rdata),
     .wait_n         (wait_n),
@@ -370,6 +544,7 @@ module z8000_cpu
       if (fcw_we)           fcw <= fcw_d;
       else if (ex_fcw_we)   fcw <= ex_fcw_d;
       else if (ex_flags_we) fcw <= (fcw & ~ex_flags_mask) | (ex_flags & ex_flags_mask);
+      else if (md_wb)       fcw <= {fcw[15:8], md_flags, fcw[3:0]};
       if (ex_pc_we)         pc  <= {9'd0, ex_pc_d};
       else if (pc_we)       pc  <= pc_d;
     end
@@ -412,5 +587,45 @@ module z8000_cpu
                        ctrl_q.priv, ctrl_q.fcw_op, ctrl_q.fcw_mask, ctrl_q.stk_mode,
                        ctrl_q.br_mode, ctrl_q.io_write, ctrl_q.io_spec, ctrl_q.mp_op};
   // verilator lint_on UNUSEDSIGNAL
+
+  // synthesis translate_off
+  // Unit and program in step; read by the testbench.
+  // verilator lint_off UNUSEDSIGNAL
+  logic check_q = 1'b0;
+  // verilator lint_on UNUSEDSIGNAL
+  logic [31:0] chk_src_q;
+  logic        last_d1_q = 1'b0;
+  always_ff @(posedge clk) begin
+    if (md_start && md_pend_q) begin
+      $display("%%Error: %m: multiply/divide started twice");
+      check_q <= 1'b1;
+    end
+    // The operands read through ports A and B are the registers as the
+    // unit starts.
+    if (md_start) begin
+      chk_src_q <= md_long ? {u_regfile.r[{ir_w0[7:5], 1'b0}], u_regfile.r[{ir_w0[7:5], 1'b1}]}
+                           : {16'h0000, u_regfile.r[ir_w0[7:4]]};
+      if (rf_rdata != {u_regfile.r[{ir_w0[3:2], 2'b00}], u_regfile.r[{ir_w0[3:2], 2'b01}],
+                       u_regfile.r[{ir_w0[3:2], 2'b10}], u_regfile.r[{ir_w0[3:2], 2'b11}]}) begin
+        $display("%%Error: %m: multiply/divide destination read differs");
+        check_q <= 1'b1;
+      end
+    end
+    if (md_pick_q && !md_tick) begin
+      $display("%%Error: %m: register source pick on a held clock");
+      check_q <= 1'b1;
+    end
+    // The units end with the program: the write is the clock after its last.
+    if (md_wb != (md_pend_q && last_d1_q)) begin
+      $display("%%Error: %m: multiply/divide unit and program out of step");
+      check_q <= 1'b1;
+    end
+    last_d1_q <= ex_last;
+    if (md_pick_q && md_src != chk_src_q) begin
+      $display("%%Error: %m: multiply/divide register source read differs");
+      check_q <= 1'b1;
+    end
+  end
+  // synthesis translate_on
 
 endmodule

@@ -242,7 +242,7 @@ module z8000_decode_rom_gen
           8'h0C, 8'h0D, 8'h0E, 8'h0F:
             ctrl = ctrl_word_t'(69'h1a0308000000000000);
           default:
-            ctrl = ctrl_word_t'(69'h1a030c000000000000);
+            ctrl = ctrl_word_t'(69'h1a030c002000000000);
         endcase
       end
       8'h19: begin
@@ -251,7 +251,7 @@ module z8000_decode_rom_gen
           8'h0C, 8'h0D, 8'h0E, 8'h0F:
             ctrl = ctrl_word_t'(69'h1a0208000000000000);
           default:
-            ctrl = ctrl_word_t'(69'h1a020c000000000000);
+            ctrl = ctrl_word_t'(69'h1a020c002000000000);
         endcase
       end
       8'h1A: begin
@@ -260,7 +260,7 @@ module z8000_decode_rom_gen
           8'h0C, 8'h0D, 8'h0E, 8'h0F:
             ctrl = ctrl_word_t'(69'h1a8308000000000000);
           default:
-            ctrl = ctrl_word_t'(69'h1a830c000000000000);
+            ctrl = ctrl_word_t'(69'h1a830c002000000000);
         endcase
       end
       8'h1B: begin
@@ -269,7 +269,7 @@ module z8000_decode_rom_gen
           8'h0C, 8'h0D, 8'h0E, 8'h0F:
             ctrl = ctrl_word_t'(69'h1a8208000000000000);
           default:
-            ctrl = ctrl_word_t'(69'h1a820c000000000000);
+            ctrl = ctrl_word_t'(69'h1a820c002000000000);
         endcase
       end
       8'h1C: begin
@@ -1322,10 +1322,10 @@ module z8000_decode_rom_gen
       8'h95: ctrl = ctrl_word_t'(69'h118000000000003000);
       8'h96: ctrl = ctrl_word_t'(69'h100304002000000000);
       8'h97: ctrl = ctrl_word_t'(69'h118000000000001000);
-      8'h98: ctrl = ctrl_word_t'(69'h1a0304000000000000);
-      8'h99: ctrl = ctrl_word_t'(69'h1a0204000000000000);
-      8'h9A: ctrl = ctrl_word_t'(69'h1a8304000000000000);
-      8'h9B: ctrl = ctrl_word_t'(69'h1a8204000000000000);
+      8'h98: ctrl = ctrl_word_t'(69'h1a0304002000000000);
+      8'h99: ctrl = ctrl_word_t'(69'h1a0204002000000000);
+      8'h9A: ctrl = ctrl_word_t'(69'h1a8304002000000000);
+      8'h9B: ctrl = ctrl_word_t'(69'h1a8204002000000000);
       8'h9C: begin
         case (w0[7:0])
           8'h08, 8'h18, 8'h28, 8'h38, 8'h48, 8'h58, 8'h68, 8'h78, 8'h88, 8'h98, 8'hA8, 8'hB8, 
