@@ -441,13 +441,13 @@ module z8000_decode_rom_gen
           8'h00, 8'h10, 8'h20, 8'h30, 8'h40, 8'h50, 8'h60, 8'h70, 8'h80, 8'h90, 8'hA0, 8'hB0, 
           8'hC0, 8'hD0, 8'hE0, 8'hF0:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188100000000000020);
+            4'h8: ctrl = ctrl_word_t'(69'h188100000000000000);
             default: ctrl = ctrl_word_t'(69'h188100000000000010);
           endcase
           8'h01, 8'h11, 8'h21, 8'h31, 8'h41, 8'h51, 8'h61, 8'h71, 8'h81, 8'h91, 8'hA1, 8'hB1, 
           8'hC1, 8'hD1, 8'hE1, 8'hF1:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188100000000000060);
+            4'h8: ctrl = ctrl_word_t'(69'h188100000000000040);
             default: ctrl = ctrl_word_t'(69'h188100000000000050);
           endcase
           8'h02, 8'h12, 8'h22, 8'h32, 8'h42, 8'h52, 8'h62, 8'h72, 8'h82, 8'h92, 8'hA2, 8'hB2, 
@@ -477,13 +477,13 @@ module z8000_decode_rom_gen
           8'h08, 8'h18, 8'h28, 8'h38, 8'h48, 8'h58, 8'h68, 8'h78, 8'h88, 8'h98, 8'hA8, 8'hB8, 
           8'hC8, 8'hD8, 8'hE8, 8'hF8:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188100000000000000);
+            4'h8: ctrl = ctrl_word_t'(69'h188100000000000020);
             default: ctrl = ctrl_word_t'(69'h188100000000000030);
           endcase
           8'h09, 8'h19, 8'h29, 8'h39, 8'h49, 8'h59, 8'h69, 8'h79, 8'h89, 8'h99, 8'hA9, 8'hB9, 
           8'hC9, 8'hD9, 8'hE9, 8'hF9:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188100000000000040);
+            4'h8: ctrl = ctrl_word_t'(69'h188100000000000060);
             default: ctrl = ctrl_word_t'(69'h188100000000000070);
           endcase
           8'h0A, 8'h1A, 8'h2A, 8'h3A, 8'h4A, 8'h5A, 8'h6A, 8'h7A, 8'h8A, 8'h9A, 8'hAA, 8'hBA, 
@@ -507,13 +507,13 @@ module z8000_decode_rom_gen
           8'h00, 8'h10, 8'h20, 8'h30, 8'h40, 8'h50, 8'h60, 8'h70, 8'h80, 8'h90, 8'hA0, 8'hB0, 
           8'hC0, 8'hD0, 8'hE0, 8'hF0:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188200000000000020);
+            4'h8: ctrl = ctrl_word_t'(69'h188200000000000000);
             default: ctrl = ctrl_word_t'(69'h188200000000000010);
           endcase
           8'h01, 8'h11, 8'h21, 8'h31, 8'h41, 8'h51, 8'h61, 8'h71, 8'h81, 8'h91, 8'hA1, 8'hB1, 
           8'hC1, 8'hD1, 8'hE1, 8'hF1:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188200000000000060);
+            4'h8: ctrl = ctrl_word_t'(69'h188200000000000040);
             default: ctrl = ctrl_word_t'(69'h188200000000000050);
           endcase
           8'h02, 8'h12, 8'h22, 8'h32, 8'h42, 8'h52, 8'h62, 8'h72, 8'h82, 8'h92, 8'hA2, 8'hB2, 
@@ -543,13 +543,13 @@ module z8000_decode_rom_gen
           8'h08, 8'h18, 8'h28, 8'h38, 8'h48, 8'h58, 8'h68, 8'h78, 8'h88, 8'h98, 8'hA8, 8'hB8, 
           8'hC8, 8'hD8, 8'hE8, 8'hF8:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188200000000000000);
+            4'h8: ctrl = ctrl_word_t'(69'h188200000000000020);
             default: ctrl = ctrl_word_t'(69'h188200000000000030);
           endcase
           8'h09, 8'h19, 8'h29, 8'h39, 8'h49, 8'h59, 8'h69, 8'h79, 8'h89, 8'h99, 8'hA9, 8'hB9, 
           8'hC9, 8'hD9, 8'hE9, 8'hF9:
             case (w1_lo)
-            4'h8: ctrl = ctrl_word_t'(69'h188200000000000040);
+            4'h8: ctrl = ctrl_word_t'(69'h188200000000000060);
             default: ctrl = ctrl_word_t'(69'h188200000000000070);
           endcase
           8'h0A, 8'h1A, 8'h2A, 8'h3A, 8'h4A, 8'h5A, 8'h6A, 8'h7A, 8'h8A, 8'h9A, 8'hAA, 8'hBA, 

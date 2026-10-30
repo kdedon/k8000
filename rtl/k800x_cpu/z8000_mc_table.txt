@@ -139,9 +139,9 @@ form 103 LDL R,src BA
 form 104 LDL dst,R RA
 form 105 LDL dst,R BA
 form 106 LDPS src IR  # privileged
-form 107 INDB IR  # privileged
+form 107 INIB IR  # privileged
 form 108 INIRB IR  # privileged
-form 109 SINDB IR  # privileged
+form 109 SINIB IR  # privileged
 form 110 SINIRB IR  # privileged
 form 111 OUTIB IR  # privileged
 form 112 OTIRB IR  # privileged
@@ -151,17 +151,17 @@ form 115 INB DA  # privileged
 form 116 SINB DA  # privileged
 form 117 OUTB DA  # privileged
 form 118 SOUTB DA  # privileged
-form 119 INIB IR  # privileged
+form 119 INDB IR  # privileged
 form 120 INDRB IR  # privileged
-form 121 SINIB IR  # privileged
+form 121 SINDB IR  # privileged
 form 122 SINDRB IR  # privileged
 form 123 OUTDB IR  # privileged
 form 124 OTDRB IR  # privileged
 form 125 SOUTDB IR  # privileged
 form 126 SOTDRB IR  # privileged
-form 127 IND IR  # privileged
+form 127 INI IR  # privileged
 form 128 INIR IR  # privileged
-form 129 SIND IR  # privileged
+form 129 SINI IR  # privileged
 form 130 SINIR IR  # privileged
 form 131 OUTI IR  # privileged
 form 132 OTIR IR  # privileged
@@ -171,9 +171,9 @@ form 135 IN DA  # privileged
 form 136 SIN DA  # privileged
 form 137 OUT DA  # privileged
 form 138 SOUT DA  # privileged
-form 139 INI IR  # privileged
+form 139 IND IR  # privileged
 form 140 INDR IR  # privileged
-form 141 SINI IR  # privileged
+form 141 SIND IR  # privileged
 form 142 SINDR IR  # privileged
 form 143 OUTD IR  # privileged
 form 144 OTDR IR  # privileged

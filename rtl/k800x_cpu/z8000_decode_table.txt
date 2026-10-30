@@ -243,12 +243,12 @@ ctrl LDPS_IR                            1b000c000000000000
 #    valid=1 exec=CLS_LDPS src2=SRC_IR
 ctrl BLOCK_IO                           188100000000000010
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE block_rept=1
-ctrl BLOCK_IO_2                         188100000000000020
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE block_decr=1
+ctrl BLOCK_IO_2                         188100000000000000
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE
 ctrl BLOCK_IO_3                         188100000000000050
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1 block_rept=1
-ctrl BLOCK_IO_4                         188100000000000060
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1 block_decr=1
+ctrl BLOCK_IO_4                         188100000000000040
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1
 ctrl BLOCK_IO_5                         188100000000000090
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 block_rept=1
 ctrl BLOCK_IO_6                         188100000000000080
@@ -267,12 +267,12 @@ ctrl IO_4                               1581000000000000c0
 #    valid=1 exec=CLS_IO width=WIDTH_BYTE io_write=1 io_spec=1
 ctrl BLOCK_IO_9                         188100000000000030
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE block_decr=1 block_rept=1
-ctrl BLOCK_IO_10                        188100000000000000
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE
+ctrl BLOCK_IO_10                        188100000000000020
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE block_decr=1
 ctrl BLOCK_IO_11                        188100000000000070
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_12                        188100000000000040
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1
+ctrl BLOCK_IO_12                        188100000000000060
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1 block_decr=1
 ctrl BLOCK_IO_13                        1881000000000000b0
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 block_decr=1 block_rept=1
 ctrl BLOCK_IO_14                        1881000000000000a0
@@ -283,12 +283,12 @@ ctrl BLOCK_IO_16                        1881000000000000e0
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 io_spec=1 block_decr=1
 ctrl BLOCK_IO_17                        188200000000000010
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD block_rept=1
-ctrl BLOCK_IO_18                        188200000000000020
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD block_decr=1
+ctrl BLOCK_IO_18                        188200000000000000
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD
 ctrl BLOCK_IO_19                        188200000000000050
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1 block_rept=1
-ctrl BLOCK_IO_20                        188200000000000060
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1 block_decr=1
+ctrl BLOCK_IO_20                        188200000000000040
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1
 ctrl BLOCK_IO_21                        188200000000000090
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 block_rept=1
 ctrl BLOCK_IO_22                        188200000000000080
@@ -307,12 +307,12 @@ ctrl IO_8                               1582000000000000c0
 #    valid=1 exec=CLS_IO width=WIDTH_WORD io_write=1 io_spec=1
 ctrl BLOCK_IO_25                        188200000000000030
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD block_decr=1 block_rept=1
-ctrl BLOCK_IO_26                        188200000000000000
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD
+ctrl BLOCK_IO_26                        188200000000000020
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD block_decr=1
 ctrl BLOCK_IO_27                        188200000000000070
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_28                        188200000000000040
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1
+ctrl BLOCK_IO_28                        188200000000000060
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1 block_decr=1
 ctrl BLOCK_IO_29                        1882000000000000b0
 #    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 block_decr=1 block_rept=1
 ctrl BLOCK_IO_30                        1882000000000000a0

@@ -83,7 +83,8 @@ module z8000_bus_monitor #(
   // ---- in-flight transaction ------------------------------------------------
   logic        t_live;
   int          t_off;        // clocks since the /AS fall sample
-  int          t_tw;         // samples inside the transaction with /WAIT Low
+  int          t_tw;         // Tw clocks inserted (/WAIT Low at a sample point)
+  int          t_tw_pre;     // of those, the ones before /DS fell
   logic [3:0]  t_st;
   logic        t_rw, t_bw, t_ns;
   logic [15:0] t_addr;
@@ -130,7 +131,7 @@ module z8000_bus_monitor #(
   // ---- checks ---------------------------------------------------------------
   task automatic check_end_of_cycle(input int ds_rise_at);
     int ds_f, ds_r;
-    ds_f = t_ds_fall  - t_tw;      // discount externally-inserted TW clocks
+    ds_f = t_ds_fall  - t_tw_pre;  // discount externally-inserted TW clocks
     ds_r = ds_rise_at - t_tw;
 
     if (is_mem(t_st)) begin
@@ -283,6 +284,7 @@ module z8000_bus_monitor #(
         t_live      <= 1'b1;
         t_off       <= 0;
         t_tw        <= 0;
+        t_tw_pre    <= 0;
         t_st        <= st;
         t_rw        <= r_w;
         t_bw        <= b_w;
@@ -296,8 +298,13 @@ module z8000_bus_monitor #(
         t_ad_drive_all_high <= 1'b1;
       end else if (t_live) begin
         t_off <= t_off + 1;
-        if (!wait_n && t_ds_rise < 0) t_tw <= t_tw + 1;
-        if (ds_q && !ds_n)   t_ds_fall   <= t_off + 1;
+        // /WAIT is sampled from T2 on; for I/O only from TWA (Fig 9-5).
+        if (!wait_n && t_ds_rise < 0 && t_off + 1 >= (is_io(t_st) ? 2 : 1))
+          t_tw <= t_tw + 1;
+        if (ds_q && !ds_n) begin
+          t_ds_fall <= t_off + 1;
+          t_tw_pre  <= t_tw;
+        end
         if (mreq_q && !mreq_n) t_mreq_fall <= t_off + 1;
         if (!ds_n) begin
           if (!ad_drive) t_ad_drive_seen_low <= 1'b1;
@@ -310,8 +317,10 @@ module z8000_bus_monitor #(
           t_live <= 1'b0;
         end
         // A cycle with no data strobe at all (refresh / internal op) closes
-        // three clocks after /AS falls -- long enough for its T3.
-        else if (t_off + 1 >= 3 && t_ds_fall < 0 && t_ds_rise < 0) begin
+        // three clocks after /AS falls -- long enough for its T3. An
+        // acknowledge /DS can fall later, after waits.
+        else if (t_off + 1 >= 3 && t_ds_fall < 0 && t_ds_rise < 0 &&
+                 !is_ack(t_st)) begin
           check_end_of_cycle(t_ds_rise);
           t_live <= 1'b0;
         end
@@ -330,7 +339,7 @@ module z8000_bus_monitor #(
     errors = 0; transactions = 0; clk_no = 0; reported = 0;
     as_q = 1'b1; ds_q = 1'b1; mreq_q = 1'b1; busack_q = 1'b1;
     ad_q = 16'h0; st_q = 4'h0;
-    t_live = 1'b0; t_off = 0; t_tw = 0; t_st = 4'h0;
+    t_live = 1'b0; t_off = 0; t_tw = 0; t_tw_pre = 0; t_st = 4'h0;
     t_rw = 1'b1; t_bw = 1'b0; t_ns = 1'b0; t_addr = 16'h0; t_sn = 7'h0;
     t_ds_fall = -1; t_ds_rise = -1; t_mreq_fall = -1;
     t_ad_drive_seen_low = 1'b0; t_ad_drive_all_high = 1'b1;

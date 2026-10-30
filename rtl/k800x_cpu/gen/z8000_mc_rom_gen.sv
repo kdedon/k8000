@@ -1656,9 +1656,9 @@ module z8000_mc_prog_gen
           default: prog = 8'd54;
         endcase
       end
-      9'd107: prog = 8'd56;  // INDB IR
+      9'd107: prog = 8'd56;  // INIB IR
       9'd108: prog = 8'd57;  // INIRB IR
-      9'd109: prog = 8'd56;  // SINDB IR
+      9'd109: prog = 8'd56;  // SINIB IR
       9'd110: prog = 8'd57;  // SINIRB IR
       9'd111: prog = 8'd58;  // OUTIB IR
       9'd112: prog = 8'd59;  // OTIRB IR
@@ -1668,17 +1668,17 @@ module z8000_mc_prog_gen
       9'd116: prog = 8'd60;  // SINB DA
       9'd117: prog = 8'd60;  // OUTB DA
       9'd118: prog = 8'd60;  // SOUTB DA
-      9'd119: prog = 8'd56;  // INIB IR
+      9'd119: prog = 8'd56;  // INDB IR
       9'd120: prog = 8'd57;  // INDRB IR
-      9'd121: prog = 8'd56;  // SINIB IR
+      9'd121: prog = 8'd56;  // SINDB IR
       9'd122: prog = 8'd57;  // SINDRB IR
       9'd123: prog = 8'd58;  // OUTDB IR
       9'd124: prog = 8'd59;  // OTDRB IR
       9'd125: prog = 8'd58;  // SOUTDB IR
       9'd126: prog = 8'd59;  // SOTDRB IR
-      9'd127: prog = 8'd56;  // IND IR
+      9'd127: prog = 8'd56;  // INI IR
       9'd128: prog = 8'd57;  // INIR IR
-      9'd129: prog = 8'd56;  // SIND IR
+      9'd129: prog = 8'd56;  // SINI IR
       9'd130: prog = 8'd57;  // SINIR IR
       9'd131: prog = 8'd58;  // OUTI IR
       9'd132: prog = 8'd59;  // OTIR IR
@@ -1688,9 +1688,9 @@ module z8000_mc_prog_gen
       9'd136: prog = 8'd60;  // SIN DA
       9'd137: prog = 8'd60;  // OUT DA
       9'd138: prog = 8'd60;  // SOUT DA
-      9'd139: prog = 8'd56;  // INI IR
+      9'd139: prog = 8'd56;  // IND IR
       9'd140: prog = 8'd57;  // INDR IR
-      9'd141: prog = 8'd56;  // SINI IR
+      9'd141: prog = 8'd56;  // SIND IR
       9'd142: prog = 8'd57;  // SINDR IR
       9'd143: prog = 8'd58;  // OUTD IR
       9'd144: prog = 8'd59;  // OTDR IR

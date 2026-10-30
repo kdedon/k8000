@@ -81,10 +81,14 @@ module tb_cpu_timing
   logic [15:0] io_last_write, io_last_port;
   logic [15:0] wr_seen_addr, wr_seen_data;
 
-  // I/O slave: two /WAIT clocks on every I/O reference (a slow peripheral --
-  // the C900 wait circuit does exactly this).  Fig 13: an external /WAIT
-  // extends the cycle with NO control-output change.
+  // I/O slave: /WAIT Low for three clocks from the one after /AS (T2, TWA,
+  // first Tw). Fig 9-5: /DS falls at TWA regardless, /WAIT is sampled mid-TWA
+  // and each Tw, so the CPU adds two Tw: T1 T2 TWA TW TW T3, /DS Low from TWA
+  // through T3.
   int io_wait_left;
+  logic io_track = 1'b0;
+  int   io_off, io_fall;
+  int unsigned n_io_shape, n_io_shape_bad;
 
   always @(posedge clk) begin
     // The /DS-rise teardown goes first: a back-to-back /AS fall on the same
@@ -98,7 +102,12 @@ module tb_cpu_timing
       lat_rw    <= r_w;
       lat_bw    <= b_w;
       lat_valid <= 1'b1;
-      if (st == ST_IO || st == ST_SPECIAL_IO) io_wait_left <= 2;
+      if (st == ST_IO || st == ST_SPECIAL_IO) begin
+        io_wait_left <= 3;
+        io_track     <= 1'b1;
+        io_off       <= 1;
+        io_fall      <= -1;
+      end
       if (st == ST_INSTR_FETCH_FIRST) n_fetch <= n_fetch + 1;
       if (st[3] && ad_out < 16'h0008) n_psa_read <= n_psa_read + 1;
     end
@@ -129,7 +138,22 @@ module tb_cpu_timing
         lat_st != ST_INSTR_FETCH_FIRST && lat_st != ST_PROG_SPACE)
       n_mem_rd <= n_mem_rd + 1;
 
-    if (io_wait_left > 0 && !ds_n) io_wait_left <= io_wait_left - 1;
+    if (io_wait_left > 0 && !wait_n) io_wait_left <= io_wait_left - 1;
+
+    // I/O /DS shape, in clocks from the /AS fall (T1 = 0).
+    if (io_track && !(as_q && !as_n)) io_off <= io_off + 1;
+    if (io_track) begin
+      if (ds_q && !ds_n) io_fall <= io_off;
+      if (!ds_q && ds_n) begin
+        // a back-to-back I/O /AS on this edge re-arms below
+        io_track   <= as_q && !as_n && ad_drive && (st == ST_IO || st == ST_SPECIAL_IO);
+        n_io_shape <= n_io_shape + 1;
+        if (io_fall != 2 || io_off != 6) begin
+          n_io_shape_bad <= n_io_shape_bad + 1;
+          $display("  I/O /DS fell at %0d, rose at %0d (want 2, 6)", io_fall, io_off);
+        end
+      end
+    end
 
     as_q <= as_n;
     ds_q <= ds_n;
@@ -205,7 +229,7 @@ module tb_cpu_timing
   initial begin
     checks = 0; fails = 0;
     n_psa_read = 0; n_fetch = 0; n_mem_rd = 0; n_mem_wr = 0;
-    n_bytewr = 0; n_io_rd = 0; n_io_wr = 0;
+    n_bytewr = 0; n_io_rd = 0; n_io_wr = 0; n_io_shape = 0; n_io_shape_bad = 0;
     io_wait_left = 0;
     lat_addr = 16'h0; lat_st = 4'h0; lat_rw = 1'b1; lat_bw = 1'b0;
     wr_seen_addr = 16'h0; wr_seen_data = 16'h0;
@@ -271,6 +295,9 @@ module tb_cpu_timing
     ck(n_io_wr > 0 && n_io_rd > 0, "standard I/O read and write performed",
        "Fig 13 input/output cycle (one automatic wait)",
        $sformatf("saw %0d I/O writes, %0d I/O reads", n_io_wr, n_io_rd));
+    ck(n_io_shape > 0 && n_io_shape_bad == 0, "I/O /DS Low from TWA through two Tw and T3",
+       "Tech Manual Fig 9-5: /DS falls opening TWA, /WAIT sampled mid-TWA, waits added between TWA and T3",
+       $sformatf("%0d of %0d I/O cycles off-shape", n_io_shape_bad, n_io_shape));
     ck(mem[DATA >> 1] == 16'h5A5A || n_mem_wr == 0, "word write landed at the addressed word",
        "Fig 12: the address latched at /AS is the destination of the data strobed at /DS",
        $sformatf("mem[%04h]=%04h, want 5A5A", DATA, mem[DATA >> 1]));

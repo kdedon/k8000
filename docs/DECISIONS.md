@@ -27,10 +27,10 @@ RTL design choices resting on the model or on inference rather than an explicit 
 | DJNZ decrements in its internal operation's first clock into the write-data latch and writes the count with the PC load. | Model writes it at the instruction's end (a vector's final state checks it); program F1+2 · I6, 11 clocks. | guess |
 | DI, EI, SETFLG, RESFLG, COMFLG and LDCTLB write the FCW (LDCTLB FLAGS,Rb bits 2:7, bits 0:1 unaffected; LDCTLB Rb,FLAGS the register, bits 0:1 zero) in the program's last clock. | Bits: Mar81 TM LDCTLB (PDF p.128, printed 6-75). Clock: model only; program F1+4 for DI/EI and the flag ops. | explicit (bits) / guess (clock) |
 | TCC, DAB and EXTS read their register and write it in the program's last clock, EXTSL's two words in the last two; DAB runs on the ALU with the D and H flags. | DAB arithmetic: Mar81 TM (PDF p.92, printed 6-39). EXTS operation: (p.102, 6-49). Clocks: model only; programs F1+2 (TCC, DAB), F1+2 · I6 (EXTS). | explicit (DAB, EXTS operation) / guess (clocks) |
-| Register EX, RLDB and RRDB swap through the write-data latch: in the second last clock w0[7:4] is written and the other result latched, in the last the latch goes to w0[3:0]. RLDB/RRDB set Z from the link (w0[3:0]); S likewise. | Z: Mar81 TM RLDB (PDF p.173, printed 6-120), RRDB (p.177, 6-124). S is undefined there; the model's choice. Clocks: model only; programs F1+3 (EX), F1+2 · I4 (RLDB/RRDB). | explicit (Z) / guess (S, clocks) |
+| Register EX, RLDB and RRDB swap through the write-data latch: in the second last clock w0[7:4] is written and the other result latched, in the last the latch goes to w0[3:0]. RLDB/RRDB set Z from the link (w0[3:0]) and leave S. | Z: Mar81 TM RLDB (PDF p.173, printed 6-120), RRDB (p.177, 6-124). S is undefined there; left unaffected, as the model (its source cites a later manual's "S: Unaffected"). Clocks: model only; programs F1+3 (EX), F1+2 · I4 (RLDB/RRDB). | explicit (Z) / guess (S, clocks) |
 | Memory EX swaps in its read's first tail clock: the read word goes to the register, the register's old value to the write-data latch; the W sends the latch to the read's address. EXB's read is a word cycle, its write a byte. | Vector pins (B/W) for the cycle widths; the rest model only, as the read-modify-write row above. | guess |
 | LDA and LDAR take the address the operand path forms (the adder, the base or index latch, the address word) and write it in the program's last clock; segmented, the segment word (segment in bits 14:8) in the second last clock and the offset in the last. | Model only; programs F1+4 · Fn+2 · I3 (RA, BA, BX), F1+4 · Fa+2 (DA, X; Fa+3 and Fn segmented). | guess |
-| The register shift count, the block count, MREQ's handshake and HALT's exit are tied off. | Held at the values the sequencer used before; no datapath source yet. | guess |
+| The register shift count, MREQ's handshake and HALT's exit are tied off. | Held at the values the sequencer used before; no datapath source yet. | guess |
 | A PUSH whose source is the stack pointer's offset register (R15; R15 of RR14 segmented) pushes the decremented value. | Mar81 TM PUSH (PDF p.165, printed 6-112): "The contents of the destination register (a stack pointer) are decremented ... Then the source operand is loaded". | interpretation |
 | A CALL through or indexed by R15 (RR14 segmented) branches to the value before its push. | Mar81 TM CALL (PDF p.71, printed 6-18) orders SP ← SP - 2 (4 segmented); @SP ← PC; PC ← dst. Read as dst evaluated before the push; matches the model. | interpretation |
 | A segmented push, pop, call or return writes only R15; R14 is left as it is. The model rewrites R14 as seg<<8 on each step, so they differ only when R14 is malformed. | Jan83 TM Figure 3-3 (PDF p.36): a segmented address in a register pair has bit 15 and bits 7-0 of the segment word 0. | interpretation |
@@ -42,6 +42,9 @@ RTL design choices resting on the model or on inference rather than an explicit 
 | LDM's address is formed once, as for a word operand, and each later word goes to the previous address + 2 (the segment takes no carry), so loading the pointer register does not move the block. Registers run from w1[11:8] modulo 16 (R0 follows R15); every cycle has data status. A store's register is read on port B as its cycle is requested; a load's word is written the clock after its T3. | Wrap: Mar81 TM PDF p.137 (6-84). The rest: model only. | explicit (wrap) / guess |
 | Translate per byte: read the string byte at @Rd (w0[7:4]), read the table at Rs (w1[7:4]) + that byte (offset add, no segment carry), then write the translated byte back to @Rd's old address (TR) or run the internal operation (TRT); every cycle data status. Per-clock work: Translate clocks below. | Fields: Mar81 TM PDF p.205 (6-152), p.214 (6-161); the Coherent assembler encodes `trib (rr4),(rr6),r3` as B840 0360. Order, V, TRT Z, TR Z undefined: PDF p.205, p.209 (6-156). A nonrepeating TR's Z tests the whole table word, as the model does. Clocks: guess. | explicit (fields, order, flags) / guess (clocks) |
 | A new FCW from LDCTL, LDPS or IRET takes effect at the next instruction: the instruction's own cycles keep the old status, and the FCW loads no later than the edge opening the next IF1. | Mar81 TM PDF p.139 (6-86), p.112 (6-59). | explicit |
+| IN/OUT: the I/O cycle is requested in the port word's T3 clock (DA) or the IF1's last tail clock (IR), with the port from word 1 or from port A (w0[7:4], a word), segment lines 0. OUT's data comes from port B (w0[7:4] DA, w0[3:0] IR) as the cycle is requested; a byte rides AD7:0 for standard I/O and AD15:8 for special I/O, the other half 0. IN writes its register in the cycle's T3 clock, the program's last. | Lanes, N/S Low, segment lines undefined: Mar81 TM PDF p.241 (printed 9-6). Register fields, the zero half, segment 0 and the write clock: model only. Programs F1+2 · Fn · IO and F1+3 · IO from the table. | explicit (lanes) / guess (rest) |
+| An I/O cycle's /DS falls at the edge opening TWA whatever /WAIT does. /WAIT is first sampled mid-TWA; its Tw clocks sit between TWA and T3 with /DS Low, so /WAIT Low only at T2 adds nothing. The interrupt acknowledge keeps its /WAIT-delayed /DS. | Mar81 TM Fig 9-5 (PDF p.242, printed 9-7) and 9.4.1 (PDF p.239, printed 9-4). The model used to hold the I/O /DS fall back while /WAIT was Low, citing Product Spec Fig 14, which shows only the acknowledge string; it now follows Fig 9-5. | explicit |
+| Block I/O (INI, IND, OUTI, OUTD, their repeats, byte and special forms) leaves Z unchanged; V is set from the count only. | The instruction summary says Z is altered (Mar81 TM PDF p.59, printed 6-6); the instruction pages say Z undefined, IND's and Mar81 INIR's say unaffected. The model's requirements (R-CPU-428, R-CPU-819) record V only, and no Coherent code tests Z or V after these. | interpretation |
 
 ## Memory operands: ADD R,@Rs
 
@@ -112,6 +115,54 @@ TR: F1 · Fn+1 · R+2 · R+3 · W · I4; TRT has I3 for the W. The repeating for
 
 TR leaves RH1 as it is: the manual makes it undefined and the model does not touch it.
 
+## Block clocks
+
+Block transfer, compare, string compare and I/O run translate's element shape: the clocks count from the element's data word, the pointers step in the tail, and the count decrements in the first clock of the element's last cycle, where V (and the compare flags) load and the repeat is decided; the sequencer reads it in that cycle's last clock. The pre-element clocks are F1 · Fn+1 (7) and the exit I4 runs once, as translate's. Every row is a guess from the totals and the operation. LD: F1 · Fn+1 · R+3 · W · I4 (20); the repeating forms 11 + 9n.
+
+| clock | work | here |
+|---|---|---|
+| Fn tail / last element clock | Rs (a pair segmented) to the address latch for the read | port A reads Rs as the read is requested |
+| R+3 tail 1 | select the byte by A0 to the write-data latch, both halves | the operand latch takes the byte at T3; write data straight from it |
+| R+3 tail 2 | Rs offset ± width (no segment carry) | port A reads Rs, the shared adder steps it |
+| R+3 tail 3 | Rd to the address latch for the write; Rd offset ± width | one port A read gives the address and the step |
+| W T1 | r - 1; V from r == 0 | the repeat decision loads with V |
+| W T2, T3 | repeat test | the sequencer reads the decision in T3; an interrupt between elements is taken here only if the repeat continues (not wired), pushing the PC of the instruction's first word |
+
+CPI: F1 · Fn+1 · R+3 · I3 · I4 (20); CPIR 11 + 9n.
+
+| clock | work | here |
+|---|---|---|
+| R+3 tail 1 | select the byte by A0 | the operand latch takes the byte at T3 |
+| R+3 tail 2 | R(w1[7:4]) - operand; cc w1[3:0] tested on its C Z S V | port A reads the register into the ALU; C, S and the match latch |
+| R+3 tail 3 | Rs offset ± width | as listed |
+| I3 c1 | r - 1; C S from the compare, Z = match, V from r == 0 | the repeat decision loads: count not zero and no match |
+| I3 c2, c3 | repeat test | read by the sequencer in c3; the between-element interrupt hook, as LD |
+
+CPSI: F1 · Fn+1 · R · R+4 · I4 · I4 (25); CPSIR 11 + 14n. The second read's word is clock 0. Destination minus source, Z from cc, V from the count, pointers before the count: Mar81 TM PDF p.88 (printed 6-35); C and S are undefined there and come from the compare, as the model.
+
+| clock | work | here |
+|---|---|---|
+| R T3 / second R T1, T2 | select the source byte by A0; Rd to the address latch | the operand latch takes the byte; port A reads Rd as the read is requested |
+| R+4 tail 1 | select the destination byte by A0 | the source moves to a second latch as the destination arrives |
+| R+4 tail 2 | destination - source; cc tested | C, S and the match latch |
+| R+4 tail 3 | Rs offset ± width | as listed |
+| R+4 tail 4 | Rd offset ± width | as listed |
+| I4 c1 | r - 1; flags as CPI | the repeat decision loads |
+| I4 c2 - c4 | repeat test | read by the sequencer in c4; the between-element interrupt hook, as LD |
+
+INI: F1 · Fn+1 · IO+3 · W · I4 (21); INIR 11 + 10n. OUTI: F1 · Fn+1 · R+3 · IO · I4 (21); OTIR 11 + 10n. The port register is a word and does not step; the I/O cycle is IN/OUT's (TWA included). Z unchanged, V from the count (see the block I/O Z row).
+
+| clock | work | here |
+|---|---|---|
+| IO+3 tail 1 | select the byte from its class lane (AD7:0 standard, AD15:8 special) | the operand latch takes it at T3 |
+| IO+3 tail 2 | the byte to the write-data latch, both halves | write data straight from the operand latch |
+| IO+3 tail 3 | Rd to the address latch; Rd offset ± width | as LD |
+| W T1 | r - 1; V | as LD, with the between-element interrupt hook in W T2, T3 |
+| R+3 tail 1 (out) | select the byte by A0 | the operand latch takes it at T3 |
+| R+3 tail 2 (out) | Rs offset ± width | as LD |
+| R+3 tail 3 (out) | the port R(w1[7:4]) to the address latch; the byte to its class lane | port A reads the port |
+| IO T1 (out) | r - 1; V | the repeat decision loads; read in the I/O cycle's T3, the between-element interrupt hook there, as LD |
+
 ## Multiply and divide
 
 The serial units keep their cadence (setup, steps, adds, finish; ledger item 50); these rows place them in the programs.
@@ -126,3 +177,32 @@ The serial units keep their cadence (setup, steps, adds, finish; ledger item 50)
 | MULTL runs one extra add per set bit of the absolute value of the multiplicand's low 16 bits read as a signed word; the unit counts them while it steps, and the program repeats its 7-clock add while it says another follows. | The Go model's reading, followed over the other readings in the notes. | interpretation |
 | Divide by zero and overflow only set flags; nothing traps. | Model has no trap. | interpretation |
 
+
+## Shifts
+
+SLA/SLL: F1+4 · Fn+3 · n x I3 (13 + 3n); SDA/SDL: F1+4 · Fn+2 · I3 · n x I3 (15 + 3n); a zero count costs one position.
+
+| decision | evidence | tag |
+|---|---|---|
+| One position per I3, shifted on the edge that opens it; the shifter starts on the edge that takes the first. Result and flags go in on the program's last clock. | Mar81 TM SLA (PDF p.190, printed 6-137): 13+3b, b = 0 timed as 1; SDA (PDF p.183, 6-130): 15+3n. The per-position I3 and its placement are the model's. | explicit (counts) / guess (placement) |
+| Port A reads the destination for the whole program; SDA/SDL read the count register on port B as the I3 before the positions is taken, and that I3 forms the count's magnitude and direction. | The extra I3 is the only difference from SLA's program; its work is the count read. No new ports. | interpretation |
+| A zero count leaves C; V is written by SLA/SDA only (SRA clears it). | Mar81 TM PDF p.189 (6-136): C undefined for a zero shift; the model leaves it. | guess (C) |
+
+## Dynamic bit
+
+BIT/SET/RES dst,Rs (bit number in a register): F1+1 · Fn+3 (10).
+
+| decision | evidence | tag |
+|---|---|---|
+| Port B reads the bit register (w0[3:0]) and its mask is latched in the second last clock; port A reads the target (w1[11:8]); the last clock sets Z (BIT) or writes the target (SET/RES). The low four bits number the bit, three for a byte. | Mar81 TM BIT (PDF p.69): only the low four (byte: three) bits of the source are used. Clock placement is the model's program; the work split is ours. | explicit (bit number) / guess (placement) |
+
+## Multi-micro
+
+MSET/MRES/MBIT: F1+2. MREQ: F1+2 · n x I7 · I7 (12 + 7n; Mar81 TM PDF p.145, printed 6-92).
+
+| decision | evidence | tag |
+|---|---|---|
+| MSET/MRES drive /MO, and MBIT sets S from /MI, on the edge that opens the last clock. | Model's placement; the pins match the vectors. | guess |
+| MBIT sets S while /MI is High (inactive) and clears it while Low. | Mar81 TM PDF p.143 (6-90), Jan83 PDF p.153 (6-94): S <- 1 if MI high; the example loops on JR PL until the resource is free. Resolved conflict: the model set S while /MI was Low (its commit note read Low as busy, no source) and was fixed. | explicit |
+| MREQ samples /MI on the edge its word is taken (the edge opening the IF1's T3): High drives /MO Low and runs the count; Low drives /MO High and skips it. Only in system mode (normal mode traps; /MO holds). Rd is read on port A in the T3 clock into a count register (zero skips the count); each counting I7 writes it less one to Rd at the end of its first clock and latches whether another follows. /MI is sampled again as the last clock opens. | Operation: Mar81 TM PDF p.144 (6-91). Edges: the model's; the latched decision keeps the register file off the program lookup. | explicit (operation) / guess (clocks) |
+| MREQ clears Z when /MI is Low at the start (not signalled) and sets it on the last clock otherwise. | Mar81 TM PDF p.144 (6-91), Jan83 PDF p.154 (6-95): Z <- 0, then Z <- 1 only on the path that drives /MO Low; the flags table gives S 0, Z 0 for a request not signalled. Resolved conflict: the model set Z on both paths (no recorded reason) and was fixed. | explicit |

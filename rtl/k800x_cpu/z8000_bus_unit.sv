@@ -177,8 +177,9 @@ module z8000_bus_unit
           end
         end
         BUS_TAW: begin
-          // An external wait here delays the automatic string.
-          if (wait_n) begin
+          // An external wait delays the acknowledge string. I/O samples
+          // /WAIT only mid-TWA, in BUS_T3 (Fig 9-5).
+          if (wait_n || !cyc_ack) begin
             taw_d = taw_dec;
             if (taw_dec == 3'd0) state_d = BUS_T3;
           end
@@ -255,7 +256,7 @@ module z8000_bus_unit
           end
         end
         BUS_TAW: begin
-          if (wait_n && (!cyc_ack || taw_dec <= 3'd1))
+          if (!cyc_ack || (wait_n && taw_dec <= 3'd1))
             ds_n_d = 1'b0;
         end
         BUS_T3: begin

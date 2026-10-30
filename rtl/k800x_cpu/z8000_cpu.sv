@@ -69,7 +69,8 @@ module z8000_cpu
   logic [1:0]  ex_rf_wwidth;
   logic [3:0]  ex_rf_wsel;
   logic [1:0]  ex_rf_rwidth_a;
-  logic [3:0]  ex_rf_rsel;
+  logic [3:0]  ex_rf_rsel, ex_rf_rsel_b;
+  logic        ex_rf_rbyte_b;
 
   z8000_regfile u_regfile (
     .clk     (clk),
@@ -127,11 +128,9 @@ module z8000_cpu
   end
 
   // Sources not wired yet, tied to what the sequencer assumed before.
-  logic        md_take, blk_more, mult_more, mreq_more, halt_exit;
+  logic        md_take, blk_more, mult_more, mreq_more, halt_exit, ex_word;
   mc_path_e    md_path;
   logic [15:0] rf_count;
-  assign rf_count  = 16'h0000;         // SDA/SDL count register read
-  assign mreq_more = 1'b0;             // MREQ's MI handshake
   assign halt_exit = 1'b0;             // HALT's exit on an interrupt
 
   // ---- multiply and divide --------------------------------------------------
@@ -145,12 +144,13 @@ module z8000_cpu
   // there. A memory or immediate source is given on the edge its last word
   // arrives. The result and flags go in from the units' registers the
   // clock after the last.
-  logic        imm_take, seq_in_rf, bus_twait;
+  logic        imm_take, seq_in_rf, seq_rf_due, bus_twait;
   mc_col_e     col_nx;
   logic        md_mul, md_div, md_on, md_long, md_reg, md_imm, md_x, md_dax, md_tick;
   logic        md_start, md_lda, md_data, md_arrive, md_src_valid, md_pick_q, md_seen_q;
   logic        md_pend_q, md_mul_q, md_long_q, md_wb, md_rf_we;
-  logic [3:0]  md_clk_q, md_at, md_dst_q, md_flags;
+  logic [3:0]  md_clk_q, md_dst_q, md_flags;
+  logic        md_at_ns, md_at_ss, md_at_sl, md_at_hit;
   logic [15:0] md_hi_q;
   logic [31:0] md_dst_w, md_src;
   logic [63:0] md_wdata, m_product;
@@ -167,7 +167,7 @@ module z8000_cpu
   assign md_dax  = md_x || ctrl_q.src2 == SRC_DA;
   assign md_tick = !seq_in_rf && !bus_twait;
 
-  localparam logic [1:0] RF_LONG = 2'd2, RF_QUAD = 2'd3;   // register file widths
+  localparam logic [1:0] RF_BYTE = 2'd0, RF_WORD = 2'd1, RF_LONG = 2'd2, RF_QUAD = 2'd3;   // register file widths
 
   // Program clocks: the IF1's T3 is clock 2.
   always_ff @(posedge clk or negedge reset_n) begin
@@ -177,14 +177,18 @@ module z8000_cpu
   end
 
   // DA/X: the clock before the R cycle's T1 less two; the address cycles
-  // are Fa (+1 for X or SS), with a long offset Fn and Fa.
-  assign md_at    = 4'd3 + {3'd0, md_x || col_nx == MC_COL_SS} + (col_nx == MC_COL_SL ? 4'd3 : 4'd0);
-  assign md_lda   = md_on && (md_dax ? !ex_first && md_clk_q == md_at : ex_first);
+  // are Fa (+1 for X or SS), with a long offset Fn and Fa. Each column's
+  // compare is from flops; the column as of the next edge picks late.
+  assign md_at_ns  = md_clk_q == 4'd3 + {3'd0, md_x};
+  assign md_at_ss  = md_clk_q == 4'd4;
+  assign md_at_sl  = md_clk_q == 4'd6 + {3'd0, md_x};
+  assign md_at_hit = col_nx == MC_COL_SL ? md_at_sl : col_nx == MC_COL_SS ? md_at_ss : md_at_ns;
+  assign md_lda    = md_on && (md_dax ? !ex_first && md_at_hit : ex_first);
   assign md_start = md_lda && md_tick;
 
   // Port A reads the destination quad as the unit starts.
-  assign rf_rwidth = md_lda ? RF_QUAD : ex_rf_rwidth_a;
-  assign rf_rsel   = md_lda ? {ir_w0[3:2], 2'b00} : ex_rf_rsel;
+  assign rf_rwidth = md_lda ? RF_QUAD : sh_on ? sh_rwidth : bd_on ? bd_rwidth : mq_on ? RF_WORD : ex_rf_rwidth_a;
+  assign rf_rsel   = md_lda ? {ir_w0[3:2], 2'b00} : sh_on || mq_on ? ir_w0[7:4] : bd_on ? ir_w1[11:8] : ex_rf_rsel;
 
   // Operand words: immediate words, or the memory reads; a long's first
   // is its high word.
@@ -298,10 +302,168 @@ module z8000_cpu
     end
   end
 
-  assign rf_we     = md_rf_we || ex_rf_we;
-  assign rf_wwidth = md_rf_we ? (md_long_q ? RF_QUAD : RF_LONG) : ex_rf_wwidth;
-  assign rf_wsel   = md_rf_we ? md_dst_q : ex_rf_wsel;
-  assign rf_wdata  = md_rf_we ? md_wdata : {48'd0, ex_wdata};
+  // ---- shifts ----------------------------------------------------------------
+  // SLA/SLL and SDA/SDL, byte, word and long: one position per 3-clock
+  // internal cycle, the unit starting as the first of them is taken. Port A
+  // reads the destination throughout. A register count is read on port B
+  // as the I3 before the positions is taken; that I3 forms its magnitude
+  // and direction. The last position is in as the last I3 opens, so the
+  // result and flags go in on the program's last clock. Each step waits
+  // for the end of a cycle that is not followed by a refresh: the Fn (the
+  // count word), then the count I3 for a register count.
+  logic        sh_on, sh_reg, sh_start, sh_arm_q, sh_step, sh_cnt_ok_q, sh_pend_q, sh_done, sh_wb;
+  logic [1:0]  sh_rwidth, sh_wwidth_q;
+  logic [3:0]  sh_dst_q;
+  logic [15:0] sh_cnt_q, sh_flags, sh_fmask;
+  logic [31:0] sh_result;
+  logic [ALUOP_W-1:0] sh_op;
+
+  assign sh_on     = ctrl_q.valid && ctrl_q.exec == CLS_SHIFT;
+  assign sh_reg    = ctrl_q.count == SRC_REG;
+  assign sh_rwidth = ctrl_q.width == WIDTH_BYTE ? RF_BYTE : ctrl_q.width == WIDTH_WORD ? RF_WORD : RF_LONG;
+  assign rf_count  = sh_cnt_q;
+  assign sh_step   = sh_on && sh_arm_q && bus_cyc_end && !seq_rf_due;
+  assign sh_start  = sh_step && (!sh_reg || sh_cnt_ok_q);
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      sh_arm_q    <= 1'b0;
+      sh_cnt_q    <= 16'h0000;
+      sh_cnt_ok_q <= 1'b0;
+    end else if (ex_first) begin
+      sh_arm_q    <= 1'b0;
+      sh_cnt_ok_q <= 1'b0;
+    end else begin
+      if (sh_on && imm_take) sh_arm_q <= 1'b1;
+      else if (sh_start)     sh_arm_q <= 1'b0;
+      if (sh_step && sh_reg && !sh_cnt_ok_q) begin
+        sh_cnt_q    <= rf_rdata_b;
+        sh_cnt_ok_q <= 1'b1;
+      end
+    end
+  end
+
+  logic [15:0] sh_cnt;
+  logic [5:0]  sh_n;
+  assign sh_cnt = sh_reg ? rf_count : ir_w1;
+  // Legal counts are at most 32 (long), so six bits.
+  assign sh_n   = sh_cnt[15] ? 6'd0 - sh_cnt[5:0] : sh_cnt[5:0];
+
+  // A negative count shifts right.
+  always_comb begin
+    if (ctrl_q.alu_op == OP_SLA) sh_op = sh_cnt[15] ? OP_SRA : OP_SLA;
+    else                         sh_op = sh_cnt[15] ? OP_SRL : OP_SLL;
+  end
+
+  z8000_shift u_shift (
+    .clk        (clk),
+    .reset_n    (reset_n),
+    .start      (sh_start),
+    .width      (ctrl_q.width),
+    .op         (sh_op),
+    .val        (rf_rdata[31:0]),
+    .count      (sh_n),
+    .done       (sh_done),
+    .result     (sh_result),
+    .flags      (sh_flags),
+    .flags_mask (sh_fmask)
+  );
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      sh_pend_q   <= 1'b0;
+      sh_dst_q    <= 4'd0;
+      sh_wwidth_q <= RF_BYTE;
+    end else if (sh_start) begin
+      sh_pend_q   <= 1'b1;
+      sh_dst_q    <= ir_w0[7:4];
+      sh_wwidth_q <= sh_rwidth;
+    end else if (sh_wb) begin
+      sh_pend_q   <= 1'b0;
+    end
+  end
+  assign sh_wb = sh_pend_q && ex_last;
+
+  // ---- BIT, SET and RES with the bit number in a register -------------------
+  // F1+1 · Fn+3: the bit register (w0[3:0]) is read on port B and its mask
+  // latched on the second last clock; port A reads the target (w1[11:8]),
+  // and the last clock tests it (Z) or writes it back with the bit changed.
+  logic        bd_on, bd_wb;
+  logic [1:0]  bd_rwidth;
+  logic [15:0] bd_mask_q, bd_val;
+
+  assign bd_on     = ctrl_q.valid && ctrl_q.exec == CLS_BIT_DYNAMIC;
+  assign bd_rwidth = ctrl_q.width == WIDTH_BYTE ? RF_BYTE : RF_WORD;
+  assign bd_val    = rf_rdata[15:0];
+  assign bd_wb     = bd_on && ex_last && ctrl_q.alu_op != OP_BIT;
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n)                bd_mask_q <= 16'h0000;
+    else if (bd_on && ex_last2)  bd_mask_q <= 16'h0001 << (ctrl_q.width == WIDTH_BYTE ? {1'b0, rf_rdata_b[2:0]} : rf_rdata_b[3:0]);
+  end
+
+  // ---- multi-micro: MSET, MRES, MBIT, MREQ -------------------------------------
+  // MSET/MRES drive /MO and MBIT sets S if /MI is High as the last clock
+  // opens. MREQ (F1+2 · n x I7 · I7) samples /MI as its word is taken: High
+  // drives /MO Low and counts Rd down, one I7 each: Rd is read on port A in
+  // the T3 clock into a count register, which each I7's first clock writes
+  // back less one. Low clears S and Z and skips the count. As the last clock
+  // opens /MI is sampled again: Low grants (S set), High withdraws (S clear,
+  // /MO High); Z is set.
+  logic        mp_on, mq_on, mq_go, mo_q, mq_req_q, mq_more_q, mq_dec_q, mq_wb, mq_end;
+  logic [15:0] mq_cnt_q;    // the next value Rd takes
+
+  assign mp_on     = ctrl_q.valid && ctrl_q.exec == CLS_MULTI_PROC;
+  assign mq_on     = mp_on && ctrl_q.mp_op == MPREQ;
+  assign mreq_more = mq_more_q;
+  assign mq_wb     = mq_on && mq_dec_q;
+  assign mq_end    = mp_on && ex_to_last;
+  assign mq_go     = ex_word && fcw[14] && ctrl.valid && ctrl.exec == CLS_MULTI_PROC && ctrl.mp_op == MPREQ;
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      mo_q      <= 1'b1;
+      mq_req_q  <= 1'b0;
+      mq_more_q <= 1'b0;
+      mq_dec_q  <= 1'b0;
+      mq_cnt_q  <= 16'h0000;
+    end else begin
+      mq_dec_q <= mq_on && int_take && more;
+      // Only a word that runs: in normal mode MREQ traps and /MO holds.
+      if (mq_go) begin
+        mq_req_q <= mi_n;
+        mo_q     <= !mi_n;
+      end else if (mq_end) begin
+        unique case (ctrl_q.mp_op)
+          MPSET:   mo_q <= 1'b0;
+          MPRES:   mo_q <= 1'b1;
+          MPREQ:   if (mq_req_q && mi_n) mo_q <= 1'b1;
+          default: ;
+        endcase
+      end
+      if (mq_on && ex_first) begin
+        mq_more_q <= mq_req_q && rf_rdata[15:0] != 16'h0000;
+        mq_cnt_q  <= rf_rdata[15:0] - 16'd1;
+      end else if (mq_wb) begin
+        mq_more_q <= mq_cnt_q != 16'h0000;
+        mq_cnt_q  <= mq_cnt_q - 16'd1;
+      end
+    end
+  end
+
+  // Port B reads a shift's count register or the bit register, else the
+  // execute unit's pick.
+  assign rf_rsel_b  = sh_on && sh_reg ? ir_w1[11:8] : bd_on ? ir_w0[3:0] : ex_rf_rsel_b;
+  assign rf_rbyte_b = (sh_on && sh_reg) || bd_on ? 1'b0 : ex_rf_rbyte_b;
+
+  assign rf_we     = md_rf_we || sh_wb || bd_wb || mq_wb || ex_rf_we;
+  assign rf_wwidth = md_rf_we ? (md_long_q ? RF_QUAD : RF_LONG) : sh_wb ? sh_wwidth_q : bd_wb ? bd_rwidth
+                   : mq_wb ? RF_WORD : ex_rf_wwidth;
+  assign rf_wsel   = md_rf_we ? md_dst_q : sh_wb ? sh_dst_q : bd_wb ? ir_w1[11:8] : mq_wb ? ir_w0[7:4] : ex_rf_wsel;
+  assign rf_wdata  = md_rf_we ? md_wdata : sh_wb ? {32'd0, sh_result}
+                   : bd_wb ? {48'd0, ctrl_q.alu_op == OP_SET ? bd_val | bd_mask_q : bd_val & ~bd_mask_q}
+                   : mq_wb ? {48'd0, mq_cnt_q}
+                   : {48'd0, ex_wdata};
 
   z8000_sequencer #(.SEGMENTED(SEGMENTED)) u_sequencer (
     .clk          (clk),
@@ -324,8 +486,10 @@ module z8000_cpu
     .md_path      (md_path),
     .more         (more),
     .iter         (iter),
-    .ex_handles   (ex_handles),
+    .ex_handles   (ex_handles || sh_on || bd_on || mp_on),
+    .io_write     (ctrl_q.io_write),
     .ex_first     (ex_first),
+    .ex_word      (ex_word),
     .ex_to_last   (ex_to_last),
     .ex_last2     (ex_last2),
     .ex_last      (ex_last),
@@ -342,6 +506,7 @@ module z8000_cpu
     .opnd_take    (opnd_take),
     .imm_take     (imm_take),
     .in_rf        (seq_in_rf),
+    .rf_due       (seq_rf_due),
     .col_nx       (col_nx),
     .rf_pending   (rf_pending),
     .rf_addr      (rf_addr),
@@ -374,12 +539,6 @@ module z8000_cpu
   // Whether the repeated part runs again after `iter` repetitions. A shift
   // runs |count| positions, at least one; LDM and EPU transfers take their
   // count from word 1.
-  logic [15:0] sh_cnt;
-  logic [5:0]  sh_n;
-  assign sh_cnt = ctrl_q.count == SRC_REG ? rf_count : ir_w1;
-  // Legal counts are at most 32 (long), so six bits.
-  assign sh_n   = sh_cnt[15] ? 6'd0 - sh_cnt[5:0] : sh_cnt[5:0];
-
   always_comb begin
     more = 1'b0;
     unique case (ctrl_q.exec)
@@ -440,8 +599,8 @@ module z8000_cpu
     .rf_rwidth  (ex_rf_rwidth_a),
     .rf_rsel    (ex_rf_rsel),
     .rf_rdata   (rf_rdata[31:0]),
-    .rf_rbyte_b (rf_rbyte_b),
-    .rf_rsel_b  (rf_rsel_b),
+    .rf_rbyte_b (ex_rf_rbyte_b),
+    .rf_rsel_b  (ex_rf_rsel_b),
     .rf_rdata_b (rf_rdata_b),
     .rf_we      (ex_rf_we),
     .rf_wwidth  (ex_rf_wwidth),
@@ -534,7 +693,7 @@ module z8000_cpu
   );
 
   assign busack_n = 1'b1;
-  assign mo_n     = 1'b1;
+  assign mo_n     = mo_q;
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -545,6 +704,13 @@ module z8000_cpu
       else if (ex_fcw_we)   fcw <= ex_fcw_d;
       else if (ex_flags_we) fcw <= (fcw & ~ex_flags_mask) | (ex_flags & ex_flags_mask);
       else if (md_wb)       fcw <= {fcw[15:8], md_flags, fcw[3:0]};
+      else if (sh_wb)       fcw <= (fcw & ~sh_fmask) | (sh_flags & sh_fmask);
+      else if (bd_on && ex_last && ctrl_q.alu_op == OP_BIT) fcw[6] <= (bd_val & bd_mask_q) == 16'h0000;
+      else if (mq_end && ctrl_q.mp_op == MPBIT) fcw[5] <= mi_n;
+      else if (mq_end && ctrl_q.mp_op == MPREQ) begin
+        fcw[6] <= mq_req_q;
+        fcw[5] <= mq_req_q && !mi_n;
+      end
       if (ex_pc_we)         pc  <= {9'd0, ex_pc_d};
       else if (pc_we)       pc  <= pc_d;
     end
@@ -585,7 +751,7 @@ module z8000_cpu
                        rf_rdata[63:32], fcw[13:8], fcw[3:0], psap, refresh[15], nspoff, nspseg,
                        halted, ir_w0[15:12], sh_cnt[14:6],
                        ctrl_q.priv, ctrl_q.fcw_op, ctrl_q.fcw_mask, ctrl_q.stk_mode,
-                       ctrl_q.br_mode, ctrl_q.io_write, ctrl_q.io_spec, ctrl_q.mp_op};
+                       ctrl_q.br_mode, ctrl_q.io_spec, ctrl_q.mp_op};
   // verilator lint_on UNUSEDSIGNAL
 
   // synthesis translate_off
@@ -594,8 +760,14 @@ module z8000_cpu
   logic check_q = 1'b0;
   // verilator lint_on UNUSEDSIGNAL
   logic [31:0] chk_src_q;
-  logic        last_d1_q = 1'b0;
+  logic        last_d1_q = 1'b0, sh_run_q = 1'b0, sh_prev_q = 1'b0;
+  logic [3:0] md_at;
+  assign md_at = 4'd3 + {3'd0, md_x || col_nx == MC_COL_SS} + (col_nx == MC_COL_SL ? 4'd3 : 4'd0);
   always_ff @(posedge clk) begin
+    if (md_on && md_dax && md_at_hit != (md_clk_q == md_at)) begin
+      $display("%%Error: %m: multiply/divide start clock differs");
+      check_q <= 1'b1;
+    end
     if (md_start && md_pend_q) begin
       $display("%%Error: %m: multiply/divide started twice");
       check_q <= 1'b1;
@@ -620,6 +792,13 @@ module z8000_cpu
       $display("%%Error: %m: multiply/divide unit and program out of step");
       check_q <= 1'b1;
     end
+    // The shifter's last step ends with the program.
+    sh_run_q <= sh_start || (sh_run_q && !sh_done);
+    if ((sh_run_q && sh_done) != (last_d1_q && sh_prev_q)) begin
+      $display("%%Error: %m: shift unit and program out of step");
+      check_q <= 1'b1;
+    end
+    sh_prev_q <= sh_wb;
     last_d1_q <= ex_last;
     if (md_pick_q && md_src != chk_src_q) begin
       $display("%%Error: %m: multiply/divide register source read differs");

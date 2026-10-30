@@ -68,7 +68,9 @@ module z8000_sequencer
 
   // execute unit
   input  logic        ex_handles,
+  input  logic        io_write,     // the instruction's I/O cycle is a write
   output logic        ex_first,     // the IF1's T3 clock: the word decoded
+  output logic        ex_word,      // the IF1's word is taken on this edge
   output logic        ex_last2,     // the program's second last clock
   output logic        ex_last,      // the program's last clock
   output logic        ex_last2_nx,  // ex_last2 and ex_last as of the next edge
@@ -85,6 +87,7 @@ module z8000_sequencer
   output logic        opnd_take,    // a read operand is in on this edge
   output logic        imm_take,     // an Fn word is in on this edge
   output logic        in_rf,        // a refresh is in flight
+  output logic        rf_due,       // the cycle in flight is followed by a refresh
   output mc_col_e     col_nx,       // the column as of the next edge
 
   // refresh
@@ -269,7 +272,7 @@ module z8000_sequencer
         else if (at_last)           sel = NEXT_IF1;
         else if (nxt.kind == MC_FN || nxt.kind == MC_FA) sel = NEXT_FETCH;
         else if (nxt.kind == MC_I)  sel = NEXT_INTERNAL;
-        else if (nxt.kind == MC_R || nxt.kind == MC_W) sel = NEXT_MEM;
+        else if (nxt.kind == MC_R || nxt.kind == MC_W || nxt.kind == MC_IO) sel = NEXT_MEM;
       end
       default: ;
     endcase
@@ -311,7 +314,7 @@ module z8000_sequencer
   end
 
   assign bus_mem   = sel == NEXT_MEM;
-  assign bus_write = bus_mem && nxt.kind == MC_W;
+  assign bus_write = bus_mem && (nxt.kind == MC_W || (nxt.kind == MC_IO && io_write));
 
   // The reset reads run in system mode whatever FCW they load.
   assign bus_normal = state_q != SEQ_PSA_REQ && !fcw_sys;
@@ -326,7 +329,7 @@ module z8000_sequencer
   assign take_prog = take && (next == NEXT_FETCH || next == NEXT_INTERNAL || next == NEXT_MEM);
   assign mem_take  = take && next == NEXT_MEM;
   assign int_take  = take && next == NEXT_INTERNAL;
-  assign opnd_take = prog_on && bus_done && cur_q.kind == MC_R;
+  assign opnd_take = prog_on && bus_done && (cur_q.kind == MC_R || (cur_q.kind == MC_IO && !io_write));
   assign rf_take   = take_rf;
 
   // A repetition of the repeated part starts on this edge.
@@ -459,6 +462,7 @@ module z8000_sequencer
     else          first_q <= word_if1;
   end
   assign ex_first = first_q;
+  assign ex_word  = word_if1;
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -518,6 +522,7 @@ module z8000_sequencer
   assign ir_ea     = ea_q;
   assign iter      = iter_q;
   assign in_rf     = in_rf_q;
+  assign rf_due    = rf_ok_q && rf_pending;
   assign col_nx    = col_d;
   assign halted    = state_q == SEQ_PROG && run_ok && dec_exec == CLS_HALT;
 

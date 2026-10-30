@@ -2,8 +2,9 @@
 //
 // SLL / SLA / SRL / SRA, one bit position per 3-clock step. The start edge
 // shifts position 1; each later step shifts one more. A zero count costs
-// one step, shifts nothing and leaves C unaffected. done follows exactly
-// 3 * max(count, 1) clocks after start.
+// one step, shifts nothing and leaves C unaffected. done is high for the
+// one clock 3 * max(count, 1) clocks after start; result and flags hold
+// until the next start.
 //
 // Flags (FCW positions): C = last bit out, Z, S. P/V is written by the
 // arithmetic forms only, as overflow (SLA: the sign changed at any step;
@@ -118,6 +119,7 @@ module z8000_shift
           end
         end
       end
+      ST_DONE: state_d = ST_IDLE;
       default: ;
     endcase
 

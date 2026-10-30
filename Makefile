@@ -43,7 +43,7 @@ RTL_UNITS := z8000_regfile z8000_alu z8000_mult z8000_div z8000_shift z8000_deco
 # Modules the CPU top currently instantiates (extend as z8000_cpu.sv grows).
 CPU_MODS  := rtl/k800x_cpu/z8000_regfile.sv rtl/k800x_cpu/z8000_decode.sv rtl/k800x_cpu/z8000_bus_unit.sv \
              rtl/k800x_cpu/z8000_sequencer.sv rtl/k800x_cpu/z8000_cond.sv rtl/k800x_cpu/z8000_refresh.sv \
-             rtl/k800x_cpu/z8000_alu.sv rtl/k800x_cpu/z8000_execute.sv rtl/k800x_cpu/z8000_mult.sv rtl/k800x_cpu/z8000_div.sv
+             rtl/k800x_cpu/z8000_alu.sv rtl/k800x_cpu/z8000_execute.sv rtl/k800x_cpu/z8000_mult.sv rtl/k800x_cpu/z8000_div.sv rtl/k800x_cpu/z8000_shift.sv
 CPU_SRCS  := $(PKG_SRCS) $(MC_SRCS) $(GEN_SRCS) $(CPU_MODS) rtl/k800x_cpu/z8000_cpu.sv
 
 # ---- lint policy -----------------------------------------------------------
