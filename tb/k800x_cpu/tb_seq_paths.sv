@@ -18,21 +18,21 @@ module tb_seq_paths
   logic        reset_n;
   logic [15:0] ad_in;
   logic [15:0] ad_out;
-  logic        ad_drive;
+  logic        ad_drive, bus_drive;
   logic [6:0]  sn;
   logic        as_n, ds_n, mreq_n, r_w, b_w, n_s;
   logic [3:0]  st;
-  logic        busack_n, mo_n;
+  logic        busack_n, mo_n, bus_lock;
 
   z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
     .clk(clk), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(1'b1), .wait_n(1'b1), .busreq_n(1'b1),
     .nmi_n(1'b1), .nvi_n(1'b1), .vi_n(1'b1), .segt_n(1'b1),
     .abort_n(1'b1), .mi_n(1'b1),
-    .ad_out(ad_out), .ad_drive(ad_drive), .sn(sn),
+    .ad_out(ad_out), .ad_drive(ad_drive), .bus_drive(bus_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
     .r_w(r_w), .b_w(b_w), .n_s(n_s), .st(st),
-    .busack_n(busack_n), .mo_n(mo_n)
+    .busack_n(busack_n), .bus_lock(bus_lock), .mo_n(mo_n)
   );
 
   localparam logic [15:0] PROG = 16'h0100;
@@ -46,12 +46,32 @@ module tb_seq_paths
   assign ad_in = mem[lat_addr[8:1]];
 
   int unsigned failed = 0, passed = 0;
+  logic        chk_seen = 1'b0;
+
+  // A DUT self-check (the %Error lines) fails the case that first trips it.
+  // Run on past the measured clocks first: the shifter's last clock comes
+  // after the next IF1 T1, and the next case's reset would cut it off.
+  string last_name = "";
+  task automatic settle();
+    repeat (8) @(posedge clk);
+    dut_checks(last_name);
+  endtask
+
+  task automatic dut_checks(input string name);
+    if (!chk_seen && (dut.check_q || dut.u_execute.check_q || dut.u_sequencer.check_q)) begin
+      chk_seen = 1'b1;
+      failed++;
+      $display("FAIL  %s: DUT self-check fired", name);
+    end
+  endtask
 
   // Clocks from the first IF1 T1 at PROG to the next IF1 T1.
   task automatic run(input string name, input logic [15:0] fcw,
                      input logic [15:0] w0, w1, input int want,
                      input mc_path_e path = MC_PATH_DEFAULT);
     int i, t0;
+    if (last_name != "") settle();
+    last_name = name;
     for (i = 0; i < 256; i++) mem[i] = 16'h0000;
     mem[1] = fcw;
     mem[2] = PROG;
@@ -133,6 +153,7 @@ module tb_seq_paths
     run("SRA R1,#3",      FCW,   16'hB319, 16'hFFFD, 22);
     run("SLAL RR2,#32",   FCW,   16'hB32D, 16'h0020, 109);
 
+    settle();
     if (failed == 0) $display("RESULT PASS  tb_seq_paths  %0d cases", passed);
     else             $display("RESULT FAIL  tb_seq_paths  %0d of %0d cases", failed, passed + failed);
     $finish;

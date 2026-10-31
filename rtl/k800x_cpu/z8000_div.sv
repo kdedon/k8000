@@ -16,6 +16,11 @@
 // when done; the quotient rounds toward zero and the remainder takes the
 // dividend's sign.
 //
+// The results are final on the last clock of the path (`fin`), done the
+// clock after: the last bit is taken a clock before its step ends. An
+// overflow whose late divisor leaves only the wide quotient's clocks, and a
+// zero path the wait covers, end with `done` alone.
+//
 // Nothing moves on a clock without `tick`. `pick_zero` and `pick_ovf` are
 // the path a divisor picks (the arriving one, else the one held).
 
@@ -29,6 +34,7 @@ module z8000_div (
   input  logic        src_valid,
   input  logic [31:0] divisor,     // sign-extended to N bits by the caller
   output logic        done,
+  output logic        fin,
   output logic        div_by_zero,
   output logic        overflow,
   output logic        wide_quot,
@@ -149,6 +155,7 @@ module z8000_div (
   logic       cov_trial, cov_zero, cov_ovf;
   logic [6:0] rem_dec, step_clks, trial_clks, zero_clks, ovf_clks;
   logic [6:0] late_trial, late_zero, late_ovf, ovf_work;
+  logic       seed_late_q;
 
   always_comb begin
     state_d    = state_q;
@@ -205,7 +212,6 @@ module z8000_div (
           state_d = ST_OVF;
           rem_d   = cov_ovf ? ovf_work : late_ovf;
         end else begin
-          seed    = cov_trial;
           state_d = cov_trial ? ST_STEP : ST_TRIAL;
           rem_d   = cov_trial ? step_clks : late_trial;
         end
@@ -222,11 +228,15 @@ module z8000_div (
       end
       ST_STEP: begin
         rem_d = rem_dec;
+        seed  = seed_late_q;
+        if (last_bit && rem_q == 7'd2) begin
+          step  = 1'b1;
+          store = 1'b1;
+        end
         if (ends) begin
-          step    = 1'b1;
-          store   = last_bit;
-          state_d = last_bit ? ST_DONE : ST_STEP;
-          rem_d   = last_bit ? 7'd0 : step_clks;
+          step    = !stored_q;
+          state_d = stored_q ? ST_DONE : ST_STEP;
+          rem_d   = stored_q ? 7'd0 : step_clks;
         end
       end
       ST_ZERO: begin
@@ -269,6 +279,13 @@ module z8000_div (
       rem_q   <= rem_d;
       spent_q <= spent_d;
     end
+  end
+
+  // A late divisor that skips the trial seeds on the clock after it
+  // arrives, a step's clocks before the first step.
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n)  seed_late_q <= 1'b0;
+    else if (tick) seed_late_q <= !start && state_q == ST_WAIT && state_d == ST_STEP;
   end
 
   // Dividend sign and width, captured at start.
@@ -391,6 +408,8 @@ module z8000_div (
   always_comb begin
     nmask       = long_q ? 32'hFFFF_FFFF : 32'h0000_FFFF;
     done        = (state_q == ST_DONE);
+    fin         = rem_q == 7'd1 && (state_q == ST_STEP ? stored_q :
+                  state_q == ST_ZERO || (state_q == ST_OVF && (stored_q || !wide_q)));
     div_by_zero = dbz_q;
     overflow    = ovf_q;
     wide_quot   = wide_q;

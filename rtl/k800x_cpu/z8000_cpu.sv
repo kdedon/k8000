@@ -32,6 +32,7 @@ module z8000_cpu
   // outputs
   output logic [15:0] ad_out,
   output logic        ad_drive,
+  output logic        bus_drive,  // Low while the bus is granted: float the other outputs but /BUSACK and /MO
   output logic [6:0]  sn,         // SN6..SN0, meaningful only when SEGMENTED
   output logic        as_n,
   output logic        ds_n,
@@ -41,6 +42,7 @@ module z8000_cpu
   output logic        n_s,        // 1 = normal (user) mode
   output logic [3:0]  st,         // ST3..ST0, z8000_zbus_pkg codes
   output logic        busack_n,
+  output logic        bus_lock,   // TSET's read to its write's T3: no re-arbitration while High
   output logic        mo_n
 );
 
@@ -100,14 +102,17 @@ module z8000_cpu
   logic [15:0] ir_w0, ir_w1, ir_w2;
   logic [22:0] ir_ea;
   logic [15:0] ex_flags, ex_flags_mask;
-  logic        rf_pending, rf_take;
-  logic [8:0]  rf_row_next, rf_cyc_row;
+  logic        rf_pending, rf_take, rf_keep;
+  logic [8:0]  rf_row_in, rf_row_next, rf_cyc_row;
   logic [22:0] rf_addr;
+  logic        bus_nodata;
   logic        bus_mem, bus_write, mem_take, int_take, opnd_take, ex_mem_byte;
   logic [22:0] ex_mem_addr;
   logic [3:0]  ex_mem_st;
   logic [15:0] ex_mem_wdata;
-  logic        bus_req, bus_internal, bus_normal, bus_cyc_end, bus_cyc_end3, bus_done;
+  logic        bus_abt_smp;
+  logic        bus_req, bus_internal, bus_normal, bus_cyc_end, bus_cyc_end3, bus_done, bus_lock_nx;
+  logic        rmw_lock;
   logic [22:0] bus_addr;
   logic [3:0]  bus_st, bus_len;
   logic [2:0]  bus_tail;
@@ -122,16 +127,52 @@ module z8000_cpu
   );
 
   // Decoded from the words as of the next edge: ctrl_q decodes the words in.
+  // A trapping word, and the entry after it, decode as nothing.
+  logic       kill_nx, seq_exc, af_done, trap_if1, trap_epa;
+  logic [4:0] exc_vec;
+  ctrl_word_t ctrl_k;
+  assign trap_epa = ctrl.valid && ctrl.exec == CLS_EPU && !fcw[13];
+  assign trap_if1 = (ctrl.valid && ctrl.priv && !fcw[14]) || trap_epa;
+  assign ctrl_k   = kill_nx ? '0 : ctrl;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) ctrl_q <= '0;
-    else          ctrl_q <= ctrl;
+    else          ctrl_q <= ctrl_k;
   end
 
   // Sources not wired yet, tied to what the sequencer assumed before.
   logic        md_take, blk_more, mult_more, mreq_more, halt_exit, ex_word;
   mc_path_e    md_path;
   logic [15:0] rf_count;
-  assign halt_exit = 1'b0;             // HALT's exit on an interrupt
+  // Interrupt requests.
+  logic        smp_end, smp_elem, smp_iop, irq, irq_now, irq_take, seq_bound;
+  logic [3:0]  irq_st;
+  logic [15:0] exc_id;
+  logic [8:0]  exc_pcoff;
+  // The enables are judged as the next instruction starts, so an EI or DI
+  // writing them on the last clock counts at this boundary.
+  logic        vie, nvie;
+  assign vie  = ex_flags_we && ex_flags_mask[12] ? ex_flags[12] : fcw[12];
+  assign nvie = ex_flags_we && ex_flags_mask[11] ? ex_flags[11] : fcw[11];
+  z8000_int_unit u_int (
+    .clk       (clk),
+    .reset_n   (reset_n),
+    .nmi_n     (nmi_n),
+    .nvi_n     (nvi_n),
+    .vi_n      (vi_n),
+    .segt_n    (segt_n || !SEGMENTED),
+    .vie       (vie),
+    .nvie      (nvie),
+    .smp_end   (smp_end),
+    .smp_elem  (smp_elem),
+    .smp_halt  (smp_iop),
+    .halt_on   (ctrl_q.valid && ctrl_q.exec == CLS_HALT),
+    .take      (irq_take),
+    .clr       (seq_bound),
+    .irq       (irq),
+    .irq_now   (irq_now),
+    .st        (irq_st),
+    .halt_exit (halt_exit)
+  );
 
   // ---- multiply and divide --------------------------------------------------
   // The units move on the program's clocks (not a wait or a refresh) and
@@ -144,7 +185,7 @@ module z8000_cpu
   // there. A memory or immediate source is given on the edge its last word
   // arrives. The result and flags go in from the units' registers the
   // clock after the last.
-  logic        imm_take, seq_in_rf, seq_rf_due, bus_twait;
+  logic        imm_take, imm_in, seq_in_rf, seq_rf_due, bus_twait, bus_held;
   mc_col_e     col_nx;
   logic        md_mul, md_div, md_on, md_long, md_reg, md_imm, md_x, md_dax, md_tick;
   logic        md_start, md_lda, md_data, md_arrive, md_src_valid, md_pick_q, md_seen_q;
@@ -155,7 +196,7 @@ module z8000_cpu
   logic [31:0] md_dst_w, md_src;
   logic [63:0] md_wdata, m_product;
   logic [31:0] d_quot, d_rem;
-  logic        m_done, m_zero, d_done, d_dbz, d_ovf, d_wide, d_qneg, d_qzero, d_zero, d_ovf_now;
+  logic        m_done, m_fin, m_zero, d_done, d_fin, d_dbz, d_ovf, d_wide, d_qneg, d_qzero, d_zero, d_ovf_now;
 
   assign md_mul  = ctrl_q.valid && ctrl_q.exec == CLS_MUL;
   assign md_div  = ctrl_q.valid && ctrl_q.exec == CLS_DIV;
@@ -165,7 +206,7 @@ module z8000_cpu
   assign md_imm  = ctrl_q.src2 == SRC_IMM;
   assign md_x    = ctrl_q.src2 == SRC_X;
   assign md_dax  = md_x || ctrl_q.src2 == SRC_DA;
-  assign md_tick = !seq_in_rf && !bus_twait;
+  assign md_tick = !seq_in_rf && !bus_twait && !bus_held;
 
   localparam logic [1:0] RF_BYTE = 2'd0, RF_WORD = 2'd1, RF_LONG = 2'd2, RF_QUAD = 2'd3;   // register file widths
 
@@ -238,6 +279,7 @@ module z8000_cpu
     .src_valid (md_src_valid && md_mul),
     .src       (md_src),
     .done      (m_done),
+    .fin       (m_fin),
     .product   (m_product),
     /* verilator lint_off PINCONNECTEMPTY */
     .remaining (),
@@ -256,6 +298,7 @@ module z8000_cpu
     .src_valid   (md_src_valid && md_div),
     .divisor     (md_src),
     .done        (d_done),
+    .fin         (d_fin),
     .div_by_zero (d_dbz),
     .overflow    (d_ovf),
     .wide_quot   (d_wide),
@@ -286,8 +329,9 @@ module z8000_cpu
     end
   end
 
-  // Divide by zero and overflow leave the destination.
-  assign md_wb    = md_pend_q && (md_mul_q ? m_done : d_done);
+  // The result goes in on the unit's last clock, the program's last; divide
+  // by zero and overflow leave the destination.
+  assign md_wb    = md_pend_q && (md_mul_q ? m_done || (m_fin && md_tick) : d_done || (d_fin && md_tick));
   assign md_rf_we = md_wb && (md_mul_q || !(d_dbz || d_ovf));
   always_comb begin
     if (md_mul_q) begin
@@ -359,6 +403,7 @@ module z8000_cpu
     .clk        (clk),
     .reset_n    (reset_n),
     .start      (sh_start),
+    .tick       (md_tick),
     .width      (ctrl_q.width),
     .op         (sh_op),
     .val        (rf_rdata[31:0]),
@@ -480,6 +525,23 @@ module z8000_cpu
     .dec_w1_lo    (dec_w1_lo),
     .dec_valid    (ctrl_q.valid),
     .dec_exec     (ctrl_q.exec),
+    .trap_if1     (trap_if1),
+    .trap_epa     (trap_epa),
+    .abt_hit      (VMPU && !abort_n && bus_abt_smp),
+    .kill_nx      (kill_nx),
+    .exc          (seq_exc),
+    .af_done      (af_done),
+    .exc_vec      (exc_vec),
+    .exc_id       (exc_id),
+    .exc_pcoff    (exc_pcoff),
+    .irq          (irq),
+    .irq_now      (irq_now),
+    .irq_st       (irq_st),
+    .smp_end      (smp_end),
+    .smp_elem     (smp_elem),
+    .smp_iop      (smp_iop),
+    .irq_take     (irq_take),
+    .bound        (seq_bound),
     .cc_met       (cc_met),
     .md_take      (md_take),
     .md_zero      (md_arrive && bus_rdata == 16'h0000 && (!md_long || md_hi_q == 16'h0000)),
@@ -487,7 +549,7 @@ module z8000_cpu
     .more         (more),
     .iter         (iter),
     .ex_handles   (ex_handles || sh_on || bd_on || mp_on),
-    .io_write     (ctrl_q.io_write),
+    .io_write     (ctrl_q.io_write || (ctrl_q.exec == CLS_EPU && ir_w0[3])),
     .ex_first     (ex_first),
     .ex_word      (ex_word),
     .ex_to_last   (ex_to_last),
@@ -505,18 +567,22 @@ module z8000_cpu
     .int_take     (int_take),
     .opnd_take    (opnd_take),
     .imm_take     (imm_take),
+    .imm_in       (imm_in),
     .in_rf        (seq_in_rf),
     .rf_due       (seq_rf_due),
     .col_nx       (col_nx),
     .rf_pending   (rf_pending),
     .rf_addr      (rf_addr),
     .rf_take      (rf_take),
+    .rf_keep      (rf_keep),
+    .stop_n       (stop_n),
     .bus_req      (bus_req),
     .bus_internal (bus_internal),
     .bus_addr     (bus_addr),
     .bus_st       (bus_st),
     .bus_normal   (bus_normal),
     .bus_mem      (bus_mem),
+    .bus_nodata   (bus_nodata),
     .bus_write    (bus_write),
     .bus_len      (bus_len),
     .bus_tail     (bus_tail),
@@ -543,8 +609,7 @@ module z8000_cpu
     more = 1'b0;
     unique case (ctrl_q.exec)
       CLS_LDM:        more = iter <= {2'b00, ir_w1[3:0]};
-      CLS_EPU:        more = iter <= (ctrl_q.epu_kind == EPU_CPU ? {3'b000, ir_w1[2:0]}
-                                                                 : {2'b00, ir_w1[3:0]});
+      CLS_EPU:        more = iter <= {2'b00, ir_w1[3:0]};
       CLS_SHIFT:      more = iter == 6'd0 || iter < sh_n;
       CLS_BLOCK_TRANSFER, CLS_BLOCK_COMPARE, CLS_BLOCK_STRING, CLS_TRANSLATE, CLS_BLOCK_IO:
                       more = iter == 6'd0 || blk_more;
@@ -559,7 +624,7 @@ module z8000_cpu
     .clk        (clk),
     .reset_n    (reset_n),
     .w0         (ir_w0[11:0]),
-    .ctrl_nx    (ctrl),
+    .ctrl_nx    (ctrl_k),
     .w0_nx      (dec_w0[11:0]),
     .alu_op     (ctrl_q.alu_op),
     .width      (ctrl_q.width),
@@ -586,16 +651,19 @@ module z8000_cpu
     .seg_mode   (SEGMENTED && fcw[15]),
     .pc_seg     (SEGMENTED ? pc[22:16] : 7'd0),
     .pc_off     (pc[15:0]),
-    .cyc_end    (bus_cyc_end),
+    .cyc_end3   (bus_cyc_end3),
     .ea_word    (ir_ea),
     .mem_take   (mem_take),
     .int_take   (int_take),
     .opnd_take  (opnd_take),
+    .imm_in     (imm_in),
     .rdata      (bus_rdata),
     .mem_addr   (ex_mem_addr),
     .mem_st     (ex_mem_st),
     .mem_byte   (ex_mem_byte),
     .mem_wdata  (ex_mem_wdata),
+    .bus_lock   (rmw_lock),
+    .bus_lock_nx(bus_lock_nx),
     .rf_rwidth  (ex_rf_rwidth_a),
     .rf_rsel    (ex_rf_rsel),
     .rf_rdata   (rf_rdata[31:0]),
@@ -612,6 +680,14 @@ module z8000_cpu
     .fcw_zsv    ({fcw[6], fcw[5], fcw[4]}),
     .fcw_lo     (fcw[10:0]),
     .fcw_sn     (fcw[14]),
+    .fcw        (fcw),
+    .exc        (seq_exc),
+    .af_done    (af_done),
+    .exc_vec    (exc_vec),
+    .psap       (psap[22:0]),
+    .id_word    (exc_id),
+    .exc_pcoff  (exc_pcoff),
+
     .fcw_we     (ex_fcw_we),
     .fcw_d      (ex_fcw_d),
     .ctl_rsel   (ctl_rsel),
@@ -645,19 +721,45 @@ module z8000_cpu
     .reset_n  (reset_n),
     .enable   (refresh_en),
     .rate     (refresh[14:9]),
-    .row      (refresh[8:0]),
+    .row      (rf_row_in),
     .load     (ref_we && ctl_wd[15]),
     .load_rate(ctl_wd[14:9]),
     .take     (rf_take),
+    .keep     (rf_keep),
     .pending  (rf_pending),
     .row_next (rf_row_next),
     .cyc_row  (rf_cyc_row)
   );
 
+  // A refresh starting on a REFRESH write runs the written row.
+  assign rf_row_in = ref_we ? ctl_wd[8:0] : refresh[8:0];
+
   // Refresh addresses take the PC segment in nonsegmented mode.
   assign rf_addr = {(SEGMENTED && !fcw[15]) ? pc[22:16] : 7'd0, 7'd0, rf_cyc_row};
 
-  // EPU transfers have no requester yet.
+  // /BUSREQ as of the last edge: a grant at a machine-cycle boundary never
+  // falls on the edge that first sees the request. Registered with TSET's
+  // lock so the boundary sees one flop.
+  logic gnt_q;
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) gnt_q <= 1'b0;
+    else          gnt_q <= !busreq_n && !bus_lock_nx;
+  end
+
+  // The lock stays up through TSET's write to the end of its T3.
+  logic wlock_q, wlock3_q;
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      wlock_q  <= 1'b0;
+      wlock3_q <= 1'b0;
+    end else begin
+      if (rmw_lock && mem_take) wlock_q <= 1'b1;
+      else if (bus_done)        wlock_q <= 1'b0;
+      wlock3_q <= wlock_q && bus_done;
+    end
+  end
+  assign bus_lock = rmw_lock || wlock_q || wlock3_q;
+
   z8000_bus_unit #(.SEGMENTED(SEGMENTED)) u_bus (
     .clk            (clk),
     .reset_n        (reset_n),
@@ -667,15 +769,20 @@ module z8000_cpu
     .req_wdata      (ex_mem_wdata),
     .req_st         (bus_st),
     .req_write      (bus_write),
+    .req_nodata     (bus_nodata),
     .req_byte       (bus_mem && ex_mem_byte),
     .req_odd        (ex_mem_addr[0]),
-    .req_epu_drives (1'b0),
+    .req_epu_drives (ctrl_q.valid && ctrl_q.exec == CLS_EPU && ctrl_q.epu_kind == EPU_MEM),
     .req_normal     (bus_normal),
     .req_len        (bus_len),
     .tail           (bus_tail),
+    .gnt            (gnt_q),
+    .busreq         (!busreq_n),
     .cyc_end        (bus_cyc_end),
     .cyc_end3       (bus_cyc_end3),
     .twait          (bus_twait),
+    .abt_smp        (bus_abt_smp),
+    .held           (bus_held),
     .done           (bus_done),
     .rdata          (bus_rdata),
     .wait_n         (wait_n),
@@ -689,11 +796,13 @@ module z8000_cpu
     .r_w            (r_w),
     .b_w            (b_w),
     .n_s            (n_s),
-    .st             (st)
+    .st             (st),
+    .busack_n       (busack_n),
+    .bus_drive      (bus_drive)
   );
 
-  assign busack_n = 1'b1;
   assign mo_n     = mo_q;
+
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -720,7 +829,7 @@ module z8000_cpu
     if (!reset_n) begin
       refresh <= 16'h0;
     end else if (ref_we) begin
-      refresh <= ctl_wd;
+      refresh <= {ctl_wd[15:9], rf_take ? rf_row_next : ctl_wd[8:0]};
     end else if (rf_take) begin
       refresh <= {refresh[15:9], rf_row_next};
     end
@@ -747,7 +856,7 @@ module z8000_cpu
   // Inputs and registers that later control units will consume.
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
-  assign unused_ok = ^{stop_n, busreq_n, nmi_n, nvi_n, vi_n, segt_n, abort_n, mi_n,
+  assign unused_ok = ^{mi_n,
                        rf_rdata[63:32], fcw[13:8], fcw[3:0], psap, refresh[15], nspoff, nspseg,
                        halted, ir_w0[15:12], sh_cnt[14:6],
                        ctrl_q.priv, ctrl_q.fcw_op, ctrl_q.fcw_mask, ctrl_q.stk_mode,
@@ -766,6 +875,12 @@ module z8000_cpu
   always_ff @(posedge clk) begin
     if (md_on && md_dax && md_at_hit != (md_clk_q == md_at)) begin
       $display("%%Error: %m: multiply/divide start clock differs");
+      check_q <= 1'b1;
+    end
+    // The interrupt unit sees an EI or DI's enables, so no other FCW write
+    // may win that edge.
+    if (ex_flags_we && (ex_flags_mask[12] || ex_flags_mask[11]) && (fcw_we || ex_fcw_we)) begin
+      $display("%%Error: %m: EI/DI coincides with another FCW write");
       check_q <= 1'b1;
     end
     if (md_start && md_pend_q) begin
@@ -787,8 +902,8 @@ module z8000_cpu
       $display("%%Error: %m: register source pick on a held clock");
       check_q <= 1'b1;
     end
-    // The units end with the program: the write is the clock after its last.
-    if (md_wb != (md_pend_q && last_d1_q)) begin
+    // The units end with the program: the write is on its last clock.
+    if (md_wb != (md_pend_q && ex_last)) begin
       $display("%%Error: %m: multiply/divide unit and program out of step");
       check_q <= 1'b1;
     end
@@ -800,6 +915,12 @@ module z8000_cpu
     end
     sh_prev_q <= sh_wb;
     last_d1_q <= ex_last;
+    // The prescaler looks ahead from its registers, blind to a write.
+    if (rf_take && ref_we && u_refresh.soon !=
+        (ctl_wd[15] && u_refresh.div4_q == 2'd2 && ctl_wd[14:9] == 6'd1)) begin
+      $display("%%Error: %m: refresh taken on a REFRESH write");
+      check_q <= 1'b1;
+    end
     if (md_pick_q && md_src != chk_src_q) begin
       $display("%%Error: %m: multiply/divide register source read differs");
       check_q <= 1'b1;

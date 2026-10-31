@@ -17,22 +17,22 @@ module tb_serial
   always #5 clk <= ~clk;
 
   // ---- mult ----
-  logic        m_start, m_width32, m_src_valid, m_done;
+  logic        m_start, m_width32, m_src_valid, m_done, m_fin;
   logic [31:0] m_dst, m_src;
   logic [63:0] m_product;
   logic [9:0]  m_remaining;
   logic        m_pick_zero, m_adds_more;  // CPU hookup only
   z8000_mult u_mult (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(m_start), .width32(m_width32), .dst(m_dst),
-                     .src_valid(m_src_valid), .src(m_src), .done(m_done), .product(m_product), .remaining(m_remaining),
+                     .src_valid(m_src_valid), .src(m_src), .done(m_done), .fin(m_fin), .product(m_product), .remaining(m_remaining),
                      .pick_zero(m_pick_zero), .adds_more(m_adds_more));
   // ---- div ----
-  logic        d_start, d_n32, d_src_valid, d_done, d_dbz, d_ovf, d_wide, d_qneg, d_qzero;
+  logic        d_start, d_n32, d_src_valid, d_done, d_fin, d_dbz, d_ovf, d_wide, d_qneg, d_qzero;
   logic [63:0] d_dividend;
   logic [31:0] d_divisor, d_quot, d_rem;
   logic [9:0]  d_remaining;
   logic        d_pick_zero, d_pick_ovf;   // CPU hookup only
   z8000_div u_div (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(d_start), .n32(d_n32), .dividend(d_dividend),
-                   .src_valid(d_src_valid), .divisor(d_divisor), .done(d_done), .div_by_zero(d_dbz),
+                   .src_valid(d_src_valid), .divisor(d_divisor), .done(d_done), .fin(d_fin), .div_by_zero(d_dbz),
                    .overflow(d_ovf), .wide_quot(d_wide), .quot_neg(d_qneg), .quot_zero(d_qzero),
                    .quotient(d_quot), .remainder(d_rem), .remaining(d_remaining),
                    .pick_zero(d_pick_zero), .pick_ovf(d_pick_ovf));
@@ -43,7 +43,7 @@ module tb_serial
   logic [31:0] s_val, s_result;
   logic [5:0]  s_count;
   logic [15:0] s_flags, s_mask;
-  z8000_shift u_shift (.clk(clk), .reset_n(reset_n), .start(s_start), .width(s_width), .op(s_op), .val(s_val),
+  z8000_shift u_shift (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(s_start), .width(s_width), .op(s_op), .val(s_val),
                        .count(s_count), .done(s_done), .result(s_result), .flags(s_flags), .flags_mask(s_mask));
 
   string vecfile, only, tok;
@@ -52,6 +52,21 @@ module tb_serial
   logic [63:0] r_dst, r_src, r_product, r_dividend, r_divisor, r_quot, r_rem, r_val, r_result;
   logic [15:0] r_flags, r_mask;
   bit fail_this;
+  // fin: the results are final on the clock before done. Only a zero path
+  // the wait covers (done on arrival) and a wide quotient whose late
+  // operand leaves just its work clocks may end without it.
+  int fin_at, fin_late;
+  logic [63:0] fin_res;
+  logic [4:0]  fin_flg;
+  task automatic fin_check(input string what, input bit may_skip, input logic [63:0] res, input logic [4:0] flg);
+    if (fin_at < 0) begin
+      if (!may_skip) mismatch($sformatf("%s: no fin before done", what));
+      else fin_late++;
+    end else begin
+      if (fin_at != exp_ticks - 2) mismatch($sformatf("%s: fin at tick %0d (exp %0d)", what, fin_at + 1, exp_ticks - 1));
+      if (fin_res !== res || fin_flg !== flg) mismatch($sformatf("%s: results at fin differ from done", what));
+    end
+  endtask
 
   task automatic report(input string what);
     total++;
@@ -266,13 +281,14 @@ module tb_serial
         @(negedge clk);
         m_width32 = (r_width == 32); m_dst = r_dst[31:0]; m_src = r_src[31:0];
         m_start = 1; tick(); m_start = 0;                       // E0: load
-        ticks = 0;
+        ticks = 0; fin_at = -1;
         for (k = 0; k < exp_ticks; k++) begin
           n = $fscanf(fd, "%d", remv);
           @(negedge clk);
           m_src_valid = (k == r_delay);
           tick(); m_src_valid = 0; ticks++;
           if (only == "" || only == "M") begin
+            if (m_fin) begin fin_at = k; fin_res = m_product; fin_flg = 0; end
             if (m_done && k != exp_ticks - 1)
               mismatch($sformatf("M w=%0d dst=%h src=%h delay=%0d: done early at tick %0d (exp %0d)", r_width, r_dst, r_src, r_delay, ticks, exp_ticks));
             if (int'(m_remaining) != remv)
@@ -283,6 +299,8 @@ module tb_serial
           if (!m_done) mismatch($sformatf("M w=%0d dst=%h src=%h delay=%0d: not done after %0d ticks", r_width, r_dst, r_src, r_delay, exp_ticks));
           if ((r_width == 16 ? m_product[31:0] : m_product) !== (r_width == 16 ? r_product[31:0] : r_product))
             mismatch($sformatf("M w=%0d dst=%h src=%h: product exp=%h got=%h", r_width, r_dst, r_src, r_product, m_product));
+          fin_check($sformatf("M w=%0d dst=%h src=%h delay=%0d", r_width, r_dst, r_src, r_delay),
+                    r_product == 0 && r_delay == exp_ticks - 1, m_product, 0);
           report("M");
         end
       end else if (tok == "D") begin
@@ -293,13 +311,16 @@ module tb_serial
         @(negedge clk);
         d_n32 = (r_width == 32); d_dividend = r_dividend; d_divisor = r_divisor[31:0];
         d_start = 1; tick(); d_start = 0;
-        ticks = 0;
+        ticks = 0; fin_at = -1;
         for (k = 0; k < exp_ticks; k++) begin
           n = $fscanf(fd, "%d", remv);
           @(negedge clk);
           d_src_valid = (k == r_delay);
           tick(); d_src_valid = 0; ticks++;
           if (only == "" || only == "D") begin
+            if (d_fin) begin
+              fin_at = k; fin_res = {d_quot, d_rem}; fin_flg = {d_dbz, d_ovf, d_wide, d_qneg, d_qzero};
+            end
             if (d_done && k != exp_ticks - 1)
               mismatch($sformatf("D n=%0d dvd=%h dvr=%h delay=%0d: done early at tick %0d (exp %0d)", r_width, r_dividend, r_divisor, r_delay, ticks, exp_ticks));
             if (int'(d_remaining) != remv)
@@ -317,6 +338,9 @@ module tb_serial
             if ((r_width == 16 ? 32'(d_rem[15:0]) : d_rem) !== (r_width == 16 ? 32'(r_rem[15:0]) : r_rem[31:0]))
               mismatch($sformatf("D n=%0d dvd=%h dvr=%h: remainder exp=%h got=%h", r_width, r_dividend, r_divisor, r_rem, d_rem));
           end
+          fin_check($sformatf("D n=%0d dvd=%h dvr=%h delay=%0d", r_width, r_dividend, r_divisor, r_delay),
+                    (r_dbz[0] && r_delay == exp_ticks - 1) ||
+                    (r_wide[0] && exp_ticks - r_delay == (r_width == 32 ? 19 : 11)), {d_quot, d_rem}, {d_dbz, d_ovf, d_wide, d_qneg, d_qzero});
           report("D");
         end
       end else if (tok == "S") begin
@@ -364,6 +388,7 @@ module tb_serial
       shift_b2b(WIDTH_WORD, OP_SLA, 32'h0000_4001, 6'd1, WIDTH_WORD, OP_SLA, 32'h0000_0001, 6'd1);
       shift_b2b(WIDTH_BYTE, OP_SLL, 32'h0000_0081, 6'd3, WIDTH_LONG, OP_SRA, 32'h8000_0001, 6'd0);
     end
+    $display("  %0d operations end on done alone (operand late)", fin_late);
     if (bad == 0) $display("RESULT PASS tb_serial %s: %0d operations", vecfile, total);
     else          $display("RESULT FAIL tb_serial %s: %0d of %0d operations mismatched", vecfile, bad, total);
     $finish;

@@ -2,10 +2,10 @@
 //
 // Drives the unit as the CPU does: REFRESH and RE take a written value on
 // the write edge, and `load` marks writes with RE set. `take` is held High,
-// so `pending` pulses once per underflow. Each edge's CLK/4 step runs before
-// that edge's write: a write at edge W with RATE n first underflows at
-// W + 4n when the CLK/4 phase is 0. /RESET keeps the phase, so each case
-// first steps it back to 0.
+// so `pending` pulses once per underflow, on the edge before it. Each edge's
+// CLK/4 step runs before that edge's write: a write at edge W with RATE n
+// first underflows at W + 4n when the CLK/4 phase is 0. /RESET keeps the
+// phase, so each case first steps it back to 0.
 
 module tb_refresh;
   logic       clk = 0, reset_n = 0;
@@ -15,7 +15,8 @@ module tb_refresh;
   logic [8:0] row_next, cyc_row;
 
   z8000_refresh dut (.clk(clk), .reset_n(reset_n), .enable(enable), .rate(rate), .row(9'd0),
-                     .load(load), .load_rate(load_rate), .take(1'b1), .pending(pending),
+                     .load(load), .load_rate(load_rate), .take(1'b1), .keep(1'b0),
+                     .pending(pending),
                      .row_next(row_next), .cyc_row(cyc_row));
 
   always #5 clk <= ~clk;
@@ -73,13 +74,13 @@ module tb_refresh;
     do_reset();
     step(1'b1, re_rate(1'b1, 3)); w = edge_n;
     run(40);
-    expect_events("RATE 3", '{w + 12, w + 24, w + 36});
+    expect_events("RATE 3", '{w + 11, w + 23, w + 35});
 
     // RATE 0: every 256 clocks.
     do_reset(); align();
     step(1'b1, re_rate(1'b1, 0)); w = edge_n;
     run(520);
-    expect_events("RATE 0", '{w + 256, w + 512});
+    expect_events("RATE 0", '{w + 255, w + 511});
 
     // Load mid-count: count restarts from the new RATE, CLK/4 phase (3 after
     // W+7) carries on, so RATE 2 underflows at W+12, not W+15.
@@ -88,7 +89,7 @@ module tb_refresh;
     run(6);
     step(1'b1, re_rate(1'b1, 2));
     run(23);
-    expect_events("load mid-count", '{w + 12, w + 20, w + 28});
+    expect_events("load mid-count", '{w + 11, w + 19, w + 27});
 
     // Load on an underflow edge keeps that edge's pending.
     do_reset(); align();
@@ -96,7 +97,7 @@ module tb_refresh;
     run(7);
     step(1'b1, re_rate(1'b1, 3));
     run(27);
-    expect_events("load on underflow", '{w + 8, w + 20, w + 32});
+    expect_events("load on underflow", '{w + 7, w + 19, w + 31});
 
     // RE clear holds count (3) and phase (2); RE set again without a load
     // resumes from them: underflow at E+9, then every 16.
@@ -108,7 +109,7 @@ module tb_refresh;
     expect_events("RE clear", '{});
     enable = 1'b1; e = edge_n + 1;
     run(30);
-    expect_events("RE resume", '{e + 9, e + 25});
+    expect_events("RE resume", '{e + 8, e + 24});
 
     // /RESET keeps the CLK/4 phase: 1 after W+1, so RATE 1 written after
     // reset underflows 3 clocks later, not 4.
@@ -118,7 +119,7 @@ module tb_refresh;
     do_reset();
     step(1'b1, re_rate(1'b1, 1)); w = edge_n;
     run(10);
-    expect_events("reset keeps phase", '{w + 3, w + 7});
+    expect_events("reset keeps phase", '{w + 2, w + 6, w + 10});
 
     if (fails == 0) $display("RESULT PASS tb_refresh: %0d checks", checks);
     else            $display("RESULT FAIL tb_refresh: %0d of %0d checks failed", fails, checks);

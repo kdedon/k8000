@@ -1,6 +1,6 @@
 # Status
 
-`make test`, 2026-10-29. Update when a bench moves.
+`make test`, 2026-10-30. Update when a bench moves.
 
 | bench | command | result |
 |---|---|---|
@@ -14,7 +14,7 @@
 | Instruction word capture | `make test-seq-words` | PASS, 17 cases (address register and words 1, 2) |
 | Program paths and repeats | `make test-seq-paths` | PASS, 20 cases (JP/RET cc taken and not taken, shift counts, LDM counts and lengths) |
 | Condition codes | `make test-cond` | PASS, 256 checks (16 codes, every C Z S P/V) |
-| CPU vectors | `make test-cpu` | 1134 pass, 119 fail, 17 skip (Z8001 380 of 395; every failure left needs an interrupt, trap, refresh, bus request, abort, STOP or EPU transfer, but three MULT final states) |
+| CPU vectors | `make test-cpu` | 1284 pass, 0 fail, 17 skip (Z8001 420 of 420, Z8002 844 of 844, Z8003 5 of 5, Z8004 15 of 15) |
 | CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks (I/O with /WAIT included) |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, 45 of 45 |
 | MMU vectors | `make test-mmu` | 6 of 71 |
@@ -34,10 +34,10 @@
 | register file (two read ports) | 399 | 130 MHz |
 | ALU | 205 | 101 MHz |
 | multiplier | 261 | 97.5 MHz |
-| divider | 779 | 62.4 MHz |
+| divider | 797 | 69.9 MHz |
 | shifter | 136 | 175 MHz |
 | execute unit + register file + ALU | 524 | 63.5 MHz |
-| CPU, Z8001 (the program ROMs drive the bus; the multiplier, divider and shifter included; the shift, dynamic bit and multi-micro work sits in the CPU glue on ports A and B) | 5147 | 50.5 MHz (worst: the decode through the port A select, register file and ALU to the register file) |
+| CPU, Z8001 (the program ROMs drive the bus; the multiplier, divider and shifter included; the shift, dynamic bit and multi-micro work sits in the CPU glue on ports A and B) | 5582 | 48.5 MHz (49.6 at the other corner; worst: execute's operand-cycle state into the sequencer's program register) |
 
 ## Next
 
@@ -51,27 +51,48 @@
   CALL, CALR, RET, DJNZ/DBJNZ and every PUSH/POP form run, segmented
   included, and so do DI/EI, the flag ops, LDCTLB, TCC, DAB, EXTS, EX, RLDB/RRDB,
   LDA and LDAR, LDCTL, LDPS, IRET, LDM and translate (single and repeat), with
-  the stack pointer swap on a mode change (R14 and R15 on a Z8001). The two
-  failing new vectors are round trips through SC, which is not built. MULT, MULTL,
+  the stack pointer swap on a mode change (R14 and R15 on a Z8001). SC and the
+  privileged-instruction trap in normal mode run the trap entry (aborted IF1,
+  status pushes, PSA reads), segmented included. MULT, MULTL,
   DIV and DIVL run in every operand form, segmented included, with the serial units
   stepping on the program's clocks and their operands read on ports A and B. IN/OUT
   and SIN/SOUT, block transfer, compare, string compare and block I/O (single and
-  repeat, segmented included) run; a refresh, bus request or interrupt between block
-  elements is not taken yet. SLA/SLL/SDA/SDL run through the serial shifter, one
+  repeat, segmented included) run; an interrupt, a refresh or a bus request between block
+  elements is taken. Refresh runs after an IF1 (aborted too), an
+  internal operation or a block element, and the STOP stream runs after an IF1. NVI, VI and NMI are sampled at the
+  instruction's last cycle (and by HALT, which leaves on two samples) and run the
+  acknowledge entry, the VI through its vector table (the identifier doubled on both
+  CPUs). Up to two skipped refreshes are owed, one issued per boundary. SLA/SLL/SDA/SDL run through the serial shifter, one
   position per I3; BIT/SET/RES with a register bit number, and MSET/MRES/MBIT/MREQ
-  with the /MO and /MI handshake, run, segmented included. Privileged instructions are not trapped in
-  normal mode yet. Left in rung 9: MULT/MULTL/DIV/DIVL write their result the clock
-  after the program's last, so a vector that stops right there sees the old
-  registers (TestMachineCycleSequenced.000-.002); the units' last step would have to
-  land on the last clock. Next: rung 10. Interrupt sampling, abort and BUSREQ are not
-  wired.
-- CPU rework after the last rung: put the program ROMs in M10K/MLAB (the sequencer is
-  2125 of 4853 ALMs, ROMs in logic, the lookup doubled for timing; a registered read
-  needs the lookup re-pipelined), and negate the divider's operands over its setup
-  clocks with a high-half compare (768 ALMs; the path is still picked on clock 3).
-  In the same pass, move the multiplier's and divider's last step a clock earlier so
-  MULT/DIV write registers and flags on the program's last clock, not the clock after
-  (TestMachineCycleSequenced .000-.002 fail on it; needs new serial vectors).
+  with the /MO and /MI handshake, run, segmented included. MULT/MULTL/DIV/DIVL write registers and flags on the program's last clock,
+  but a clock later when the operand arrives so late that the zero path, or a wide
+  quotient's work, ends on the arrival's clocks alone (no CPU program delivers an
+  operand that late; only the serial bench does). A byte or word immediate op
+  writes its register and flags as its word's T3 opens. A bus request is granted at any machine-cycle boundary
+  (/BUSACK, AD released, `bus_drive` Low for the other outputs, the units held) and
+  released two clocks after /BUSREQ rises; TSET grants none between its read and write,
+  and `bus_lock` stays High through the write's T3. On a Z8003/Z8004 /ABORT,
+  sampled at a memory transaction's T2 and its waits, ends the instruction as
+  that cycle's T3 ends; the requests sampled there, SEGT/SAT among them, take
+  the entry. An EPU instruction with EPA clear traps after its IF1; with EPA
+  set its transfers run: memory (1010, a store with AD released), registers
+  (1 to 16 words) and the flag byte (a byte on AD7:AD0) (1110, I/O timing
+  with its automatic wait). STOP is
+  sampled before an EPU instruction's second word as before an IF1. Rung 10
+  is done.
+- CPU rework after the last rung: the core must close 48 MHz with its ROMs in logic.
+  Moving the program ROMs to M10K/MLAB is optional and must keep a logic-only build (a
+  registered read needs the lookup re-pipelined). Negate the divider's operands over
+  its setup clocks with a high-half compare (768 ALMs; the path is still picked on
+  clock 3).
+- CPU: an interrupt pending while EI, LDCTL FCW, LDPS or IRET enables it is taken
+  at the next boundary, and a DI before the sample masks it. An SC, trap or
+  interrupt entry whose new FCW enables a pending request (or with an NMI held
+  through it) takes it before the handler's first instruction. Done.
+- CPU: shifts with counts 0 and 1 under refresh, and a bus request held
+  mid-shift, have vectors. Done.
+- CPU: a refresh among a shift's internal clocks holds the shifter's step, so its
+  last position lands on the program's last clock. Done.
 - MMU: passes are the "chip does nothing" cases (TestReset.001,
   TestMasterEnableDisabled, TestMMU_URS_SingleMMU.001/.003, TestSegTrapAcknowledge_NotOurs.001,
   TestCmd_UnlistedOpcodeWriteIsNoOp). TestReset.000 fails on one final-state field.
@@ -83,7 +104,7 @@
 
 | device | files | notes |
 |---|---|---|
-| CPU | 1270 | 17 skipped (restore Go snapshots, or set a refresh pending directly) |
+| CPU | 1301 | 17 skipped (restore Go snapshots, or set a refresh pending directly) |
 | CPU cycle counts | 45 | 35 `exact`, 10 `approx` |
 | MMU | 71 | from 48 of 49 Go tests |
 | CIO | 110 | 52 `X partial` |

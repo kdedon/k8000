@@ -3,7 +3,8 @@
 // SLL / SLA / SRL / SRA, one bit position per 3-clock step. The start edge
 // shifts position 1; each later step shifts one more. A zero count costs
 // one step, shifts nothing and leaves C unaffected. done is high for the
-// one clock 3 * max(count, 1) clocks after start; result and flags hold
+// one clock 3 * max(count, 1) ticks after start; a clock without tick
+// (a refresh or wait mid-shift) holds the step. Result and flags hold
 // until the next start.
 //
 // Flags (FCW positions): C = last bit out, Z, S. P/V is written by the
@@ -16,6 +17,7 @@ module z8000_shift
   input  logic               clk,
   input  logic               reset_n,
   input  logic               start,
+  input  logic               tick,
   input  logic [1:0]         width,     // WIDTH_BYTE / WIDTH_WORD / WIDTH_LONG
   input  logic [ALUOP_W-1:0] op,        // OP_SLL / OP_SLA / OP_SRL / OP_SRA
   input  logic [31:0]        val,
@@ -107,7 +109,7 @@ module z8000_shift
     shift_now = 1'b0;
 
     unique case (state_q)
-      ST_RUN: begin
+      ST_RUN: if (tick) begin
         rem_d = rem_q - 2'd1;
         if (rem_q == 2'd1) begin
           cnt_d = cnt_q - 6'd1;

@@ -16,10 +16,33 @@
 // others into words 1 and 2. In segmented mode a long address word (bit 15
 // set) moves the program to its SL column at that edge.
 //
-// Refresh goes in between whole machine cycles, after an IF1 or an
-// internal operation, at most once per gap. Instructions the execute unit
-// does not run yet (and HALT in normal mode) stop the sequencer after
-// their IF1 machine cycle.
+// A trap replaces the next IF1 with the entry program: the aborted IF1
+// (the fetch at the PC, its word ignored), the status pushes and the
+// Program Status Area reads, all from the trapping instruction's word,
+// which is the identifier pushed. SC traps after its program; a
+// privileged instruction in normal mode, or an EPU instruction with FCW
+// EPA clear, after its IF1 machine cycle, its work suppressed. The execute unit runs the entry's cycles.
+//
+// An interrupt sampled at the instruction's last cycle (its T3, or the
+// third clock of an internal operation) runs the external entry program
+// at the boundary: the aborted IF1, the acknowledge, whose word is the
+// identifier pushed, then the pushes and reads as a trap's. A Vectored
+// Interrupt reads its PC from the identifier's entry of the PSA table. A
+// repeat form samples at the last cycle of an element another follows;
+// a request then ends the instruction there, the PC stepped back to its
+// first word (the repeat forms are two words) for the aborted IF1 and
+// the push.
+//
+// On a Z8003/Z8004 an /ABORT sampled in a memory transaction of the
+// instruction ends it as that cycle's T3 ends, with no tail: the read word
+// is dropped, the instruction's work stops, and the next IF1 or an entry
+// for a request sampled at that T3 follows. A word fetched counts as taken.
+//
+// Refresh goes in between whole machine cycles, after an IF1 (aborted
+// too), an internal operation or a block element, at most once per gap.
+// STOP Low as an IF1, or an EPU instruction's second word, starts runs
+// refreshes after its T3 until STOP is High again. Instructions the execute unit does not run yet (and HALT in
+// normal mode) stop the sequencer after their IF1 machine cycle.
 //
 // The datapath picks a program's path and says whether its repeated part
 // runs again (`more`). The first word's condition (`cc_met`, for the word
@@ -57,6 +80,25 @@ module z8000_sequencer
   output logic [3:0]  dec_w1_lo,
   input  logic        dec_valid,
   input  logic [4:0]  dec_exec,
+  input  logic        trap_if1,     // the IF1 word taken on this edge traps
+  input  logic        trap_epa,     // ... as an EPU instruction with FCW EPA clear
+  input  logic        abt_hit,      // /ABORT Low at a sample of this cycle
+  output logic        kill_nx,      // the word's work is suppressed as of the next edge
+  output logic        exc,          // the entry program runs
+  output logic        af_done,      // the aborted IF1's T3 opens on this edge
+  output logic [4:0]  exc_vec,      // the entry's PSA offset, nonsegmented bytes
+  output logic [15:0] exc_id,       // the identifier pushed
+  output logic [8:0]  exc_pcoff,    // added to the PSA PC entry's address
+
+  // interrupts
+  input  logic        irq,          // an entry starts at this boundary
+  input  logic        irq_now,      // an enabled request as of the sample on this edge
+  input  logic [3:0]  irq_st,
+  output logic        smp_end,      // the instruction's sample is on this edge
+  output logic        smp_elem,     // a between-element sample is on this edge
+  output logic        smp_iop,      // an internal operation's third clock opens
+  output logic        irq_take,     // an external entry starts on this edge
+  output logic        bound,        // an instruction boundary is on this edge
 
   // datapath decisions
   input  logic        cc_met,
@@ -68,7 +110,7 @@ module z8000_sequencer
 
   // execute unit
   input  logic        ex_handles,
-  input  logic        io_write,     // the instruction's I/O cycle is a write
+  input  logic        io_write,     // the instruction's I/O or EPU transfer cycle is a write
   output logic        ex_first,     // the IF1's T3 clock: the word decoded
   output logic        ex_word,      // the IF1's word is taken on this edge
   output logic        ex_last2,     // the program's second last clock
@@ -86,6 +128,7 @@ module z8000_sequencer
   output logic        int_take,     // an internal operation is taken on this edge
   output logic        opnd_take,    // a read operand is in on this edge
   output logic        imm_take,     // an Fn word is in on this edge
+  output logic        imm_in,       // ... and the cycle is not aborted
   output logic        in_rf,        // a refresh is in flight
   output logic        rf_due,       // the cycle in flight is followed by a refresh
   output mc_col_e     col_nx,       // the column as of the next edge
@@ -94,6 +137,8 @@ module z8000_sequencer
   input  logic        rf_pending,
   input  logic [22:0] rf_addr,
   output logic        rf_take,     // a refresh starts on this edge
+  output logic        rf_keep,     // ... a STOP refresh, leaving the prescaler's pending
+  input  logic        stop_n,
 
   // bus unit
   output logic        bus_req,
@@ -102,6 +147,7 @@ module z8000_sequencer
   output logic [3:0]  bus_st,
   output logic        bus_normal,
   output logic        bus_mem,      // the request is an operand cycle
+  output logic        bus_nodata,   // the transaction takes no data
   output logic        bus_write,
   output logic [3:0]  bus_len,
   output logic [2:0]  bus_tail,
@@ -140,7 +186,21 @@ module z8000_sequencer
   mc_path_e    path_q, path_d;
   logic        in_rf_q;              // the cycle in flight is a refresh
   logic        rf_ok_q;              // a refresh may follow the cycle in flight
+  logic        stop_q, stp_t1_q;     // STOP as of the last edge; a STOP sample's T1 clock
+  logic        stop_go_q;            // a STOP refresh follows the cycle in flight
+  logic        stop_rf_q;            // the refresh in flight is a STOP refresh
   logic        prog_on;
+  logic        trap_q, exc_q;        // a trap after the IF1; the entry runs
+  logic [4:0]  vec_q;
+  logic [8:0]  poff_q;
+  logic        ext_q;                // the entry is for an interrupt
+  logic        eirq_q;               // a request ends the repeat at this element
+  logic        abt_q;                // an abort ends the instruction at this cycle
+  logic        epa_q;                // the trap is the extended-instruction trap
+  logic [3:0]  ia_st_q;
+  logic [15:0] ia_q;                 // the acknowledge word
+  logic        i1_q, i2_q;           // an internal operation's second and third clocks
+  logic        take_af, trap_go;
 
   // ---- program ROM ------------------------------------------------------------------
   logic [MC_FORM_W-1:0] form_n, form_s;
@@ -188,11 +248,32 @@ module z8000_sequencer
   z8000_mc_cycle_gen u_cur_s  (.prog(prog_s), .pos(pos_q), .cyc(cur_s));
   z8000_mc_link_gen  u_link_s (.prog(prog_s), .pos(pos_q), .link(link_s));
   z8000_mc_prog_gen  u_prog_m (.form(form_s), .col(col_s), .path(md_path), .prog(prog_m));
-  assign prog_d = md_take ? prog_m : bus_done ? prog_s : prog_n;
-  assign cur_d  = bus_done ? cur_s  : cur_n;
-  assign link_d = bus_done ? link_s : link_n;
+  // The entry program: one per part, the words not looked at.
+  // An interrupt's adds the acknowledge.
+  localparam logic [MC_PROG_W-1:0] EXC_PROG = SEGMENTED ? MC_PROG_W'(233) : MC_PROG_W'(232);
+  localparam logic [MC_PROG_W-1:0] INT_PROG = SEGMENTED ? MC_PROG_W'(235) : MC_PROG_W'(234);
+  logic [MC_PROG_W-1:0] eprog;
+  mc_cycle_t cur_e, af_cyc, cur_next;
+  logic [2:0] tail_q;
+  mc_link_t  link_e;
+  assign eprog = ext_q ? INT_PROG : EXC_PROG;
+  z8000_mc_cycle_gen u_cur_e  (.prog(eprog), .pos(pos_q), .cyc(cur_e));
+  z8000_mc_link_gen  u_link_e (.prog(eprog), .pos(pos_q), .link(link_e));
+  z8000_mc_cycle_gen u_af     (.prog(EXC_PROG), .pos(MC_POS_W'(0)), .cyc(af_cyc));
+  logic exc_d, ext_d;
+  assign ext_d  = take_af ? !trap_go : ext_q;
+  assign prog_d = exc_d ? (ext_d ? INT_PROG : EXC_PROG) : md_take ? prog_m : bus_done ? prog_s : prog_n;
+  assign cur_d  = exc_q ? cur_e : bus_done ? cur_s  : cur_n;
+  assign link_d = exc_q ? link_e : bus_done ? link_s : link_n;
   z8000_mc_link_gen  u_link   (.prog(prog_q), .pos(pos_q), .link(link));
-  z8000_mc_cycle_gen u_nxt    (.prog(prog_q), .pos(npos), .cyc(nxt));
+  // The next cycle is looked up at both positions it may take; the
+  // repetition count picks after the ROMs.
+  mc_cycle_t nxt_hold, nxt_step;
+  logic      rep_end;
+  z8000_mc_cycle_gen u_nxt_h  (.prog(prog_q), .pos(pos_q), .cyc(nxt_hold));
+  z8000_mc_cycle_gen u_nxt_s  (.prog(prog_q), .pos(more ? link.next_more : link.next_done),
+                               .cyc(nxt_step));
+  assign nxt = rep_end ? nxt_step : nxt_hold;
 
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
@@ -200,11 +281,11 @@ module z8000_sequencer
   // verilator lint_on UNUSEDSIGNAL
 
   // ---- program position ---------------------------------------------------------------
-  logic rep_end, at_last, run_ok;
+  logic at_last, run_ok;
   assign rep_end = rep_q + MC_REPS_W'(1) == link.reps;
-  assign at_last = rep_end && (more ? link.fin_more : link.fin_done);
+  assign at_last = trap_q || eirq_q || abt_q || (rep_end && (more ? link.fin_more : link.fin_done));
   assign npos    = !rep_end ? pos_q : more ? link.next_more : link.next_done;
-  assign run_ok  = dec_valid && (ex_handles || (dec_exec == CLS_HALT && fcw_sys));
+  assign run_ok  = exc_q || trap_q || abt_q || (dec_valid && (ex_handles || (dec_exec == CLS_HALT && fcw_sys)));
 
   // A program cycle is in flight. One starts only with run_ok; a captured
   // word can drop run_ok a clock later, but no bus_done follows before
@@ -221,7 +302,9 @@ module z8000_sequencer
   logic at_last_d, cyc_on, last_q, last2_q, last_d, last2_d;
   assign at_last_d = rep_q + MC_REPS_W'(1) == link_d.reps &&
                      (more ? link_d.fin_more : link_d.fin_done);
-  assign cyc_on    = (state_q == SEQ_PROG && !in_rf_q) || state_q == SEQ_IF1;
+  // The last refresh of a STOP stream carries the IF1's tail.
+  assign cyc_on    = (state_q == SEQ_PROG && (!in_rf_q || (stop_rf_q && !stop_go_q))) ||
+                     state_q == SEQ_IF1;
 
   assign last_d  = last2_q || (cyc_on && at_last_d && bus_done &&
                                cur_d.clocks == MC_CLOCKS_W'(0));
@@ -238,41 +321,49 @@ module z8000_sequencer
     end
   end
 
-  assign ex_last  = last_q;
-  assign ex_last2 = last2_q;
+  // An aborted instruction has no last clocks.
+  assign ex_last  = last_q && !abt_q;
+  assign ex_last2 = last2_q && !abt_q;
   assign ex_last_nx  = last_d;
   assign ex_last2_nx = last2_d;
   // As last's next value, from the registered program: no branch or stack
   // program ends on its IF1 or as a word arrives.
-  assign ex_to_last = last2_q || (prog_on && at_last && bus_done &&
-                                  cur_q.clocks == MC_CLOCKS_W'(0));
+  assign ex_to_last = !abt_q && (last2_q || (prog_on && at_last && bus_done &&
+                                             cur_q.clocks == MC_CLOCKS_W'(0)));
 
   // ---- next machine cycle -------------------------------------------------------------
-  typedef enum logic [2:0] {
+  typedef enum logic [3:0] {
     NEXT_NONE,
     NEXT_PSA,
     NEXT_REFRESH,
     NEXT_IF1,
+    NEXT_AF,        // the aborted IF1 opening a trap entry
     NEXT_FETCH,     // a later instruction word
     NEXT_INTERNAL,
-    NEXT_MEM        // an operand read or write
+    NEXT_MEM,       // an operand read or write
+    NEXT_ACK        // the interrupt acknowledge
   } next_e;
 
   // `sel` is the cycle a request would be; run_ok gates only the request.
   // The bus unit reads the request's data only with req, so the data mux
   // stays off the decode path.
   next_e sel, next;
+  logic  exc_go;
+  assign trap_go = trap_q || (!exc_q && dec_valid && dec_exec == CLS_SYS_CALL);
+  assign exc_go  = trap_go || irq || eirq_q;
   always_comb begin
     sel = NEXT_NONE;
     unique case (state_q)
       SEQ_PSA_REQ: sel = NEXT_PSA;
       SEQ_FETCH:   sel = NEXT_IF1;
       SEQ_PROG: begin
-        if (rf_ok_q && rf_pending)  sel = NEXT_REFRESH;
-        else if (at_last)           sel = NEXT_IF1;
+        if ((rf_ok_q && rf_pending) || stop_go_q) sel = NEXT_REFRESH;
+        else if (at_last)           sel = exc_go ? NEXT_AF : NEXT_IF1;
         else if (nxt.kind == MC_FN || nxt.kind == MC_FA) sel = NEXT_FETCH;
         else if (nxt.kind == MC_I)  sel = NEXT_INTERNAL;
-        else if (nxt.kind == MC_R || nxt.kind == MC_W || nxt.kind == MC_IO) sel = NEXT_MEM;
+        else if (nxt.kind == MC_R || nxt.kind == MC_W || nxt.kind == MC_IO || nxt.kind == MC_EPU)
+                                    sel = NEXT_MEM;
+        else if (nxt.kind == MC_IA) sel = NEXT_ACK;
       end
       default: ;
     endcase
@@ -303,34 +394,44 @@ module z8000_sequencer
         bus_addr = rf_addr;
         bus_st   = ST_REFRESH;
       end
-      NEXT_IF1:      bus_st   = ST_INSTR_FETCH_FIRST;
+      NEXT_IF1, NEXT_AF: bus_st = ST_INSTR_FETCH_FIRST;
       NEXT_INTERNAL: bus_st   = ST_INTERNAL_OP;
       NEXT_MEM: begin
         bus_addr = mem_addr;
         bus_st   = mem_st;
       end
+      NEXT_ACK: begin
+        bus_addr = 23'd0;
+        bus_st   = ia_st_q;
+      end
       default: ;
     endcase
   end
 
-  assign bus_mem   = sel == NEXT_MEM;
-  assign bus_write = bus_mem && (nxt.kind == MC_W || (nxt.kind == MC_IO && io_write));
+  assign bus_mem    = sel == NEXT_MEM;
+  assign bus_nodata = sel == NEXT_AF;
+  assign bus_write = bus_mem && (nxt.kind == MC_W || ((nxt.kind == MC_IO || nxt.kind == MC_EPU) && io_write));
 
   // The reset reads run in system mode whatever FCW they load.
   assign bus_normal = state_q != SEQ_PSA_REQ && !fcw_sys;
 
-  // A transaction's tail, read by the bus unit in its T3 clock.
-  assign bus_tail = (state_q == SEQ_PROG && !in_rf_q) ? cur_q.clocks[2:0] : 3'd0;
+  // A transaction's tail, read by the bus unit in its T3 clock; registered
+  // from the next cycle. The acknowledge's T4 and T5, which take the
+  // identifier, are its tail.
+  assign bus_tail = tail_q;
 
   logic take, take_rf, take_if1, take_prog;
   assign take      = bus_req && bus_cyc_end;
   assign take_rf   = take && next == NEXT_REFRESH;
   assign take_if1  = take && next == NEXT_IF1;
-  assign take_prog = take && (next == NEXT_FETCH || next == NEXT_INTERNAL || next == NEXT_MEM);
+  assign take_af   = take && next == NEXT_AF;
+  assign take_prog = take && (next == NEXT_FETCH || next == NEXT_INTERNAL || next == NEXT_MEM || next == NEXT_ACK);
   assign mem_take  = take && next == NEXT_MEM;
   assign int_take  = take && next == NEXT_INTERNAL;
-  assign opnd_take = prog_on && bus_done && (cur_q.kind == MC_R || (cur_q.kind == MC_IO && !io_write));
+  assign opnd_take = prog_on && bus_done && !abt_q && (cur_q.kind == MC_R ||
+                     ((cur_q.kind == MC_IO || cur_q.kind == MC_EPU) && !io_write));
   assign rf_take   = take_rf;
+  assign rf_keep   = stop_go_q;
 
   // A repetition of the repeated part starts on this edge.
   logic rep_start;
@@ -375,6 +476,7 @@ module z8000_sequencer
   assign word_if1  = state_q == SEQ_IF1 && bus_done;
   assign word_more = prog_on && bus_done && (cur_q.kind == MC_FN || cur_q.kind == MC_FA);
   assign imm_take  = word_more && cur_q.kind == MC_FN;
+  assign imm_in    = imm_take && !abt_q;
   assign word_addr = word_more && cur_q.kind == MC_FA;
 
   // FCW and PC writes: the PSA loads, then +2 per instruction word taken.
@@ -389,6 +491,9 @@ module z8000_sequencer
     end else if (psa_last) begin
       pc_we = 1'b1;
       pc_d  = SEGMENTED ? {pc[31:16], bus_rdata} : {16'h0000, bus_rdata};
+    end else if (smp_elem && irq_now) begin
+      pc_we = 1'b1;
+      pc_d  = {pc[31:16], pc[15:0] - 16'd4};
     end else if (word_if1 || word_more) begin
       pc_we = 1'b1;
       pc_d  = {pc[31:16], pc[15:0] + 16'd2};
@@ -456,6 +561,77 @@ module z8000_sequencer
     end
   end
 
+  // The trap and the entry. Execute ignores the words from the trapping
+  // IF1 to the next IF1.
+  logic trap_d;
+  assign trap_d  = word_if1 ? trap_if1 && !abt_q : trap_q && !take_af;
+  assign exc_d   = take_af || (exc_q && !take_if1);
+  // The clock after the aborted IF1 is taken still sees SC's own decode,
+  // which does nothing there; the kill stays off the take path.
+  assign kill_nx = (word_if1 ? trap_if1 : trap_q) || exc_q || abt_q;
+  assign af_done = prog_on && bus_done && cur_q.kind == MC_AF;
+  logic ia_done;
+  assign ia_done = prog_on && bus_done && cur_q.kind == MC_IA;
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      trap_q  <= 1'b0;
+      exc_q   <= 1'b0;
+      vec_q   <= 5'd0;
+      ext_q   <= 1'b0;
+      eirq_q  <= 1'b0;
+      abt_q   <= 1'b0;
+      epa_q   <= 1'b0;
+      ia_st_q <= ST_NVI_ACK;
+      ia_q    <= 16'h0000;
+      poff_q  <= 9'd0;
+      i1_q    <= 1'b0;
+      i2_q    <= 1'b0;
+    end else begin
+      trap_q <= trap_d;
+      exc_q  <= exc_d;
+      ext_q  <= ext_d;
+      if (take_af) begin
+        ia_st_q <= irq_st;
+        if (trap_q)                  vec_q <= epa_q ? 5'h04 : 5'h08;   // extended, privileged
+        else if (trap_go)            vec_q <= 5'h0C;   // SC
+        else if (irq_st == ST_NMI_ACK) vec_q <= 5'h14;
+        else if (irq_st == ST_SEGMENT_TRAP) vec_q <= 5'h10;
+        else if (irq_st == ST_VI_ACK)  vec_q <= 5'h1C;
+        else                         vec_q <= 5'h18;   // NVI
+      end
+      if (ia_done) begin
+        ia_q  <= bus_rdata;
+        poff_q <= ia_st_q != ST_VI_ACK ? 9'd0 : {bus_rdata[7:0], 1'b0};
+      end
+      i1_q   <= int_take;
+      i2_q   <= i1_q;
+      eirq_q <= smp_elem ? irq_now : eirq_q && !take_af;
+      if (word_if1) epa_q <= trap_epa;
+      if (take_if1 || take_af)
+        abt_q <= 1'b0;
+      else if (abt_hit && (state_q == SEQ_IF1 || prog_on) && !exc_q)
+        abt_q <= 1'b1;
+    end
+  end
+  assign exc       = exc_q;
+  assign exc_vec   = vec_q;
+  assign exc_id    = ext_q ? ia_q : ir0_q;
+  assign exc_pcoff = poff_q;
+  assign irq_take  = take_af && !trap_go;
+  assign bound     = take_if1 || take_af;
+
+  // Interrupt samples. An entry samples at its end, so a request its new
+  // FCW enables follows at once; none in an instruction that traps after
+  // its IF1.
+  logic smp_ok, blk;
+  assign smp_ok   = !trap_q;
+  assign blk      = dec_exec == CLS_BLOCK_TRANSFER || dec_exec == CLS_BLOCK_COMPARE ||
+                    dec_exec == CLS_BLOCK_STRING || dec_exec == CLS_BLOCK_IO || dec_exec == CLS_TRANSLATE;
+  assign smp_iop  = prog_on && i2_q;
+  assign smp_end  = smp_ok && ((cyc_on && bus_done && (at_last_d || abt_q)) || (smp_iop && at_last));
+  assign smp_elem = smp_ok && prog_on && dec_valid && blk && (bus_done || i2_q) &&
+                    rep_end && more && link.next_more <= pos_q;
+
   logic first_q;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) first_q <= 1'b0;
@@ -463,6 +639,8 @@ module z8000_sequencer
   end
   assign ex_first = first_q;
   assign ex_word  = word_if1;
+
+  assign cur_next = take_af ? af_cyc : take_prog ? nxt : cur_d;
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -474,6 +652,7 @@ module z8000_sequencer
       path_q   <= MC_PATH_DEFAULT;
       prog_q   <= MC_PROG_W'(0);
       cur_q    <= mc_cycle_t'(0);
+      tail_q   <= 3'd0;
     end else begin
       ir0_q    <= ir0_d;
       ir1_q    <= ir1_d;
@@ -482,7 +661,15 @@ module z8000_sequencer
       ea_q     <= ea_d;
       path_q   <= path_d;
       prog_q   <= prog_d;
-      cur_q    <= take_prog ? nxt : cur_d;   // stale while an IF1 runs
+      cur_q    <= cur_next;   // stale while an IF1 runs
+      // A STOP stream runs the sampled cycle's tail after its last refresh.
+      if (stop_go_q || abt_q)
+        tail_q <= 3'd0;
+      else if (in_rf_q && stop_rf_q)
+        tail_q <= cur_q.clocks[2:0];
+      else
+        tail_q <= (state_d != SEQ_PROG || (take ? take_rf : in_rf_q)) ? 3'd0 :
+                  cur_next.kind == MC_IA ? 3'd2 : cur_next.clocks[2:0];
     end
   end
 
@@ -492,7 +679,7 @@ module z8000_sequencer
       pos_q <= MC_POS_W'(0);
       rep_q <= MC_REPS_W'(0);
       iter_q <= 6'd0;
-    end else if (take_if1) begin
+    end else if (take_if1 || take_af) begin
       pos_q <= MC_POS_W'(0);
       rep_q <= MC_REPS_W'(0);
       iter_q <= 6'd0;
@@ -503,14 +690,45 @@ module z8000_sequencer
     end
   end
 
-  // Refresh bookkeeping: allowed after an IF1 or internal cycle, once.
+  // Refresh bookkeeping: allowed after an IF1, aborted IF1 or internal
+  // cycle, or a block element not ending the program, once.
+  logic elem_rf;
+  assign elem_rf = prog_on && dec_valid && blk && (bus_done || i2_q) &&
+                   rep_end && link.next_more <= pos_q && !at_last;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       in_rf_q <= 1'b0;
       rf_ok_q <= 1'b0;
     end else if (take) begin
       in_rf_q <= take_rf;
-      rf_ok_q <= take_if1 || (take_prog && next == NEXT_INTERNAL);
+      rf_ok_q <= take_if1 || take_af || (take_prog && next == NEXT_INTERNAL) ||
+                 (take_rf && stop_go_q);
+    end else if (elem_rf) begin
+      rf_ok_q <= 1'b1;
+    end
+  end
+
+  // STOP Low in the T1 clock of an IF1, or of an EPU instruction's second
+  // word, puts a stream of refreshes after its T3. STOP is sampled again in
+  // each T3 clock; once High, one more refresh runs, then the cycle's tail.
+  logic stp_take;
+  assign stp_take = take_if1 || (take && next == NEXT_FETCH && nxt.kind == MC_FN &&
+                                 nwords_q == 2'd1 && dec_exec == CLS_EPU);
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      stop_q    <= 1'b1;
+      stp_t1_q  <= 1'b0;
+      stop_go_q <= 1'b0;
+      stop_rf_q <= 1'b0;
+    end else begin
+      stop_q   <= stop_n;
+      stp_t1_q <= stp_take;
+      if (stp_t1_q)
+        stop_go_q <= !stop_q;
+      else if (take)
+        stop_go_q <= take_rf && stop_go_q && !stop_q;
+      if (take)
+        stop_rf_q <= take_rf && stop_go_q;
     end
   end
 
@@ -543,7 +761,7 @@ module z8000_sequencer
   z8000_mc_link_gen  u_link_o (.prog(prog_o), .pos(pos_q), .link(link_o));
   z8000_mc_cycle_gen u_cur_h  (.prog(prog_q), .pos(pos_q), .cyc(cur_h));
   always_ff @(posedge clk) begin
-    if ((prog_o != prog_d || link_o != link_d || cur_o != cur_d)) begin
+    if (!exc_q && !take_af && (prog_o != prog_d || link_o != link_d || cur_o != cur_d)) begin
       $display("%%Error: %m: split program lookup differs");
       check_q <= 1'b1;
     end

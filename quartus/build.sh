@@ -20,7 +20,7 @@ case "${unit}" in
                  rtl/k800x_cpu/z8000_{regfile,alu,execute}.sv) ;;
   cpu)     srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
                  rtl/k800x_cpu/gen/z8000_mc_pkg.sv rtl/k800x_cpu/gen/z8000_decode_rom_gen.sv rtl/k800x_cpu/gen/z8000_mc_rom_gen.sv
-                 rtl/k800x_cpu/z8000_{regfile,decode,bus_unit,sequencer,cond,refresh,alu,execute,mult,div,shift,cpu}.sv) ;;
+                 rtl/k800x_cpu/z8000_{regfile,decode,bus_unit,sequencer,cond,refresh,alu,execute,mult,div,shift,int_unit,cpu}.sv) ;;
   *) echo "unknown unit: ${unit}" >&2; exit 2 ;;
 esac
 top="z8000_${unit}_measure"

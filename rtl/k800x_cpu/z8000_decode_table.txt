@@ -7,7 +7,7 @@
 // overwrite it. What proves it correct HERE is tb_decode_table replaying THIS FILE
 // against the committed z8000_decode_rom_gen.sv -- no external repo needed.
 //
-// z8000_decode_table -- the decode ROM as 476 distinct control words over 3646
+// z8000_decode_table -- the decode ROM as 478 distinct control words over 3646
 // first-word ranges, instead of 65536 opaque hex literals. This is the file to
 // read (and to review the diff of) when the decoder changes.
 //
@@ -239,96 +239,96 @@ ctrl UNIFIED_LD_PCREL_REG_3             105f05800000000000
 #    valid=1 alu_op=OP_LD width=WIDTH_LONG src2=SRC_REG dst=DST_PCREL
 ctrl UNIFIED_LD_BASED_REG_3             105f05c00800000000
 #    valid=1 alu_op=OP_LD width=WIDTH_LONG src2=SRC_REG dst=DST_BASED dst_nib=REG_NIB2
-ctrl LDPS_IR                            1b000c000000000000
-#    valid=1 exec=CLS_LDPS src2=SRC_IR
-ctrl BLOCK_IO                           188100000000000010
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE block_rept=1
-ctrl BLOCK_IO_2                         188100000000000000
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE
-ctrl BLOCK_IO_3                         188100000000000050
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1 block_rept=1
-ctrl BLOCK_IO_4                         188100000000000040
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1
-ctrl BLOCK_IO_5                         188100000000000090
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 block_rept=1
-ctrl BLOCK_IO_6                         188100000000000080
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1
-ctrl BLOCK_IO_7                         1881000000000000d0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 io_spec=1 block_rept=1
-ctrl BLOCK_IO_8                         1881000000000000c0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 io_spec=1
-ctrl IO                                 158100000000000000
-#    valid=1 exec=CLS_IO width=WIDTH_BYTE
-ctrl IO_2                               158100000000000040
-#    valid=1 exec=CLS_IO width=WIDTH_BYTE io_spec=1
-ctrl IO_3                               158100000000000080
-#    valid=1 exec=CLS_IO width=WIDTH_BYTE io_write=1
-ctrl IO_4                               1581000000000000c0
-#    valid=1 exec=CLS_IO width=WIDTH_BYTE io_write=1 io_spec=1
-ctrl BLOCK_IO_9                         188100000000000030
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE block_decr=1 block_rept=1
-ctrl BLOCK_IO_10                        188100000000000020
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE block_decr=1
-ctrl BLOCK_IO_11                        188100000000000070
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_12                        188100000000000060
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_spec=1 block_decr=1
-ctrl BLOCK_IO_13                        1881000000000000b0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_14                        1881000000000000a0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 block_decr=1
-ctrl BLOCK_IO_15                        1881000000000000f0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 io_spec=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_16                        1881000000000000e0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE io_write=1 io_spec=1 block_decr=1
-ctrl BLOCK_IO_17                        188200000000000010
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD block_rept=1
-ctrl BLOCK_IO_18                        188200000000000000
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD
-ctrl BLOCK_IO_19                        188200000000000050
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1 block_rept=1
-ctrl BLOCK_IO_20                        188200000000000040
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1
-ctrl BLOCK_IO_21                        188200000000000090
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 block_rept=1
-ctrl BLOCK_IO_22                        188200000000000080
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1
-ctrl BLOCK_IO_23                        1882000000000000d0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 io_spec=1 block_rept=1
-ctrl BLOCK_IO_24                        1882000000000000c0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 io_spec=1
-ctrl IO_5                               158200000000000000
-#    valid=1 exec=CLS_IO width=WIDTH_WORD
-ctrl IO_6                               158200000000000040
-#    valid=1 exec=CLS_IO width=WIDTH_WORD io_spec=1
-ctrl IO_7                               158200000000000080
-#    valid=1 exec=CLS_IO width=WIDTH_WORD io_write=1
-ctrl IO_8                               1582000000000000c0
-#    valid=1 exec=CLS_IO width=WIDTH_WORD io_write=1 io_spec=1
-ctrl BLOCK_IO_25                        188200000000000030
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD block_decr=1 block_rept=1
-ctrl BLOCK_IO_26                        188200000000000020
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD block_decr=1
-ctrl BLOCK_IO_27                        188200000000000070
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_28                        188200000000000060
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_spec=1 block_decr=1
-ctrl BLOCK_IO_29                        1882000000000000b0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_30                        1882000000000000a0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 block_decr=1
-ctrl BLOCK_IO_31                        1882000000000000f0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 io_spec=1 block_decr=1 block_rept=1
-ctrl BLOCK_IO_32                        1882000000000000e0
-#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD io_write=1 io_spec=1 block_decr=1
-ctrl IO_IR                              15810c000000000000
-#    valid=1 exec=CLS_IO width=WIDTH_BYTE src2=SRC_IR
-ctrl IO_IR_2                            15820c000000000000
-#    valid=1 exec=CLS_IO width=WIDTH_WORD src2=SRC_IR
-ctrl IO_IR_3                            15810c000000000080
-#    valid=1 exec=CLS_IO width=WIDTH_BYTE src2=SRC_IR io_write=1
-ctrl IO_IR_4                            15820c000000000080
-#    valid=1 exec=CLS_IO width=WIDTH_WORD src2=SRC_IR io_write=1
+ctrl LDPS_IR                            1b008c000000000000
+#    valid=1 exec=CLS_LDPS priv=1 src2=SRC_IR
+ctrl BLOCK_IO                           188180000000000010
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 block_rept=1
+ctrl BLOCK_IO_2                         188180000000000000
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1
+ctrl BLOCK_IO_3                         188180000000000050
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_spec=1 block_rept=1
+ctrl BLOCK_IO_4                         188180000000000040
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_spec=1
+ctrl BLOCK_IO_5                         188180000000000090
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1 block_rept=1
+ctrl BLOCK_IO_6                         188180000000000080
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1
+ctrl BLOCK_IO_7                         1881800000000000d0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1 io_spec=1 block_rept=1
+ctrl BLOCK_IO_8                         1881800000000000c0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1 io_spec=1
+ctrl IO                                 158180000000000000
+#    valid=1 exec=CLS_IO width=WIDTH_BYTE priv=1
+ctrl IO_2                               158180000000000040
+#    valid=1 exec=CLS_IO width=WIDTH_BYTE priv=1 io_spec=1
+ctrl IO_3                               158180000000000080
+#    valid=1 exec=CLS_IO width=WIDTH_BYTE priv=1 io_write=1
+ctrl IO_4                               1581800000000000c0
+#    valid=1 exec=CLS_IO width=WIDTH_BYTE priv=1 io_write=1 io_spec=1
+ctrl BLOCK_IO_9                         188180000000000030
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_10                        188180000000000020
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 block_decr=1
+ctrl BLOCK_IO_11                        188180000000000070
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_spec=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_12                        188180000000000060
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_spec=1 block_decr=1
+ctrl BLOCK_IO_13                        1881800000000000b0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_14                        1881800000000000a0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1 block_decr=1
+ctrl BLOCK_IO_15                        1881800000000000f0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1 io_spec=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_16                        1881800000000000e0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_BYTE priv=1 io_write=1 io_spec=1 block_decr=1
+ctrl BLOCK_IO_17                        188280000000000010
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 block_rept=1
+ctrl BLOCK_IO_18                        188280000000000000
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1
+ctrl BLOCK_IO_19                        188280000000000050
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_spec=1 block_rept=1
+ctrl BLOCK_IO_20                        188280000000000040
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_spec=1
+ctrl BLOCK_IO_21                        188280000000000090
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1 block_rept=1
+ctrl BLOCK_IO_22                        188280000000000080
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1
+ctrl BLOCK_IO_23                        1882800000000000d0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1 io_spec=1 block_rept=1
+ctrl BLOCK_IO_24                        1882800000000000c0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1 io_spec=1
+ctrl IO_5                               158280000000000000
+#    valid=1 exec=CLS_IO width=WIDTH_WORD priv=1
+ctrl IO_6                               158280000000000040
+#    valid=1 exec=CLS_IO width=WIDTH_WORD priv=1 io_spec=1
+ctrl IO_7                               158280000000000080
+#    valid=1 exec=CLS_IO width=WIDTH_WORD priv=1 io_write=1
+ctrl IO_8                               1582800000000000c0
+#    valid=1 exec=CLS_IO width=WIDTH_WORD priv=1 io_write=1 io_spec=1
+ctrl BLOCK_IO_25                        188280000000000030
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_26                        188280000000000020
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 block_decr=1
+ctrl BLOCK_IO_27                        188280000000000070
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_spec=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_28                        188280000000000060
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_spec=1 block_decr=1
+ctrl BLOCK_IO_29                        1882800000000000b0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_30                        1882800000000000a0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1 block_decr=1
+ctrl BLOCK_IO_31                        1882800000000000f0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1 io_spec=1 block_decr=1 block_rept=1
+ctrl BLOCK_IO_32                        1882800000000000e0
+#    valid=1 exec=CLS_BLOCK_IO width=WIDTH_WORD priv=1 io_write=1 io_spec=1 block_decr=1
+ctrl IO_IR                              15818c000000000000
+#    valid=1 exec=CLS_IO width=WIDTH_BYTE priv=1 src2=SRC_IR
+ctrl IO_IR_2                            15828c000000000000
+#    valid=1 exec=CLS_IO width=WIDTH_WORD priv=1 src2=SRC_IR
+ctrl IO_IR_3                            15818c000000000080
+#    valid=1 exec=CLS_IO width=WIDTH_BYTE priv=1 src2=SRC_IR io_write=1
+ctrl IO_IR_4                            15828c000000000080
+#    valid=1 exec=CLS_IO width=WIDTH_WORD priv=1 src2=SRC_IR io_write=1
 ctrl UNIFIED_DA                         100110000000000000
 #    valid=1 width=WIDTH_BYTE src2=SRC_DA
 ctrl UNIFIED_X                          100114002000000000
@@ -591,38 +591,38 @@ ctrl LEA_X                              150014002000000000
 #    valid=1 exec=CLS_LEA src2=SRC_X src2_nib=REG_NIB2
 ctrl UNIFIED_LD_BX_REG_3                105f06000800000000
 #    valid=1 alu_op=OP_LD width=WIDTH_LONG src2=SRC_REG dst=DST_BX dst_nib=REG_NIB2
-ctrl LDPS_DA                            1b0010000000000000
-#    valid=1 exec=CLS_LDPS src2=SRC_DA
-ctrl HALT                               1b8000000000000000
-#    valid=1 exec=CLS_HALT
-ctrl IRET                               1c8000000000000000
-#    valid=1 exec=CLS_IRET
-ctrl MULTI_PROC                         198000000000000008
-#    valid=1 exec=CLS_MULTI_PROC mp_op=MPSET
-ctrl MULTI_PROC_2                       198000000000000004
-#    valid=1 exec=CLS_MULTI_PROC mp_op=MPRES
-ctrl MULTI_PROC_3                       198000000000000000
-#    valid=1 exec=CLS_MULTI_PROC
-ctrl MULTI_PROC_4                       19800000000000000c
-#    valid=1 exec=CLS_MULTI_PROC mp_op=MPREQ
-ctrl FCW_OP                             108000000118000000
-#    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=6144
-ctrl FCW_OP_2                           108000000110000000
-#    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=4096
-ctrl FCW_OP_3                           108000000108000000
-#    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=2048
-ctrl FCW_OP_4                           108000000100000000
-#    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR
-ctrl FCW_OP_5                           108000000018000000
-#    valid=1 exec=CLS_FCW_OP fcw_mask=6144
-ctrl FCW_OP_6                           108000000010000000
-#    valid=1 exec=CLS_FCW_OP fcw_mask=4096
-ctrl FCW_OP_7                           108000000008000000
-#    valid=1 exec=CLS_FCW_OP fcw_mask=2048
-ctrl FCW_OP_8                           108000000000000000
-#    valid=1 exec=CLS_FCW_OP
-ctrl LDCTL                              160000000000000000
-#    valid=1 exec=CLS_LDCTL
+ctrl LDPS_DA                            1b0090000000000000
+#    valid=1 exec=CLS_LDPS priv=1 src2=SRC_DA
+ctrl HALT                               1b8080000000000000
+#    valid=1 exec=CLS_HALT priv=1
+ctrl IRET                               1c8080000000000000
+#    valid=1 exec=CLS_IRET priv=1
+ctrl MULTI_PROC                         198080000000000008
+#    valid=1 exec=CLS_MULTI_PROC priv=1 mp_op=MPSET
+ctrl MULTI_PROC_2                       198080000000000004
+#    valid=1 exec=CLS_MULTI_PROC priv=1 mp_op=MPRES
+ctrl MULTI_PROC_3                       198080000000000000
+#    valid=1 exec=CLS_MULTI_PROC priv=1
+ctrl MULTI_PROC_4                       19808000000000000c
+#    valid=1 exec=CLS_MULTI_PROC priv=1 mp_op=MPREQ
+ctrl FCW_OP                             108080000118000000
+#    valid=1 exec=CLS_FCW_OP priv=1 fcw_op=FCW_CLEAR fcw_mask=6144
+ctrl FCW_OP_2                           108080000110000000
+#    valid=1 exec=CLS_FCW_OP priv=1 fcw_op=FCW_CLEAR fcw_mask=4096
+ctrl FCW_OP_3                           108080000108000000
+#    valid=1 exec=CLS_FCW_OP priv=1 fcw_op=FCW_CLEAR fcw_mask=2048
+ctrl FCW_OP_4                           108080000100000000
+#    valid=1 exec=CLS_FCW_OP priv=1 fcw_op=FCW_CLEAR
+ctrl FCW_OP_5                           108080000018000000
+#    valid=1 exec=CLS_FCW_OP priv=1 fcw_mask=6144
+ctrl FCW_OP_6                           108080000010000000
+#    valid=1 exec=CLS_FCW_OP priv=1 fcw_mask=4096
+ctrl FCW_OP_7                           108080000008000000
+#    valid=1 exec=CLS_FCW_OP priv=1 fcw_mask=2048
+ctrl FCW_OP_8                           108080000000000000
+#    valid=1 exec=CLS_FCW_OP priv=1
+ctrl LDCTL                              160080000000000000
+#    valid=1 exec=CLS_LDCTL priv=1
 ctrl SYS_CALL                           1c0000000000000000
 #    valid=1 exec=CLS_SYS_CALL
 ctrl UNIFIED_REG                        100104002000000000
@@ -665,11 +665,15 @@ ctrl FCW_OP_10                          108000000300000000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_LOAD_LO
 ctrl UNIFIED_COM_2                      101e00008800000000
 #    valid=1 alu_op=OP_COM width=WIDTH_WORD src1_nib=REG_NIB2 dst_nib=REG_NIB2
+ctrl FCW_OP_11                          108000000000000000
+#    valid=1 exec=CLS_FCW_OP
 ctrl UNIFIED_NEG_2                      102200008800000000
 #    valid=1 alu_op=OP_NEG width=WIDTH_WORD src1_nib=REG_NIB2 dst_nib=REG_NIB2
+ctrl FCW_OP_12                          108000000100000000
+#    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR
 ctrl UNIFIED_TEST_NONE_2                102600408800000000
 #    valid=1 alu_op=OP_TEST width=WIDTH_WORD dst=DST_NONE src1_nib=REG_NIB2 dst_nib=REG_NIB2
-ctrl FCW_OP_11                          108000000200000000
+ctrl FCW_OP_13                          108000000200000000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE
 ctrl UNIFIED_TSET_2                     106e00008800000000
 #    valid=1 alu_op=OP_TSET width=WIDTH_WORD src1_nib=REG_NIB2 dst_nib=REG_NIB2
@@ -677,95 +681,95 @@ ctrl UNIFIED_LD_NONE_ZERO               105e24400000000000
 #    valid=1 alu_op=OP_LD width=WIDTH_WORD src2=SRC_ZERO dst=DST_NONE
 ctrl UNIFIED_LD_ZERO_2                  105e24000800000000
 #    valid=1 alu_op=OP_LD width=WIDTH_WORD src2=SRC_ZERO dst_nib=REG_NIB2
-ctrl FCW_OP_12                          108000000000100000
+ctrl FCW_OP_14                          108000000000100000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=16
-ctrl FCW_OP_13                          108000000100100000
+ctrl FCW_OP_15                          108000000100100000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=16
-ctrl FCW_OP_14                          108000000200100000
+ctrl FCW_OP_16                          108000000200100000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=16
-ctrl FCW_OP_15                          108000000000200000
+ctrl FCW_OP_17                          108000000000200000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=32
-ctrl FCW_OP_16                          108000000100200000
+ctrl FCW_OP_18                          108000000100200000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=32
-ctrl FCW_OP_17                          108000000200200000
+ctrl FCW_OP_19                          108000000200200000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=32
-ctrl FCW_OP_18                          108000000000300000
+ctrl FCW_OP_20                          108000000000300000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=48
-ctrl FCW_OP_19                          108000000100300000
+ctrl FCW_OP_21                          108000000100300000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=48
-ctrl FCW_OP_20                          108000000200300000
+ctrl FCW_OP_22                          108000000200300000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=48
-ctrl FCW_OP_21                          108000000000400000
+ctrl FCW_OP_23                          108000000000400000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=64
-ctrl FCW_OP_22                          108000000100400000
+ctrl FCW_OP_24                          108000000100400000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=64
-ctrl FCW_OP_23                          108000000200400000
+ctrl FCW_OP_25                          108000000200400000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=64
-ctrl FCW_OP_24                          108000000000500000
+ctrl FCW_OP_26                          108000000000500000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=80
-ctrl FCW_OP_25                          108000000100500000
+ctrl FCW_OP_27                          108000000100500000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=80
-ctrl FCW_OP_26                          108000000200500000
+ctrl FCW_OP_28                          108000000200500000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=80
-ctrl FCW_OP_27                          108000000000600000
+ctrl FCW_OP_29                          108000000000600000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=96
-ctrl FCW_OP_28                          108000000100600000
+ctrl FCW_OP_30                          108000000100600000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=96
-ctrl FCW_OP_29                          108000000200600000
+ctrl FCW_OP_31                          108000000200600000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=96
-ctrl FCW_OP_30                          108000000000700000
+ctrl FCW_OP_32                          108000000000700000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=112
-ctrl FCW_OP_31                          108000000100700000
+ctrl FCW_OP_33                          108000000100700000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=112
-ctrl FCW_OP_32                          108000000200700000
+ctrl FCW_OP_34                          108000000200700000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=112
-ctrl FCW_OP_33                          108000000000800000
+ctrl FCW_OP_35                          108000000000800000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=128
-ctrl FCW_OP_34                          108000000100800000
+ctrl FCW_OP_36                          108000000100800000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=128
-ctrl FCW_OP_35                          108000000200800000
+ctrl FCW_OP_37                          108000000200800000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=128
-ctrl FCW_OP_36                          108000000000900000
+ctrl FCW_OP_38                          108000000000900000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=144
-ctrl FCW_OP_37                          108000000100900000
+ctrl FCW_OP_39                          108000000100900000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=144
-ctrl FCW_OP_38                          108000000200900000
+ctrl FCW_OP_40                          108000000200900000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=144
-ctrl FCW_OP_39                          108000000000a00000
+ctrl FCW_OP_41                          108000000000a00000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=160
-ctrl FCW_OP_40                          108000000100a00000
+ctrl FCW_OP_42                          108000000100a00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=160
-ctrl FCW_OP_41                          108000000200a00000
+ctrl FCW_OP_43                          108000000200a00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=160
-ctrl FCW_OP_42                          108000000000b00000
+ctrl FCW_OP_44                          108000000000b00000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=176
-ctrl FCW_OP_43                          108000000100b00000
+ctrl FCW_OP_45                          108000000100b00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=176
-ctrl FCW_OP_44                          108000000200b00000
+ctrl FCW_OP_46                          108000000200b00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=176
-ctrl FCW_OP_45                          108000000000c00000
+ctrl FCW_OP_47                          108000000000c00000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=192
-ctrl FCW_OP_46                          108000000100c00000
+ctrl FCW_OP_48                          108000000100c00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=192
-ctrl FCW_OP_47                          108000000200c00000
+ctrl FCW_OP_49                          108000000200c00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=192
-ctrl FCW_OP_48                          108000000000d00000
+ctrl FCW_OP_50                          108000000000d00000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=208
-ctrl FCW_OP_49                          108000000100d00000
+ctrl FCW_OP_51                          108000000100d00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=208
-ctrl FCW_OP_50                          108000000200d00000
+ctrl FCW_OP_52                          108000000200d00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=208
-ctrl FCW_OP_51                          108000000000e00000
+ctrl FCW_OP_53                          108000000000e00000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=224
-ctrl FCW_OP_52                          108000000100e00000
+ctrl FCW_OP_54                          108000000100e00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=224
-ctrl FCW_OP_53                          108000000200e00000
+ctrl FCW_OP_55                          108000000200e00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=224
-ctrl FCW_OP_54                          108000000000f00000
+ctrl FCW_OP_56                          108000000000f00000
 #    valid=1 exec=CLS_FCW_OP fcw_mask=240
-ctrl FCW_OP_55                          108000000100f00000
+ctrl FCW_OP_57                          108000000100f00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_CLEAR fcw_mask=240
-ctrl FCW_OP_56                          108000000200f00000
+ctrl FCW_OP_58                          108000000200f00000
 #    valid=1 exec=CLS_FCW_OP fcw_op=FCW_TOGGLE fcw_mask=240
 ctrl EPU                                1d8000000000000003
 #    valid=1 exec=CLS_EPU epu_kind=EPU_FLAGS
@@ -6856,161 +6860,161 @@ range 8CF8 8CF8 -  UNIFIED_LD_ZERO
 range 8CF9 8CF9 -  FCW_OP_10
 range 8CFA 8CFF -  UNDEF
 range 8D00 8D00 -  UNIFIED_COM_2
-range 8D01 8D01 -  FCW_OP_8
+range 8D01 8D01 -  FCW_OP_11
 range 8D02 8D02 -  UNIFIED_NEG_2
-range 8D03 8D03 -  FCW_OP_4
+range 8D03 8D03 -  FCW_OP_12
 range 8D04 8D04 -  UNIFIED_TEST_NONE_2
-range 8D05 8D05 -  FCW_OP_11
+range 8D05 8D05 -  FCW_OP_13
 range 8D06 8D06 -  UNIFIED_TSET_2
 range 8D07 8D07 -  UNIFIED_LD_NONE_ZERO
 range 8D08 8D08 -  UNIFIED_LD_ZERO_2
 range 8D09 8D0F -  UNDEF
 range 8D10 8D10 -  UNIFIED_COM_2
-range 8D11 8D11 -  FCW_OP_12
+range 8D11 8D11 -  FCW_OP_14
 range 8D12 8D12 -  UNIFIED_NEG_2
-range 8D13 8D13 -  FCW_OP_13
+range 8D13 8D13 -  FCW_OP_15
 range 8D14 8D14 -  UNIFIED_TEST_NONE_2
-range 8D15 8D15 -  FCW_OP_14
+range 8D15 8D15 -  FCW_OP_16
 range 8D16 8D16 -  UNIFIED_TSET_2
 range 8D17 8D17 -  UNIFIED_LD_NONE_ZERO
 range 8D18 8D18 -  UNIFIED_LD_ZERO_2
 range 8D19 8D1F -  UNDEF
 range 8D20 8D20 -  UNIFIED_COM_2
-range 8D21 8D21 -  FCW_OP_15
+range 8D21 8D21 -  FCW_OP_17
 range 8D22 8D22 -  UNIFIED_NEG_2
-range 8D23 8D23 -  FCW_OP_16
+range 8D23 8D23 -  FCW_OP_18
 range 8D24 8D24 -  UNIFIED_TEST_NONE_2
-range 8D25 8D25 -  FCW_OP_17
+range 8D25 8D25 -  FCW_OP_19
 range 8D26 8D26 -  UNIFIED_TSET_2
 range 8D27 8D27 -  UNIFIED_LD_NONE_ZERO
 range 8D28 8D28 -  UNIFIED_LD_ZERO_2
 range 8D29 8D2F -  UNDEF
 range 8D30 8D30 -  UNIFIED_COM_2
-range 8D31 8D31 -  FCW_OP_18
+range 8D31 8D31 -  FCW_OP_20
 range 8D32 8D32 -  UNIFIED_NEG_2
-range 8D33 8D33 -  FCW_OP_19
+range 8D33 8D33 -  FCW_OP_21
 range 8D34 8D34 -  UNIFIED_TEST_NONE_2
-range 8D35 8D35 -  FCW_OP_20
+range 8D35 8D35 -  FCW_OP_22
 range 8D36 8D36 -  UNIFIED_TSET_2
 range 8D37 8D37 -  UNIFIED_LD_NONE_ZERO
 range 8D38 8D38 -  UNIFIED_LD_ZERO_2
 range 8D39 8D3F -  UNDEF
 range 8D40 8D40 -  UNIFIED_COM_2
-range 8D41 8D41 -  FCW_OP_21
+range 8D41 8D41 -  FCW_OP_23
 range 8D42 8D42 -  UNIFIED_NEG_2
-range 8D43 8D43 -  FCW_OP_22
+range 8D43 8D43 -  FCW_OP_24
 range 8D44 8D44 -  UNIFIED_TEST_NONE_2
-range 8D45 8D45 -  FCW_OP_23
+range 8D45 8D45 -  FCW_OP_25
 range 8D46 8D46 -  UNIFIED_TSET_2
 range 8D47 8D47 -  UNIFIED_LD_NONE_ZERO
 range 8D48 8D48 -  UNIFIED_LD_ZERO_2
 range 8D49 8D4F -  UNDEF
 range 8D50 8D50 -  UNIFIED_COM_2
-range 8D51 8D51 -  FCW_OP_24
+range 8D51 8D51 -  FCW_OP_26
 range 8D52 8D52 -  UNIFIED_NEG_2
-range 8D53 8D53 -  FCW_OP_25
+range 8D53 8D53 -  FCW_OP_27
 range 8D54 8D54 -  UNIFIED_TEST_NONE_2
-range 8D55 8D55 -  FCW_OP_26
+range 8D55 8D55 -  FCW_OP_28
 range 8D56 8D56 -  UNIFIED_TSET_2
 range 8D57 8D57 -  UNIFIED_LD_NONE_ZERO
 range 8D58 8D58 -  UNIFIED_LD_ZERO_2
 range 8D59 8D5F -  UNDEF
 range 8D60 8D60 -  UNIFIED_COM_2
-range 8D61 8D61 -  FCW_OP_27
+range 8D61 8D61 -  FCW_OP_29
 range 8D62 8D62 -  UNIFIED_NEG_2
-range 8D63 8D63 -  FCW_OP_28
+range 8D63 8D63 -  FCW_OP_30
 range 8D64 8D64 -  UNIFIED_TEST_NONE_2
-range 8D65 8D65 -  FCW_OP_29
+range 8D65 8D65 -  FCW_OP_31
 range 8D66 8D66 -  UNIFIED_TSET_2
 range 8D67 8D67 -  UNIFIED_LD_NONE_ZERO
 range 8D68 8D68 -  UNIFIED_LD_ZERO_2
 range 8D69 8D6F -  UNDEF
 range 8D70 8D70 -  UNIFIED_COM_2
-range 8D71 8D71 -  FCW_OP_30
+range 8D71 8D71 -  FCW_OP_32
 range 8D72 8D72 -  UNIFIED_NEG_2
-range 8D73 8D73 -  FCW_OP_31
+range 8D73 8D73 -  FCW_OP_33
 range 8D74 8D74 -  UNIFIED_TEST_NONE_2
-range 8D75 8D75 -  FCW_OP_32
+range 8D75 8D75 -  FCW_OP_34
 range 8D76 8D76 -  UNIFIED_TSET_2
 range 8D77 8D77 -  UNIFIED_LD_NONE_ZERO
 range 8D78 8D78 -  UNIFIED_LD_ZERO_2
 range 8D79 8D7F -  UNDEF
 range 8D80 8D80 -  UNIFIED_COM_2
-range 8D81 8D81 -  FCW_OP_33
+range 8D81 8D81 -  FCW_OP_35
 range 8D82 8D82 -  UNIFIED_NEG_2
-range 8D83 8D83 -  FCW_OP_34
+range 8D83 8D83 -  FCW_OP_36
 range 8D84 8D84 -  UNIFIED_TEST_NONE_2
-range 8D85 8D85 -  FCW_OP_35
+range 8D85 8D85 -  FCW_OP_37
 range 8D86 8D86 -  UNIFIED_TSET_2
 range 8D87 8D87 -  UNIFIED_LD_NONE_ZERO
 range 8D88 8D88 -  UNIFIED_LD_ZERO_2
 range 8D89 8D8F -  UNDEF
 range 8D90 8D90 -  UNIFIED_COM_2
-range 8D91 8D91 -  FCW_OP_36
+range 8D91 8D91 -  FCW_OP_38
 range 8D92 8D92 -  UNIFIED_NEG_2
-range 8D93 8D93 -  FCW_OP_37
+range 8D93 8D93 -  FCW_OP_39
 range 8D94 8D94 -  UNIFIED_TEST_NONE_2
-range 8D95 8D95 -  FCW_OP_38
+range 8D95 8D95 -  FCW_OP_40
 range 8D96 8D96 -  UNIFIED_TSET_2
 range 8D97 8D97 -  UNIFIED_LD_NONE_ZERO
 range 8D98 8D98 -  UNIFIED_LD_ZERO_2
 range 8D99 8D9F -  UNDEF
 range 8DA0 8DA0 -  UNIFIED_COM_2
-range 8DA1 8DA1 -  FCW_OP_39
+range 8DA1 8DA1 -  FCW_OP_41
 range 8DA2 8DA2 -  UNIFIED_NEG_2
-range 8DA3 8DA3 -  FCW_OP_40
+range 8DA3 8DA3 -  FCW_OP_42
 range 8DA4 8DA4 -  UNIFIED_TEST_NONE_2
-range 8DA5 8DA5 -  FCW_OP_41
+range 8DA5 8DA5 -  FCW_OP_43
 range 8DA6 8DA6 -  UNIFIED_TSET_2
 range 8DA7 8DA7 -  UNIFIED_LD_NONE_ZERO
 range 8DA8 8DA8 -  UNIFIED_LD_ZERO_2
 range 8DA9 8DAF -  UNDEF
 range 8DB0 8DB0 -  UNIFIED_COM_2
-range 8DB1 8DB1 -  FCW_OP_42
+range 8DB1 8DB1 -  FCW_OP_44
 range 8DB2 8DB2 -  UNIFIED_NEG_2
-range 8DB3 8DB3 -  FCW_OP_43
+range 8DB3 8DB3 -  FCW_OP_45
 range 8DB4 8DB4 -  UNIFIED_TEST_NONE_2
-range 8DB5 8DB5 -  FCW_OP_44
+range 8DB5 8DB5 -  FCW_OP_46
 range 8DB6 8DB6 -  UNIFIED_TSET_2
 range 8DB7 8DB7 -  UNIFIED_LD_NONE_ZERO
 range 8DB8 8DB8 -  UNIFIED_LD_ZERO_2
 range 8DB9 8DBF -  UNDEF
 range 8DC0 8DC0 -  UNIFIED_COM_2
-range 8DC1 8DC1 -  FCW_OP_45
+range 8DC1 8DC1 -  FCW_OP_47
 range 8DC2 8DC2 -  UNIFIED_NEG_2
-range 8DC3 8DC3 -  FCW_OP_46
+range 8DC3 8DC3 -  FCW_OP_48
 range 8DC4 8DC4 -  UNIFIED_TEST_NONE_2
-range 8DC5 8DC5 -  FCW_OP_47
+range 8DC5 8DC5 -  FCW_OP_49
 range 8DC6 8DC6 -  UNIFIED_TSET_2
 range 8DC7 8DC7 -  UNIFIED_LD_NONE_ZERO
 range 8DC8 8DC8 -  UNIFIED_LD_ZERO_2
 range 8DC9 8DCF -  UNDEF
 range 8DD0 8DD0 -  UNIFIED_COM_2
-range 8DD1 8DD1 -  FCW_OP_48
+range 8DD1 8DD1 -  FCW_OP_50
 range 8DD2 8DD2 -  UNIFIED_NEG_2
-range 8DD3 8DD3 -  FCW_OP_49
+range 8DD3 8DD3 -  FCW_OP_51
 range 8DD4 8DD4 -  UNIFIED_TEST_NONE_2
-range 8DD5 8DD5 -  FCW_OP_50
+range 8DD5 8DD5 -  FCW_OP_52
 range 8DD6 8DD6 -  UNIFIED_TSET_2
 range 8DD7 8DD7 -  UNIFIED_LD_NONE_ZERO
 range 8DD8 8DD8 -  UNIFIED_LD_ZERO_2
 range 8DD9 8DDF -  UNDEF
 range 8DE0 8DE0 -  UNIFIED_COM_2
-range 8DE1 8DE1 -  FCW_OP_51
+range 8DE1 8DE1 -  FCW_OP_53
 range 8DE2 8DE2 -  UNIFIED_NEG_2
-range 8DE3 8DE3 -  FCW_OP_52
+range 8DE3 8DE3 -  FCW_OP_54
 range 8DE4 8DE4 -  UNIFIED_TEST_NONE_2
-range 8DE5 8DE5 -  FCW_OP_53
+range 8DE5 8DE5 -  FCW_OP_55
 range 8DE6 8DE6 -  UNIFIED_TSET_2
 range 8DE7 8DE7 -  UNIFIED_LD_NONE_ZERO
 range 8DE8 8DE8 -  UNIFIED_LD_ZERO_2
 range 8DE9 8DEF -  UNDEF
 range 8DF0 8DF0 -  UNIFIED_COM_2
-range 8DF1 8DF1 -  FCW_OP_54
+range 8DF1 8DF1 -  FCW_OP_56
 range 8DF2 8DF2 -  UNIFIED_NEG_2
-range 8DF3 8DF3 -  FCW_OP_55
+range 8DF3 8DF3 -  FCW_OP_57
 range 8DF4 8DF4 -  UNIFIED_TEST_NONE_2
-range 8DF5 8DF5 -  FCW_OP_56
+range 8DF5 8DF5 -  FCW_OP_58
 range 8DF6 8DF6 -  UNIFIED_TSET_2
 range 8DF7 8DF7 -  UNIFIED_LD_NONE_ZERO
 range 8DF8 8DF8 -  UNIFIED_LD_ZERO_2

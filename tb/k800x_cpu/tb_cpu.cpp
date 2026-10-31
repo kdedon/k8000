@@ -50,7 +50,7 @@ struct In {
     uint16_t ad;
 };
 struct Out {
-    bool ad_drive, as_n, ds_n, mreq_n, r_w, b_w, n_s, busack_n, mo_n;
+    bool ad_drive, as_n, ds_n, mreq_n, r_w, b_w, n_s, busack_n, mo_n, bus_drive, bus_lock;
     uint16_t ad;
     uint8_t sn, st;
 };
@@ -68,6 +68,8 @@ static Out decodeOut(unsigned bits, unsigned ad, unsigned sn, unsigned st) {
     o.ad_drive = bits >> 8 & 1; o.as_n = bits >> 7 & 1; o.ds_n = bits >> 6 & 1;
     o.mreq_n = bits >> 5 & 1; o.r_w = bits >> 4 & 1; o.b_w = bits >> 3 & 1;
     o.n_s = bits >> 2 & 1; o.busack_n = bits >> 1 & 1; o.mo_n = bits & 1;
+    o.bus_drive = o.busack_n; // the strobes are driven whenever the bus is not granted
+    o.bus_lock = false;
     o.ad = ad; o.sn = sn; o.st = st;
     return o;
 }
@@ -75,6 +77,7 @@ static Out readOut(Vz8000_cpu* t) {
     Out o;
     o.ad_drive = t->ad_drive; o.as_n = t->as_n; o.ds_n = t->ds_n; o.mreq_n = t->mreq_n;
     o.r_w = t->r_w; o.b_w = t->b_w; o.n_s = t->n_s; o.busack_n = t->busack_n; o.mo_n = t->mo_n;
+    o.bus_drive = t->bus_drive; o.bus_lock = t->bus_lock;
     o.ad = t->ad_out; o.sn = t->sn; o.st = t->st;
     return o;
 }
@@ -242,6 +245,8 @@ int main(int argc, char** argv) {
             cmp(exp.n_s == got.n_s, "N_S");
             cmp(exp.st == got.st, "ST");
             cmp(exp.busack_n == got.busack_n, "BUSACK_n");
+            cmp(exp.bus_drive == got.bus_drive, "BusDrive");
+            cmp(!(got.bus_lock && !got.busack_n), "BusLock"); // no grant while locked
             cmp(exp.mo_n == got.mo_n, "MO_n");
             if (exp.ad_drive && got.ad_drive) {
                 if (internalOp) { /* undefined */ }

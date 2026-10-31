@@ -3,12 +3,14 @@
 // REFRESH register: bit 15 RE, bits 14:9 RATE (0 means 64), bits 8:0 ROW.
 // While enabled the prescaler is clocked at CLK/4 whatever the bus is
 // doing; reaching zero reloads it from RATE and leaves a refresh pending.
+// Up to two are owed at once; one goes out per boundary.
 // Writing REFRESH with RE set also reloads it.
 // The sequencer issues the refresh cycle at its next allowed boundary.
 // Each refresh cycle puts ROW on AD and steps it by two (bit 0 cleared).
 //
-// `pending` includes an underflow on this edge: the sequencer may issue the
-// refresh in the same clock. `take` marks the edge the sequencer commits to
+// `pending` includes an underflow on this edge or the next: a refresh's T1
+// may be the clock the prescaler underflows in. A refresh taken against the
+// next edge's underflow swallows it. `take` marks the edge the sequencer commits to
 // a refresh, which on a T3 edge is one clock before its T1; `cyc_row` is
 // the row that cycle drives.
 
@@ -21,6 +23,7 @@ module z8000_refresh (
   input  logic       load,        // REFRESH written with RE set
   input  logic [5:0] load_rate,
   input  logic       take,
+  input  logic       keep,        // the refresh taken leaves the pending
   output logic       pending,
   output logic [8:0] row_next,    // ROW after this refresh
   output logic [8:0] cyc_row
@@ -28,9 +31,9 @@ module z8000_refresh (
 
   logic [1:0]  div4_q, div4_d;     // CLK/4 sub-divider
   logic [15:0] count_q, count_d;   // prescaler
-  logic        pending_q, pending_d;
+  logic [1:0]  owed_q, owed_d;     // refreshes owed, 0 to 2
   logic [8:0]  row_q;
-  logic        underflow;
+  logic        underflow, soon, skip_q;
 
   logic [15:0] count_dec, reload;
   logic [5:0]  rate_sel;
@@ -56,8 +59,16 @@ module z8000_refresh (
     if (load) count_d = reload;
   end
 
-  assign pending   = pending_q || underflow;
-  assign pending_d = pending && !take;
+  // A write on this edge is not seen; the CPU checks that none coincides
+  // with a take.
+  assign soon      = enable && div4_q == 2'd2 && count_q == 16'd1;
+  assign pending   = owed_q != 2'd0 || (underflow && !skip_q) || soon;
+  logic used;
+  logic [2:0] owed_in;
+  assign used      = take && !keep;
+  // A take against the next edge's underflow counts it now and skips it then.
+  assign owed_in   = {1'b0, owed_q} + {2'd0, underflow && !skip_q} + {2'd0, used && soon};
+  assign owed_d    = (owed_in > 3'd2 ? 2'd2 : owed_in[1:0]) - {1'b0, used && owed_in != 3'd0};
   assign row_next  = (row + 9'd2) & 9'h1FE;
   assign cyc_row   = take ? row : row_q;
 
@@ -69,10 +80,12 @@ module z8000_refresh (
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-      pending_q <= 1'b0;
+      owed_q    <= 2'd0;
+      skip_q    <= 1'b0;
       row_q     <= 9'd0;
     end else begin
-      pending_q <= pending_d;
+      owed_q    <= owed_d;
+      skip_q    <= used && soon;
       row_q     <= cyc_row;
     end
   end

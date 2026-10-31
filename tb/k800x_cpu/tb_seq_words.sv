@@ -14,21 +14,21 @@ module tb_seq_words;
   logic        reset_n;
   logic [15:0] ad_in;
   logic [15:0] ad_out;
-  logic        ad_drive;
+  logic        ad_drive, bus_drive;
   logic [6:0]  sn;
   logic        as_n, ds_n, mreq_n, r_w, b_w, n_s;
   logic [3:0]  st;
-  logic        busack_n, mo_n;
+  logic        busack_n, mo_n, bus_lock;
 
   z8000_cpu #(.SEGMENTED(1'b1), .VMPU(1'b0)) dut (
     .clk(clk), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(1'b1), .wait_n(1'b1), .busreq_n(1'b1),
     .nmi_n(1'b1), .nvi_n(1'b1), .vi_n(1'b1), .segt_n(1'b1),
     .abort_n(1'b1), .mi_n(1'b1),
-    .ad_out(ad_out), .ad_drive(ad_drive), .sn(sn),
+    .ad_out(ad_out), .ad_drive(ad_drive), .bus_drive(bus_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
     .r_w(r_w), .b_w(b_w), .n_s(n_s), .st(st),
-    .busack_n(busack_n), .mo_n(mo_n)
+    .busack_n(busack_n), .bus_lock(bus_lock), .mo_n(mo_n)
   );
 
   // Program memory in segment 0; the latched offset selects the word.
@@ -78,6 +78,7 @@ module tb_seq_words;
 
   localparam logic [15:0] SEG = 16'hC000;   // system, segmented
   localparam logic [15:0] NS  = 16'h4000;   // system, nonsegmented
+  localparam logic [15:0] EPA = 16'h2000;   // EPU instructions run, not trap
 
   initial begin
     reset_n = 1'b0;
@@ -92,8 +93,8 @@ module tb_seq_words;
     run("CPB DA,#imm SL",  SEG, 4, 16'h4C01, 16'h8100, 16'h0002, 16'h5A5A, 23'h010002, 16'h5A5A, 16'h0000);
     run("LDM R,DA SL",     SEG, 4, 16'h5C01, 16'h0302, 16'h8700, 16'h4567, 23'h074567, 16'h0302, 16'h0000);
     run("LDM X,R SL",      SEG, 4, 16'h5C19, 16'h0302, 16'h8700, 16'h4567, 23'h074567, 16'h0302, 16'h0000);
-    run("EPU DA SL",       SEG, 4, 16'h4E00, 16'hABCD, 16'h8100, 16'h2222, 23'h012222, 16'hABCD, 16'h0000);
-    run("EPU X to mem SL", SEG, 4, 16'h4E18, 16'hABCD, 16'h8100, 16'h2222, 23'h012222, 16'hABCD, 16'h0000);
+    run("EPU DA SL",       SEG | EPA, 4, 16'h4E00, 16'hABCD, 16'h8100, 16'h2222, 23'h012222, 16'hABCD, 16'h0000);
+    run("EPU X to mem SL", SEG | EPA, 4, 16'h4E18, 16'hABCD, 16'h8100, 16'h2222, 23'h012222, 16'hABCD, 16'h0000);
     // Short offset: segment and offset in one word.
     run("CP DA,#imm SS",   SEG, 3, 16'h4D01, 16'h0512, 16'hBEEF, 16'h0000, 23'h050012, 16'hBEEF, 16'h0000);
     run("LDM R,DA SS",     SEG, 3, 16'h5C01, 16'h0302, 16'h0745, 16'h0000, 23'h070045, 16'h0302, 16'h0000);
@@ -102,7 +103,7 @@ module tb_seq_words;
     // Nonsegmented: one address word.
     run("CP DA,#imm NS",   NS,  3, 16'h4D01, 16'h1234, 16'hBEEF, 16'h0000, 23'h001234, 16'hBEEF, 16'h0000);
     run("LDM R,DA NS",     NS,  3, 16'h5C01, 16'h0302, 16'h4567, 16'h0000, 23'h004567, 16'h0302, 16'h0000);
-    run("EPU DA NS",       NS,  3, 16'h4E00, 16'hABCD, 16'hFEDC, 16'h0000, 23'h00FEDC, 16'hABCD, 16'h0000);
+    run("EPU DA NS",       NS | EPA,  3, 16'h4E00, 16'hABCD, 16'hFEDC, 16'h0000, 23'h00FEDC, 16'hABCD, 16'h0000);
     pc_seg = 16'h0300;                       // the address takes the PC's segment
     run("CP DA,#imm NS seg 3", NS, 3, 16'h4D01, 16'h1234, 16'hBEEF, 16'h0000, 23'h031234, 16'hBEEF, 16'h0000);
     pc_seg = 16'h0000;

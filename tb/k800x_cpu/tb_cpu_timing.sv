@@ -38,21 +38,21 @@ module tb_cpu_timing
   logic        mi_n    = 1'b1;
 
   logic [15:0] ad_out;
-  logic        ad_drive;
+  logic        ad_drive, bus_drive;
   logic [6:0]  sn;
   logic        as_n, ds_n, mreq_n, r_w, b_w, n_s;
   logic [3:0]  st;
-  logic        busack_n, mo_n;
+  logic        busack_n, mo_n, bus_lock;
 
   z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
     .clk(clk), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(stop_n), .wait_n(wait_n), .busreq_n(busreq_n),
     .nmi_n(nmi_n), .nvi_n(nvi_n), .vi_n(vi_n), .segt_n(segt_n),
     .abort_n(abort_n), .mi_n(mi_n),
-    .ad_out(ad_out), .ad_drive(ad_drive), .sn(sn),
+    .ad_out(ad_out), .ad_drive(ad_drive), .bus_drive(bus_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
     .r_w(r_w), .b_w(b_w), .n_s(n_s), .st(st),
-    .busack_n(busack_n), .mo_n(mo_n)
+    .busack_n(busack_n), .bus_lock(bus_lock), .mo_n(mo_n)
   );
 
   logic mon_en = 1'b0;

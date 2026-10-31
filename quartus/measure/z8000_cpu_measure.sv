@@ -5,11 +5,11 @@
 module z8000_cpu_measure (
   input  logic        clk,
   input  logic [25:0] in_i,
-  output logic [35:0] out_o
+  output logic [37:0] out_o
 );
 
   logic [25:0] in_q;
-  logic [35:0] res;
+  logic [37:0] res;
 
   always_ff @(posedge clk) begin
     in_q  <= in_i;
@@ -31,6 +31,7 @@ module z8000_cpu_measure (
     .mi_n     (in_q[0]),
     .ad_out   (res[35:20]),
     .ad_drive (res[19]),
+    .bus_drive(res[37]),
     .sn       (res[18:12]),
     .as_n     (res[11]),
     .ds_n     (res[10]),
@@ -40,6 +41,7 @@ module z8000_cpu_measure (
     .n_s      (res[6]),
     .st       (res[5:2]),
     .busack_n (res[1]),
+    .bus_lock (res[36]),
     .mo_n     (res[0])
   );
 

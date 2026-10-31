@@ -14,6 +14,10 @@
 // arrival clock. `remaining` is a lower bound on clocks still needed: the
 // current phase's count, 1 while waiting, 0 when done.
 //
+// The result is final on the last clock of the last phase (`fin`), done the
+// clock after: MULT's last bit folds a clock before its step ends. A zero
+// path the wait covers ends on arrival with `done` alone.
+//
 // Nothing moves on a clock without `tick`. `pick_zero` is the path a
 // multiplier picks (the arriving one, else the one held); `adds_more` says
 // whether a MULTL extra add follows the step or add in progress.
@@ -28,6 +32,7 @@ module z8000_mult (
   input  logic        src_valid,
   input  logic [31:0] src,         // multiplier
   output logic        done,
+  output logic        fin,
   output logic [63:0] product,
   output logic [9:0]  remaining,
   output logic        pick_zero,
@@ -100,7 +105,7 @@ module z8000_mult (
   // Both paths' counts for a late multiplier are formed from the clocks
   // waited, before the multiplier picks one. A path the wait covers ends on
   // arrival.
-  logic       ends, fold, path_zero, cov_step, cov_zero, bits_done;
+  logic       ends, fold, path_zero, cov_step, cov_zero, bits_done, acc_early, last_w;
   logic [4:0] rem_dec, step_clks, zero_clks, late_step, late_zero, adds_left;
   state_e     next_st;
   logic [4:0] next_clks;
@@ -124,6 +129,9 @@ module z8000_mult (
     cov_zero  = (spent_q >= zero_clks - 5'd1);
     path_zero = arrive ? (src[15:0] == 16'd0 && (!wide_cur || src[31:16] == 16'd0))
                        : (addend_q == 64'd0);
+
+    last_w    = !wide_q && fold_last;
+    acc_early = state_q == ST_STEP && last_w && rem_q == 5'd2;
 
     unique case (state_q)
       ST_SETUP: begin
@@ -244,9 +252,11 @@ module z8000_mult (
     end else if (fold) begin
       cand_d    = {1'b0, cand_q[31:1]};
       addend_d  = {mult_now[62:0], 1'b0};
-      acc_d     = fold_acc;
+      acc_d     = last_w ? acc_q : fold_acc;
       bit_d     = bit_q + 6'd1;
       low_one_d = low_one_q || fold_set;
+    end else if (acc_early) begin
+      acc_d = fold_acc;
     end else if (arrive) begin
       addend_d = src_ext;
     end
@@ -271,6 +281,7 @@ module z8000_mult (
   // ---- outputs --------------------------------------------------------------
   always_comb begin
     done      = (state_q == ST_DONE);
+    fin       = ends && ((state_q == ST_STEP && last_w) || state_q == ST_FINISH || state_q == ST_ZERO);
     product   = acc_q;
     remaining = 10'd0;
     if (state_q != ST_DONE && state_q != ST_IDLE)
