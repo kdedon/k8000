@@ -25,7 +25,8 @@
 //     CLK rises, and every output is comparable after every record.
 //   * RESET_n low acts on every Tick regardless of CLK (asynchronous).
 //   * All Go outputs are registered (m.out persists between Ticks), so PA
-//     is compared only while PADrive=1 and Data only while DataDrive=1 --
+//     is compared only while PADrive=1 and Data only while DataDrive=1
+//     (DataMask always) --
 //     the held-but-undriven values are not pins.
 //   * SEGT_n/SUP_n are the resolved open-drain levels (0 = driving low).
 
@@ -55,6 +56,7 @@ struct Out {
     bool pa_drive, segt_n, sup_n, data_drive;
     uint32_t pa;
     uint16_t data;
+    uint8_t mask;
 };
 
 // Input bit order (MSB first): CLK RESET_n AS_n DS_n RW NS CS_n DMASYNC
@@ -66,16 +68,16 @@ static In decodeIn(unsigned bits, unsigned ad, unsigned sn, unsigned st) {
     return i;
 }
 // Output bit order (MSB first): PADrive SEGT_n SUP_n DataDrive
-static Out decodeOut(unsigned bits, unsigned pa, unsigned data) {
+static Out decodeOut(unsigned bits, unsigned pa, unsigned data, unsigned mask) {
     Out o;
     o.pa_drive = bits >> 3 & 1; o.segt_n = bits >> 2 & 1; o.sup_n = bits >> 1 & 1; o.data_drive = bits & 1;
-    o.pa = pa; o.data = data;
+    o.pa = pa; o.data = data; o.mask = mask;
     return o;
 }
 static Out readOut(Vz8010_mmu* t) {
     Out o;
-    o.pa_drive = t->pa_drive; o.segt_n = t->segt_n; o.sup_n = t->sup_n; o.data_drive = t->data_drive;
-    o.pa = t->pa; o.data = t->data;
+    o.pa_drive = t->pa_drive; o.segt_n = t->segt_n; o.sup_n = t->sup_n; o.data_drive = t->data_drive != 0;
+    o.pa = t->pa; o.data = t->data; o.mask = t->data_drive;
     return o;
 }
 
@@ -90,12 +92,12 @@ static std::string fmtRow(long tick, long clock, const In& in, const Out& e, con
                           const std::string& marks) {
     char buf[512];
     snprintf(buf, sizeof buf,
-             "%7ld %6ld  %d %d %c%c %c %c %c %c %04X %02X %-4s | %d %d %d %d %06X %04X | %d %d %d %d %06X %04X  %s",
+             "%7ld %6ld  %d %d %c%c %c %c %c %c %04X %02X %-4s | %d %d %d %d %06X %04X %02X | %d %d %d %d %06X %04X %02X  %s",
              tick, clock, in.clk, in.reset_n,
              in.as_n ? '-' : 'A', in.ds_n ? '-' : 'D', in.r_w ? 'R' : 'W', in.n_s ? 'N' : 'S',
              in.cs_n ? '-' : 'C', in.dmasync ? 'Y' : '-', in.ad, in.sn, stName(in.st),
-             e.pa_drive, e.segt_n, e.sup_n, e.data_drive, e.pa, e.data,
-             a.pa_drive, a.segt_n, a.sup_n, a.data_drive, a.pa, a.data,
+             e.pa_drive, e.segt_n, e.sup_n, e.data_drive, e.pa, e.data, e.mask,
+             a.pa_drive, a.segt_n, a.sup_n, a.data_drive, a.pa, a.data, a.mask,
              marks.c_str());
     return buf;
 }
@@ -193,12 +195,12 @@ int main(int argc, char** argv) {
             std::string what; ss >> what;
             if (!poke(ss, what)) { printf("RESULT SKIP %s: unsupported poke %s\n", vecPath.c_str(), what.c_str()); return 2; }
         } else if (tag == "T") {
-            std::string sInB, sAD, sSN, sST, sOutB, sPA, sData;
-            ss >> sInB >> sAD >> sSN >> sST >> sOutB >> sPA >> sData;
+            std::string sInB, sAD, sSN, sST, sOutB, sPA, sData, sMask;
+            ss >> sInB >> sAD >> sSN >> sST >> sOutB >> sPA >> sData >> sMask;
             In in = decodeIn(strtoul(sInB.c_str(), nullptr, 16), strtoul(sAD.c_str(), nullptr, 16),
                              strtoul(sSN.c_str(), nullptr, 16), strtoul(sST.c_str(), nullptr, 16));
             Out exp = decodeOut(strtoul(sOutB.c_str(), nullptr, 16), strtoul(sPA.c_str(), nullptr, 16),
-                                strtoul(sData.c_str(), nullptr, 16));
+                                strtoul(sData.c_str(), nullptr, 16), strtoul(sMask.c_str(), nullptr, 16));
             tick++;
             // drive inputs
             top->reset_n = in.reset_n; top->ad = in.ad; top->sn = in.sn; top->st = in.st;
@@ -218,6 +220,7 @@ int main(int argc, char** argv) {
             cmp(exp.segt_n == got.segt_n, "SEGT_n");
             cmp(exp.sup_n == got.sup_n, "SUP_n");
             cmp(exp.data_drive == got.data_drive, "DataDrive");
+            cmp(exp.mask == got.mask, "DataMask");
             if (exp.pa_drive && got.pa_drive) cmp(exp.pa == got.pa, "PA");
             if (exp.data_drive && got.data_drive) cmp(exp.data == got.data, "Data");
             std::string row = fmtRow(tick, clock, in, exp, got, marks.empty() ? "" : "<-- " + marks);

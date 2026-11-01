@@ -33,7 +33,7 @@ module tb_mmu_timing;
   logic [23:0] pa;
   logic        pa_drive, segt_n, sup_n;
   logic [15:0] data;
-  logic        data_drive;
+  logic [7:0]  data_drive;
 
   z8010_mmu dut (
     .clk(clk), .reset_n(reset_n),
@@ -103,11 +103,11 @@ module tb_mmu_timing;
     ad = {cmd, 8'h00}; st = ST_SPECIAL_IO; as_n = 1'b0; ds_n = 1'b1;
     r_w = 1'b1; cs_n = 1'b0;                                     phase();
     as_n = 1'b1;                                                 phase();
-    #1; early = data_drive;
+    #1; early = |data_drive;
     ad = 16'h0000; ds_n = 1'b0; cs_n = 1'b1;                     phase();
-    #1; during = data_drive; val = data[15:8];
+    #1; during = |data_drive; val = data[15:8];
     ds_n = 1'b1;                                                 phase();
-    #1; late = data_drive;
+    #1; late = |data_drive;
     idle_bus();
   endtask
 
@@ -126,7 +126,7 @@ module tb_mmu_timing;
     reset_n = 1'b0;
     repeat (4) @(posedge clk);
     #1;
-    ck(!pa_drive && !data_drive && segt_n && sup_n, "reset releases PA, Data, /SEGT and /SUP",
+    ck(!pa_drive && data_drive == 8'h00 && segt_n && sup_n, "reset releases PA, Data, /SEGT and /SUP",
        "p.562 Outputs: /SEGT and /SUP are open-drain and released when inactive; the PA drivers are enabled by the Mode Register MSEN bit, which a reset clears (with /CS High)",
        $sformatf("pa_drive=%0b data_drive=%0b segt_n=%0b sup_n=%0b", pa_drive, data_drive, segt_n, sup_n));
     reset_n = 1'b1;
