@@ -38,12 +38,12 @@ PKG_SRCS  := rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pk
 GEN_SRCS  := rtl/k800x_cpu/gen/z8000_decode_rom_gen.sv
 # The machine-cycle program ROM, for the units that walk programs.
 MC_SRCS   := rtl/k800x_cpu/gen/z8000_mc_pkg.sv rtl/k800x_cpu/gen/z8000_mc_rom_gen.sv
-RTL_UNITS := z8000_regfile z8000_alu z8000_mult z8000_div z8000_shift z8000_decode \
+RTL_UNITS := z8000_regfile z8000_alu z8000_serial z8000_decode \
              z8000_bus_unit z8000_sequencer z8000_cond z8000_execute z8000_int_unit z8000_refresh z8000_cpu
 # Modules the CPU top currently instantiates (extend as z8000_cpu.sv grows).
 CPU_MODS  := rtl/k800x_cpu/z8000_regfile.sv rtl/k800x_cpu/z8000_decode.sv rtl/k800x_cpu/z8000_bus_unit.sv \
              rtl/k800x_cpu/z8000_sequencer.sv rtl/k800x_cpu/z8000_cond.sv rtl/k800x_cpu/z8000_refresh.sv \
-             rtl/k800x_cpu/z8000_alu.sv rtl/k800x_cpu/z8000_execute.sv rtl/k800x_cpu/z8000_mult.sv rtl/k800x_cpu/z8000_div.sv rtl/k800x_cpu/z8000_shift.sv \
+             rtl/k800x_cpu/z8000_alu.sv rtl/k800x_cpu/z8000_execute.sv rtl/k800x_cpu/z8000_serial.sv \
              rtl/k800x_cpu/z8000_int_unit.sv
 CPU_SRCS  := $(PKG_SRCS) $(MC_SRCS) $(GEN_SRCS) $(CPU_MODS) rtl/k800x_cpu/z8000_cpu.sv
 
@@ -155,10 +155,10 @@ $(OBJ)/tb_regfile/tb_regfile: rtl/k800x_cpu/z8000_regfile.sv tb/k800x_cpu/tb_reg
 	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_regfile \
 	  rtl/k800x_cpu/z8000_regfile.sv tb/k800x_cpu/tb_regfile.sv -o tb_regfile >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
-$(OBJ)/tb_serial/tb_serial: $(PKG_SRCS) rtl/k800x_cpu/z8000_mult.sv rtl/k800x_cpu/z8000_div.sv rtl/k800x_cpu/z8000_shift.sv tb/k800x_cpu/tb_serial.sv
+$(OBJ)/tb_serial/tb_serial: $(PKG_SRCS) rtl/k800x_cpu/z8000_serial.sv tb/k800x_cpu/tb_serial.sv
 	@mkdir -p $(dir $@)
 	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_serial \
-	  $(PKG_SRCS) rtl/k800x_cpu/z8000_mult.sv rtl/k800x_cpu/z8000_div.sv rtl/k800x_cpu/z8000_shift.sv tb/k800x_cpu/tb_serial.sv -o tb_serial >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+	  $(PKG_SRCS) rtl/k800x_cpu/z8000_serial.sv tb/k800x_cpu/tb_serial.sv -o tb_serial >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 $(OBJ)/tb_refresh/tb_refresh: rtl/k800x_cpu/z8000_refresh.sv tb/k800x_cpu/tb_refresh.sv
 	@mkdir -p $(dir $@)

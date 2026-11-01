@@ -19,14 +19,21 @@ package z8000_mc_pkg;
   localparam int MC_FORM_W   = 9;
   localparam int MC_PROG_W   = 8;
   localparam int MC_POS_W    = 4;
-  localparam int MC_REPS_W   = 7;
+  localparam int MC_REPS_W   = 2;
   localparam int MC_CLOCKS_W = 4;
+
+  // The trap and interrupt entry programs, nonsegmented and segmented.
+  localparam int MC_PROG_TRAP_NS  = 202;
+  localparam int MC_PROG_TRAP_SEG = 203;
+  localparam int MC_PROG_INT_NS   = 204;
+  localparam int MC_PROG_INT_SEG  = 205;
 
   // F1 first instruction word, FN later word, FA address word, R/W memory
   // read/write, IO, EPU transfer, AF aborted fetch, I internal operation,
-  // IA interrupt acknowledge.
+  // IA interrupt acknowledge, IU internal operations ended by the serial
+  // unit, repeated until its last.
   typedef enum logic [3:0] {
-    MC_F1, MC_FN, MC_FA, MC_R, MC_W, MC_IO, MC_EPU, MC_AF, MC_I, MC_IA
+    MC_F1, MC_FN, MC_FA, MC_R, MC_W, MC_IO, MC_EPU, MC_AF, MC_I, MC_IA, MC_IU
   } mc_kind_e;
 
   typedef enum logic [1:0] {
@@ -34,7 +41,7 @@ package z8000_mc_pkg;
   } mc_col_e;
 
   typedef enum logic [1:0] {
-    MC_PATH_DEFAULT, MC_PATH_NOT_TAKEN, MC_PATH_ZERO, MC_PATH_OVERFLOW
+    MC_PATH_DEFAULT, MC_PATH_NOT_TAKEN, MC_PATH_ZERO
   } mc_path_e;
 
   typedef struct packed {

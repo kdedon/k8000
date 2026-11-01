@@ -62,6 +62,11 @@ The Go tests that sweep every form, column or snapshot point
 `TestEPADirections`) are not recorded (`vecNotRecorded` in the recorder);
 they stay checks of the model.
 
+In `F REGS`, `----` marks a register the instruction leaves undefined
+(the destination of a DIV/DIVL past the quotient's width), not written
+since; it is not compared. The mark covers only `F REGS`, so a vector that
+stores or uses a case-3 destination would diverge.
+
 `X unsupported <reason>` means the test restored a Go snapshot or set a
 refresh pending directly (micro-architectural state the RTL cannot be
 poked with); the harness reports SKIP.

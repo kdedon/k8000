@@ -1381,21 +1381,18 @@ module z8000_mc_prog_gen
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd20;
               MC_PATH_ZERO: prog = 8'd21;
-              MC_PATH_OVERFLOW: prog = 8'd20;
               default: prog = 8'd20;
             endcase
           MC_COL_SL:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd20;
               MC_PATH_ZERO: prog = 8'd21;
-              MC_PATH_OVERFLOW: prog = 8'd20;
               default: prog = 8'd20;
             endcase
           default:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd20;
               MC_PATH_ZERO: prog = 8'd21;
-              MC_PATH_OVERFLOW: prog = 8'd20;
               default: prog = 8'd20;
             endcase
         endcase
@@ -1406,21 +1403,18 @@ module z8000_mc_prog_gen
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd22;
               MC_PATH_ZERO: prog = 8'd23;
-              MC_PATH_OVERFLOW: prog = 8'd22;
               default: prog = 8'd22;
             endcase
           MC_COL_SL:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd22;
               MC_PATH_ZERO: prog = 8'd23;
-              MC_PATH_OVERFLOW: prog = 8'd22;
               default: prog = 8'd22;
             endcase
           default:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd22;
               MC_PATH_ZERO: prog = 8'd23;
-              MC_PATH_OVERFLOW: prog = 8'd22;
               default: prog = 8'd22;
             endcase
         endcase
@@ -1431,21 +1425,18 @@ module z8000_mc_prog_gen
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd24;
               MC_PATH_ZERO: prog = 8'd25;
-              MC_PATH_OVERFLOW: prog = 8'd24;
               default: prog = 8'd24;
             endcase
           MC_COL_SL:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd24;
               MC_PATH_ZERO: prog = 8'd25;
-              MC_PATH_OVERFLOW: prog = 8'd24;
               default: prog = 8'd24;
             endcase
           default:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd24;
               MC_PATH_ZERO: prog = 8'd25;
-              MC_PATH_OVERFLOW: prog = 8'd24;
               default: prog = 8'd24;
             endcase
         endcase
@@ -1456,776 +1447,671 @@ module z8000_mc_prog_gen
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd26;
               MC_PATH_ZERO: prog = 8'd27;
-              MC_PATH_OVERFLOW: prog = 8'd26;
               default: prog = 8'd26;
             endcase
           MC_COL_SL:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd26;
               MC_PATH_ZERO: prog = 8'd27;
-              MC_PATH_OVERFLOW: prog = 8'd26;
               default: prog = 8'd26;
             endcase
           default:
             unique case (path)
               MC_PATH_NOT_TAKEN: prog = 8'd26;
               MC_PATH_ZERO: prog = 8'd27;
-              MC_PATH_OVERFLOW: prog = 8'd26;
               default: prog = 8'd26;
             endcase
         endcase
       end
-      9'd58: begin  // DIVL R,src IM
-        unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd28;
-              MC_PATH_ZERO: prog = 8'd29;
-              MC_PATH_OVERFLOW: prog = 8'd30;
-              default: prog = 8'd28;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd28;
-              MC_PATH_ZERO: prog = 8'd29;
-              MC_PATH_OVERFLOW: prog = 8'd30;
-              default: prog = 8'd28;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd28;
-              MC_PATH_ZERO: prog = 8'd29;
-              MC_PATH_OVERFLOW: prog = 8'd30;
-              default: prog = 8'd28;
-            endcase
-        endcase
-      end
-      9'd59: begin  // DIVL R,src IR
-        unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd31;
-              MC_PATH_ZERO: prog = 8'd32;
-              MC_PATH_OVERFLOW: prog = 8'd33;
-              default: prog = 8'd31;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd31;
-              MC_PATH_ZERO: prog = 8'd32;
-              MC_PATH_OVERFLOW: prog = 8'd33;
-              default: prog = 8'd31;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd31;
-              MC_PATH_ZERO: prog = 8'd32;
-              MC_PATH_OVERFLOW: prog = 8'd33;
-              default: prog = 8'd31;
-            endcase
-        endcase
-      end
-      9'd60: begin  // DIV R,src IM
-        unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd34;
-              MC_PATH_ZERO: prog = 8'd35;
-              MC_PATH_OVERFLOW: prog = 8'd36;
-              default: prog = 8'd34;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd34;
-              MC_PATH_ZERO: prog = 8'd35;
-              MC_PATH_OVERFLOW: prog = 8'd36;
-              default: prog = 8'd34;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd34;
-              MC_PATH_ZERO: prog = 8'd35;
-              MC_PATH_OVERFLOW: prog = 8'd36;
-              default: prog = 8'd34;
-            endcase
-        endcase
-      end
-      9'd61: begin  // DIV R,src IR
-        unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd37;
-              MC_PATH_ZERO: prog = 8'd38;
-              MC_PATH_OVERFLOW: prog = 8'd39;
-              default: prog = 8'd37;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd37;
-              MC_PATH_ZERO: prog = 8'd38;
-              MC_PATH_OVERFLOW: prog = 8'd39;
-              default: prog = 8'd37;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd37;
-              MC_PATH_ZERO: prog = 8'd38;
-              MC_PATH_OVERFLOW: prog = 8'd39;
-              default: prog = 8'd37;
-            endcase
-        endcase
-      end
+      9'd58: prog = 8'd28;  // DIVL R,src IM
+      9'd59: prog = 8'd29;  // DIVL R,src IR
+      9'd60: prog = 8'd24;  // DIV R,src IM
+      9'd61: prog = 8'd26;  // DIV R,src IR
       9'd62: prog = 8'd10;  // LDM R,src,n IR
-      9'd63: prog = 8'd40;  // TESTL dst IR
+      9'd63: prog = 8'd30;  // TESTL dst IR
       9'd64: prog = 8'd11;  // LDM dst,R,n IR
-      9'd65: prog = 8'd41;  // LDL dst,R IR
+      9'd65: prog = 8'd31;  // LDL dst,R IR
       9'd66: begin  // JP cc,dst IR (taken)
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd43;
-              MC_PATH_ZERO: prog = 8'd44;
-              MC_PATH_OVERFLOW: prog = 8'd44;
-              default: prog = 8'd44;
+              MC_PATH_NOT_TAKEN: prog = 8'd33;
+              MC_PATH_ZERO: prog = 8'd34;
+              default: prog = 8'd34;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd43;
-              MC_PATH_ZERO: prog = 8'd44;
-              MC_PATH_OVERFLOW: prog = 8'd44;
-              default: prog = 8'd44;
+              MC_PATH_NOT_TAKEN: prog = 8'd33;
+              MC_PATH_ZERO: prog = 8'd34;
+              default: prog = 8'd34;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd43;
-              MC_PATH_ZERO: prog = 8'd42;
-              MC_PATH_OVERFLOW: prog = 8'd42;
-              default: prog = 8'd42;
+              MC_PATH_NOT_TAKEN: prog = 8'd33;
+              MC_PATH_ZERO: prog = 8'd32;
+              default: prog = 8'd32;
             endcase
         endcase
       end
       9'd67: begin  // CALL dst IR
         unique case (col)
-          MC_COL_SS: prog = 8'd46;
-          MC_COL_SL: prog = 8'd46;
-          default: prog = 8'd45;
+          MC_COL_SS: prog = 8'd36;
+          MC_COL_SL: prog = 8'd36;
+          default: prog = 8'd35;
         endcase
       end
       9'd68: prog = 8'd1;  // LDB R,src IM
       9'd69: prog = 8'd2;  // LDB R,src IR
       9'd70: prog = 8'd1;  // LD R,src IM
       9'd71: prog = 8'd2;  // LD R,src IR
-      9'd72: prog = 8'd47;  // RESB dst,R R
-      9'd73: prog = 8'd48;  // RESB dst,b IR
-      9'd74: prog = 8'd47;  // RES dst,R R
-      9'd75: prog = 8'd48;  // RES dst,b IR
-      9'd76: prog = 8'd47;  // SETB dst,R R
-      9'd77: prog = 8'd48;  // SETB dst,b IR
-      9'd78: prog = 8'd47;  // SET dst,R R
-      9'd79: prog = 8'd48;  // SET dst,b IR
-      9'd80: prog = 8'd47;  // BITB dst,R R
+      9'd72: prog = 8'd37;  // RESB dst,R R
+      9'd73: prog = 8'd38;  // RESB dst,b IR
+      9'd74: prog = 8'd37;  // RES dst,R R
+      9'd75: prog = 8'd38;  // RES dst,b IR
+      9'd76: prog = 8'd37;  // SETB dst,R R
+      9'd77: prog = 8'd38;  // SETB dst,b IR
+      9'd78: prog = 8'd37;  // SET dst,R R
+      9'd79: prog = 8'd38;  // SET dst,b IR
+      9'd80: prog = 8'd37;  // BITB dst,R R
       9'd81: prog = 8'd5;  // BITB dst,b IR
-      9'd82: prog = 8'd47;  // BIT dst,R R
+      9'd82: prog = 8'd37;  // BIT dst,R R
       9'd83: prog = 8'd5;  // BIT dst,b IR
-      9'd84: prog = 8'd48;  // INCB dst,n IR
-      9'd85: prog = 8'd48;  // INC dst,n IR
-      9'd86: prog = 8'd48;  // DECB dst,n IR
-      9'd87: prog = 8'd48;  // DEC dst,n IR
+      9'd84: prog = 8'd38;  // INCB dst,n IR
+      9'd85: prog = 8'd38;  // INC dst,n IR
+      9'd86: prog = 8'd38;  // DECB dst,n IR
+      9'd87: prog = 8'd38;  // DEC dst,n IR
       9'd88: prog = 8'd19;  // EXB R,src IR
       9'd89: prog = 8'd19;  // EX R,src IR
       9'd90: prog = 8'd8;  // LDB dst,R IR
       9'd91: prog = 8'd8;  // LD dst,R IR
-      9'd92: prog = 8'd49;  // LDB R,src RA
-      9'd93: prog = 8'd49;  // LDB R,src BA
-      9'd94: prog = 8'd49;  // LD R,src RA
-      9'd95: prog = 8'd49;  // LD R,src BA
-      9'd96: prog = 8'd50;  // LDB dst,R RA
-      9'd97: prog = 8'd50;  // LDB dst,R BA
-      9'd98: prog = 8'd50;  // LD dst,R RA
-      9'd99: prog = 8'd50;  // LD dst,R BA
-      9'd100: prog = 8'd51;  // LDAR R,src RA
-      9'd101: prog = 8'd51;  // LDA R,src BA
-      9'd102: prog = 8'd52;  // LDL R,src RA
-      9'd103: prog = 8'd52;  // LDL R,src BA
-      9'd104: prog = 8'd53;  // LDL dst,R RA
-      9'd105: prog = 8'd53;  // LDL dst,R BA
+      9'd92: prog = 8'd39;  // LDB R,src RA
+      9'd93: prog = 8'd39;  // LDB R,src BA
+      9'd94: prog = 8'd39;  // LD R,src RA
+      9'd95: prog = 8'd39;  // LD R,src BA
+      9'd96: prog = 8'd40;  // LDB dst,R RA
+      9'd97: prog = 8'd40;  // LDB dst,R BA
+      9'd98: prog = 8'd40;  // LD dst,R RA
+      9'd99: prog = 8'd40;  // LD dst,R BA
+      9'd100: prog = 8'd41;  // LDAR R,src RA
+      9'd101: prog = 8'd41;  // LDA R,src BA
+      9'd102: prog = 8'd42;  // LDL R,src RA
+      9'd103: prog = 8'd42;  // LDL R,src BA
+      9'd104: prog = 8'd43;  // LDL dst,R RA
+      9'd105: prog = 8'd43;  // LDL dst,R BA
       9'd106: begin  // LDPS src IR
         unique case (col)
-          MC_COL_SS: prog = 8'd55;
-          MC_COL_SL: prog = 8'd55;
-          default: prog = 8'd54;
+          MC_COL_SS: prog = 8'd45;
+          MC_COL_SL: prog = 8'd45;
+          default: prog = 8'd44;
         endcase
       end
-      9'd107: prog = 8'd56;  // INIB IR
-      9'd108: prog = 8'd57;  // INIRB IR
-      9'd109: prog = 8'd56;  // SINIB IR
-      9'd110: prog = 8'd57;  // SINIRB IR
-      9'd111: prog = 8'd58;  // OUTIB IR
-      9'd112: prog = 8'd59;  // OTIRB IR
-      9'd113: prog = 8'd58;  // SOUTIB IR
-      9'd114: prog = 8'd59;  // SOTIRB IR
-      9'd115: prog = 8'd60;  // INB DA
-      9'd116: prog = 8'd60;  // SINB DA
-      9'd117: prog = 8'd60;  // OUTB DA
-      9'd118: prog = 8'd60;  // SOUTB DA
-      9'd119: prog = 8'd56;  // INDB IR
-      9'd120: prog = 8'd57;  // INDRB IR
-      9'd121: prog = 8'd56;  // SINDB IR
-      9'd122: prog = 8'd57;  // SINDRB IR
-      9'd123: prog = 8'd58;  // OUTDB IR
-      9'd124: prog = 8'd59;  // OTDRB IR
-      9'd125: prog = 8'd58;  // SOUTDB IR
-      9'd126: prog = 8'd59;  // SOTDRB IR
-      9'd127: prog = 8'd56;  // INI IR
-      9'd128: prog = 8'd57;  // INIR IR
-      9'd129: prog = 8'd56;  // SINI IR
-      9'd130: prog = 8'd57;  // SINIR IR
-      9'd131: prog = 8'd58;  // OUTI IR
-      9'd132: prog = 8'd59;  // OTIR IR
-      9'd133: prog = 8'd58;  // SOUTI IR
-      9'd134: prog = 8'd59;  // SOTIR IR
-      9'd135: prog = 8'd60;  // IN DA
-      9'd136: prog = 8'd60;  // SIN DA
-      9'd137: prog = 8'd60;  // OUT DA
-      9'd138: prog = 8'd60;  // SOUT DA
-      9'd139: prog = 8'd56;  // IND IR
-      9'd140: prog = 8'd57;  // INDR IR
-      9'd141: prog = 8'd56;  // SIND IR
-      9'd142: prog = 8'd57;  // SINDR IR
-      9'd143: prog = 8'd58;  // OUTD IR
-      9'd144: prog = 8'd59;  // OTDR IR
-      9'd145: prog = 8'd58;  // SOUTD IR
-      9'd146: prog = 8'd59;  // SOTDR IR
-      9'd147: prog = 8'd61;  // INB IR
-      9'd148: prog = 8'd61;  // IN IR
-      9'd149: prog = 8'd61;  // OUTB IR
-      9'd150: prog = 8'd61;  // OUT IR
+      9'd107: prog = 8'd46;  // INIB IR
+      9'd108: prog = 8'd47;  // INIRB IR
+      9'd109: prog = 8'd46;  // SINIB IR
+      9'd110: prog = 8'd47;  // SINIRB IR
+      9'd111: prog = 8'd48;  // OUTIB IR
+      9'd112: prog = 8'd49;  // OTIRB IR
+      9'd113: prog = 8'd48;  // SOUTIB IR
+      9'd114: prog = 8'd49;  // SOTIRB IR
+      9'd115: prog = 8'd50;  // INB DA
+      9'd116: prog = 8'd50;  // SINB DA
+      9'd117: prog = 8'd50;  // OUTB DA
+      9'd118: prog = 8'd50;  // SOUTB DA
+      9'd119: prog = 8'd46;  // INDB IR
+      9'd120: prog = 8'd47;  // INDRB IR
+      9'd121: prog = 8'd46;  // SINDB IR
+      9'd122: prog = 8'd47;  // SINDRB IR
+      9'd123: prog = 8'd48;  // OUTDB IR
+      9'd124: prog = 8'd49;  // OTDRB IR
+      9'd125: prog = 8'd48;  // SOUTDB IR
+      9'd126: prog = 8'd49;  // SOTDRB IR
+      9'd127: prog = 8'd46;  // INI IR
+      9'd128: prog = 8'd47;  // INIR IR
+      9'd129: prog = 8'd46;  // SINI IR
+      9'd130: prog = 8'd47;  // SINIR IR
+      9'd131: prog = 8'd48;  // OUTI IR
+      9'd132: prog = 8'd49;  // OTIR IR
+      9'd133: prog = 8'd48;  // SOUTI IR
+      9'd134: prog = 8'd49;  // SOTIR IR
+      9'd135: prog = 8'd50;  // IN DA
+      9'd136: prog = 8'd50;  // SIN DA
+      9'd137: prog = 8'd50;  // OUT DA
+      9'd138: prog = 8'd50;  // SOUT DA
+      9'd139: prog = 8'd46;  // IND IR
+      9'd140: prog = 8'd47;  // INDR IR
+      9'd141: prog = 8'd46;  // SIND IR
+      9'd142: prog = 8'd47;  // SINDR IR
+      9'd143: prog = 8'd48;  // OUTD IR
+      9'd144: prog = 8'd49;  // OTDR IR
+      9'd145: prog = 8'd48;  // SOUTD IR
+      9'd146: prog = 8'd49;  // SOTDR IR
+      9'd147: prog = 8'd51;  // INB IR
+      9'd148: prog = 8'd51;  // IN IR
+      9'd149: prog = 8'd51;  // OUTB IR
+      9'd150: prog = 8'd51;  // OUT IR
       9'd151: begin  // ADDB R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd152: begin  // ADDB R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd153: begin  // ADD R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd154: begin  // ADD R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd155: begin  // SUBB R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd156: begin  // SUBB R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd157: begin  // SUB R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd158: begin  // SUB R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd159: begin  // ORB R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd160: begin  // ORB R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd161: begin  // OR R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd162: begin  // OR R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd163: begin  // ANDB R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd164: begin  // ANDB R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd165: begin  // AND R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd166: begin  // AND R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd167: begin  // XORB R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd168: begin  // XORB R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd169: begin  // XOR R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd170: begin  // XOR R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd171: begin  // CPB R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
         endcase
       end
       9'd172: begin  // CPB R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
         endcase
       end
       9'd173: begin  // CP R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
+        endcase
+      end
+      9'd174: begin  // CP R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
+        endcase
+      end
+      9'd175: begin  // COMB dst DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd58;
+          default: prog = 8'd56;
+        endcase
+      end
+      9'd176: begin  // CPB dst,IM DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd60;
+          MC_COL_SL: prog = 8'd61;
+          default: prog = 8'd59;
+        endcase
+      end
+      9'd177: begin  // NEGB dst DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd58;
+          default: prog = 8'd56;
+        endcase
+      end
+      9'd178: begin  // TESTB dst DA
         unique case (col)
           MC_COL_SS: prog = 8'd63;
           MC_COL_SL: prog = 8'd64;
           default: prog = 8'd62;
         endcase
       end
-      9'd174: begin  // CP R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
-        endcase
-      end
-      9'd175: begin  // COMB dst DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd68;
-          default: prog = 8'd66;
-        endcase
-      end
-      9'd176: begin  // CPB dst,IM DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd70;
-          MC_COL_SL: prog = 8'd71;
-          default: prog = 8'd69;
-        endcase
-      end
-      9'd177: begin  // NEGB dst DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd68;
-          default: prog = 8'd66;
-        endcase
-      end
-      9'd178: begin  // TESTB dst DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd73;
-          MC_COL_SL: prog = 8'd74;
-          default: prog = 8'd72;
-        endcase
-      end
       9'd179: begin  // LDB dst,IM DA
         unique case (col)
-          MC_COL_SS: prog = 8'd76;
-          MC_COL_SL: prog = 8'd77;
-          default: prog = 8'd75;
+          MC_COL_SS: prog = 8'd66;
+          MC_COL_SL: prog = 8'd67;
+          default: prog = 8'd65;
         endcase
       end
       9'd180: begin  // TSETB dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd79;
-          MC_COL_SL: prog = 8'd80;
-          default: prog = 8'd78;
+          MC_COL_SS: prog = 8'd69;
+          MC_COL_SL: prog = 8'd70;
+          default: prog = 8'd68;
         endcase
       end
       9'd181: begin  // CLRB dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd83;
-          default: prog = 8'd81;
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd73;
+          default: prog = 8'd71;
         endcase
       end
       9'd182: begin  // COMB dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd84;
-          default: prog = 8'd67;
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd74;
+          default: prog = 8'd57;
         endcase
       end
       9'd183: begin  // CPB dst,IM X
         unique case (col)
-          MC_COL_SS: prog = 8'd70;
-          MC_COL_SL: prog = 8'd85;
-          default: prog = 8'd70;
+          MC_COL_SS: prog = 8'd60;
+          MC_COL_SL: prog = 8'd75;
+          default: prog = 8'd60;
         endcase
       end
       9'd184: begin  // NEGB dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd84;
-          default: prog = 8'd67;
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd74;
+          default: prog = 8'd57;
         endcase
       end
       9'd185: begin  // TESTB dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd73;
-          MC_COL_SL: prog = 8'd86;
-          default: prog = 8'd73;
+          MC_COL_SS: prog = 8'd63;
+          MC_COL_SL: prog = 8'd76;
+          default: prog = 8'd63;
         endcase
       end
       9'd186: begin  // LDB dst,IM X
         unique case (col)
-          MC_COL_SS: prog = 8'd76;
-          MC_COL_SL: prog = 8'd87;
-          default: prog = 8'd76;
+          MC_COL_SS: prog = 8'd66;
+          MC_COL_SL: prog = 8'd77;
+          default: prog = 8'd66;
         endcase
       end
       9'd187: begin  // TSETB dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd79;
-          MC_COL_SL: prog = 8'd88;
-          default: prog = 8'd79;
+          MC_COL_SS: prog = 8'd69;
+          MC_COL_SL: prog = 8'd78;
+          default: prog = 8'd69;
         endcase
       end
       9'd188: begin  // CLRB dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd89;
-          default: prog = 8'd82;
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd79;
+          default: prog = 8'd72;
         endcase
       end
       9'd189: begin  // COM dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd68;
-          default: prog = 8'd66;
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd58;
+          default: prog = 8'd56;
         endcase
       end
       9'd190: begin  // CP dst,IM DA
         unique case (col)
-          MC_COL_SS: prog = 8'd70;
-          MC_COL_SL: prog = 8'd71;
-          default: prog = 8'd69;
+          MC_COL_SS: prog = 8'd60;
+          MC_COL_SL: prog = 8'd61;
+          default: prog = 8'd59;
         endcase
       end
       9'd191: begin  // NEG dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd68;
-          default: prog = 8'd66;
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd58;
+          default: prog = 8'd56;
         endcase
       end
       9'd192: begin  // TEST dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd73;
-          MC_COL_SL: prog = 8'd74;
-          default: prog = 8'd72;
+          MC_COL_SS: prog = 8'd63;
+          MC_COL_SL: prog = 8'd64;
+          default: prog = 8'd62;
         endcase
       end
       9'd193: begin  // LD dst,IM DA
         unique case (col)
-          MC_COL_SS: prog = 8'd76;
-          MC_COL_SL: prog = 8'd77;
-          default: prog = 8'd75;
+          MC_COL_SS: prog = 8'd66;
+          MC_COL_SL: prog = 8'd67;
+          default: prog = 8'd65;
         endcase
       end
       9'd194: begin  // TSET dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd79;
-          MC_COL_SL: prog = 8'd80;
-          default: prog = 8'd78;
+          MC_COL_SS: prog = 8'd69;
+          MC_COL_SL: prog = 8'd70;
+          default: prog = 8'd68;
         endcase
       end
       9'd195: begin  // CLR dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd83;
-          default: prog = 8'd81;
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd73;
+          default: prog = 8'd71;
         endcase
       end
       9'd196: begin  // COM dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd84;
-          default: prog = 8'd67;
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd74;
+          default: prog = 8'd57;
         endcase
       end
       9'd197: begin  // CP dst,IM X
         unique case (col)
-          MC_COL_SS: prog = 8'd70;
-          MC_COL_SL: prog = 8'd85;
-          default: prog = 8'd70;
+          MC_COL_SS: prog = 8'd60;
+          MC_COL_SL: prog = 8'd75;
+          default: prog = 8'd60;
         endcase
       end
       9'd198: begin  // NEG dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd67;
-          MC_COL_SL: prog = 8'd84;
-          default: prog = 8'd67;
+          MC_COL_SS: prog = 8'd57;
+          MC_COL_SL: prog = 8'd74;
+          default: prog = 8'd57;
         endcase
       end
       9'd199: begin  // TEST dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd73;
-          MC_COL_SL: prog = 8'd86;
-          default: prog = 8'd73;
+          MC_COL_SS: prog = 8'd63;
+          MC_COL_SL: prog = 8'd76;
+          default: prog = 8'd63;
         endcase
       end
       9'd200: begin  // LD dst,IM X
         unique case (col)
-          MC_COL_SS: prog = 8'd76;
-          MC_COL_SL: prog = 8'd87;
-          default: prog = 8'd76;
+          MC_COL_SS: prog = 8'd66;
+          MC_COL_SL: prog = 8'd77;
+          default: prog = 8'd66;
         endcase
       end
       9'd201: begin  // TSET dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd79;
-          MC_COL_SL: prog = 8'd88;
-          default: prog = 8'd79;
+          MC_COL_SS: prog = 8'd69;
+          MC_COL_SL: prog = 8'd78;
+          default: prog = 8'd69;
         endcase
       end
       9'd202: begin  // CLR dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd89;
-          default: prog = 8'd82;
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd79;
+          default: prog = 8'd72;
         endcase
       end
       9'd203: begin  // EPU memory DA
         unique case (col)
-          MC_COL_SS: prog = 8'd91;
-          MC_COL_SL: prog = 8'd92;
-          default: prog = 8'd90;
+          MC_COL_SS: prog = 8'd81;
+          MC_COL_SL: prog = 8'd82;
+          default: prog = 8'd80;
         endcase
       end
       9'd204: begin  // EPU memory DA (to memory)
         unique case (col)
-          MC_COL_SS: prog = 8'd94;
-          MC_COL_SL: prog = 8'd95;
-          default: prog = 8'd93;
+          MC_COL_SS: prog = 8'd84;
+          MC_COL_SL: prog = 8'd85;
+          default: prog = 8'd83;
         endcase
       end
       9'd205: begin  // EPU memory X
         unique case (col)
-          MC_COL_SS: prog = 8'd91;
-          MC_COL_SL: prog = 8'd96;
-          default: prog = 8'd91;
+          MC_COL_SS: prog = 8'd81;
+          MC_COL_SL: prog = 8'd86;
+          default: prog = 8'd81;
         endcase
       end
       9'd206: begin  // EPU memory X (to memory)
         unique case (col)
-          MC_COL_SS: prog = 8'd94;
-          MC_COL_SL: prog = 8'd97;
-          default: prog = 8'd94;
+          MC_COL_SS: prog = 8'd84;
+          MC_COL_SL: prog = 8'd87;
+          default: prog = 8'd84;
         endcase
       end
       9'd207: begin  // CPL R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd89;
+          MC_COL_SL: prog = 8'd90;
+          default: prog = 8'd88;
+        endcase
+      end
+      9'd208: begin  // CPL R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd89;
+          MC_COL_SL: prog = 8'd91;
+          default: prog = 8'd89;
+        endcase
+      end
+      9'd209: begin  // PUSHL IR,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd92;
+          MC_COL_SL: prog = 8'd93;
+          default: prog = 8'd92;
+        endcase
+      end
+      9'd210: begin  // PUSHL IR,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd92;
+          MC_COL_SL: prog = 8'd94;
+          default: prog = 8'd92;
+        endcase
+      end
+      9'd211: begin  // SUBL R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd89;
+          MC_COL_SL: prog = 8'd90;
+          default: prog = 8'd88;
+        endcase
+      end
+      9'd212: begin  // SUBL R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd89;
+          MC_COL_SL: prog = 8'd91;
+          default: prog = 8'd89;
+        endcase
+      end
+      9'd213: begin  // PUSH IR,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd95;
+          MC_COL_SL: prog = 8'd96;
+          default: prog = 8'd95;
+        endcase
+      end
+      9'd214: begin  // PUSH IR,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd95;
+          MC_COL_SL: prog = 8'd97;
+          default: prog = 8'd95;
+        endcase
+      end
+      9'd215: begin  // LDL R,src DA
         unique case (col)
           MC_COL_SS: prog = 8'd99;
           MC_COL_SL: prog = 8'd100;
           default: prog = 8'd98;
         endcase
       end
-      9'd208: begin  // CPL R,src X
+      9'd216: begin  // LDL R,src X
         unique case (col)
           MC_COL_SS: prog = 8'd99;
           MC_COL_SL: prog = 8'd101;
           default: prog = 8'd99;
         endcase
       end
-      9'd209: begin  // PUSHL IR,src DA
+      9'd217: begin  // POPL dst,IR DA
         unique case (col)
           MC_COL_SS: prog = 8'd102;
           MC_COL_SL: prog = 8'd103;
           default: prog = 8'd102;
         endcase
       end
-      9'd210: begin  // PUSHL IR,src X
+      9'd218: begin  // POPL dst,IR X
         unique case (col)
           MC_COL_SS: prog = 8'd102;
           MC_COL_SL: prog = 8'd104;
           default: prog = 8'd102;
         endcase
       end
-      9'd211: begin  // SUBL R,src DA
+      9'd219: begin  // ADDL R,src DA
         unique case (col)
-          MC_COL_SS: prog = 8'd99;
-          MC_COL_SL: prog = 8'd100;
-          default: prog = 8'd98;
+          MC_COL_SS: prog = 8'd89;
+          MC_COL_SL: prog = 8'd90;
+          default: prog = 8'd88;
         endcase
       end
-      9'd212: begin  // SUBL R,src X
+      9'd220: begin  // ADDL R,src X
         unique case (col)
-          MC_COL_SS: prog = 8'd99;
-          MC_COL_SL: prog = 8'd101;
-          default: prog = 8'd99;
+          MC_COL_SS: prog = 8'd89;
+          MC_COL_SL: prog = 8'd91;
+          default: prog = 8'd89;
         endcase
       end
-      9'd213: begin  // PUSH IR,src DA
+      9'd221: begin  // POP dst,IR DA
         unique case (col)
           MC_COL_SS: prog = 8'd105;
           MC_COL_SL: prog = 8'd106;
           default: prog = 8'd105;
         endcase
       end
-      9'd214: begin  // PUSH IR,src X
+      9'd222: begin  // POP dst,IR X
         unique case (col)
           MC_COL_SS: prog = 8'd105;
           MC_COL_SL: prog = 8'd107;
           default: prog = 8'd105;
         endcase
       end
-      9'd215: begin  // LDL R,src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd109;
-          MC_COL_SL: prog = 8'd110;
-          default: prog = 8'd108;
-        endcase
-      end
-      9'd216: begin  // LDL R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd109;
-          MC_COL_SL: prog = 8'd111;
-          default: prog = 8'd109;
-        endcase
-      end
-      9'd217: begin  // POPL dst,IR DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd112;
-          MC_COL_SL: prog = 8'd113;
-          default: prog = 8'd112;
-        endcase
-      end
-      9'd218: begin  // POPL dst,IR X
-        unique case (col)
-          MC_COL_SS: prog = 8'd112;
-          MC_COL_SL: prog = 8'd114;
-          default: prog = 8'd112;
-        endcase
-      end
-      9'd219: begin  // ADDL R,src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd99;
-          MC_COL_SL: prog = 8'd100;
-          default: prog = 8'd98;
-        endcase
-      end
-      9'd220: begin  // ADDL R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd99;
-          MC_COL_SL: prog = 8'd101;
-          default: prog = 8'd99;
-        endcase
-      end
-      9'd221: begin  // POP dst,IR DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd115;
-          MC_COL_SL: prog = 8'd116;
-          default: prog = 8'd115;
-        endcase
-      end
-      9'd222: begin  // POP dst,IR X
-        unique case (col)
-          MC_COL_SS: prog = 8'd115;
-          MC_COL_SL: prog = 8'd117;
-          default: prog = 8'd115;
-        endcase
-      end
       9'd223: begin  // MULTL R,src DA
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd120;
-              MC_PATH_ZERO: prog = 8'd121;
-              MC_PATH_OVERFLOW: prog = 8'd120;
-              default: prog = 8'd120;
+              MC_PATH_NOT_TAKEN: prog = 8'd110;
+              MC_PATH_ZERO: prog = 8'd111;
+              default: prog = 8'd110;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd122;
-              MC_PATH_ZERO: prog = 8'd123;
-              MC_PATH_OVERFLOW: prog = 8'd122;
-              default: prog = 8'd122;
+              MC_PATH_NOT_TAKEN: prog = 8'd112;
+              MC_PATH_ZERO: prog = 8'd113;
+              default: prog = 8'd112;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd118;
-              MC_PATH_ZERO: prog = 8'd119;
-              MC_PATH_OVERFLOW: prog = 8'd118;
-              default: prog = 8'd118;
+              MC_PATH_NOT_TAKEN: prog = 8'd108;
+              MC_PATH_ZERO: prog = 8'd109;
+              default: prog = 8'd108;
             endcase
         endcase
       end
@@ -2233,24 +2119,21 @@ module z8000_mc_prog_gen
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd120;
-              MC_PATH_ZERO: prog = 8'd121;
-              MC_PATH_OVERFLOW: prog = 8'd120;
-              default: prog = 8'd120;
+              MC_PATH_NOT_TAKEN: prog = 8'd110;
+              MC_PATH_ZERO: prog = 8'd111;
+              default: prog = 8'd110;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd124;
-              MC_PATH_ZERO: prog = 8'd125;
-              MC_PATH_OVERFLOW: prog = 8'd124;
-              default: prog = 8'd124;
+              MC_PATH_NOT_TAKEN: prog = 8'd114;
+              MC_PATH_ZERO: prog = 8'd115;
+              default: prog = 8'd114;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd120;
-              MC_PATH_ZERO: prog = 8'd121;
-              MC_PATH_OVERFLOW: prog = 8'd120;
-              default: prog = 8'd120;
+              MC_PATH_NOT_TAKEN: prog = 8'd110;
+              MC_PATH_ZERO: prog = 8'd111;
+              default: prog = 8'd110;
             endcase
         endcase
       end
@@ -2258,24 +2141,21 @@ module z8000_mc_prog_gen
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd128;
-              MC_PATH_ZERO: prog = 8'd129;
-              MC_PATH_OVERFLOW: prog = 8'd128;
-              default: prog = 8'd128;
+              MC_PATH_NOT_TAKEN: prog = 8'd118;
+              MC_PATH_ZERO: prog = 8'd119;
+              default: prog = 8'd118;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd130;
-              MC_PATH_ZERO: prog = 8'd131;
-              MC_PATH_OVERFLOW: prog = 8'd130;
-              default: prog = 8'd130;
+              MC_PATH_NOT_TAKEN: prog = 8'd120;
+              MC_PATH_ZERO: prog = 8'd121;
+              default: prog = 8'd120;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd126;
-              MC_PATH_ZERO: prog = 8'd127;
-              MC_PATH_OVERFLOW: prog = 8'd126;
-              default: prog = 8'd126;
+              MC_PATH_NOT_TAKEN: prog = 8'd116;
+              MC_PATH_ZERO: prog = 8'd117;
+              default: prog = 8'd116;
             endcase
         endcase
       end
@@ -2283,547 +2163,469 @@ module z8000_mc_prog_gen
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd128;
-              MC_PATH_ZERO: prog = 8'd129;
-              MC_PATH_OVERFLOW: prog = 8'd128;
-              default: prog = 8'd128;
+              MC_PATH_NOT_TAKEN: prog = 8'd118;
+              MC_PATH_ZERO: prog = 8'd119;
+              default: prog = 8'd118;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd132;
-              MC_PATH_ZERO: prog = 8'd133;
-              MC_PATH_OVERFLOW: prog = 8'd132;
-              default: prog = 8'd132;
+              MC_PATH_NOT_TAKEN: prog = 8'd122;
+              MC_PATH_ZERO: prog = 8'd123;
+              default: prog = 8'd122;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd128;
-              MC_PATH_ZERO: prog = 8'd129;
-              MC_PATH_OVERFLOW: prog = 8'd128;
-              default: prog = 8'd128;
+              MC_PATH_NOT_TAKEN: prog = 8'd118;
+              MC_PATH_ZERO: prog = 8'd119;
+              default: prog = 8'd118;
             endcase
         endcase
       end
       9'd227: begin  // DIVL R,src DA
         unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd137;
-              MC_PATH_ZERO: prog = 8'd138;
-              MC_PATH_OVERFLOW: prog = 8'd139;
-              default: prog = 8'd137;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd140;
-              MC_PATH_ZERO: prog = 8'd141;
-              MC_PATH_OVERFLOW: prog = 8'd142;
-              default: prog = 8'd140;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd134;
-              MC_PATH_ZERO: prog = 8'd135;
-              MC_PATH_OVERFLOW: prog = 8'd136;
-              default: prog = 8'd134;
-            endcase
+          MC_COL_SS: prog = 8'd125;
+          MC_COL_SL: prog = 8'd126;
+          default: prog = 8'd124;
         endcase
       end
       9'd228: begin  // DIVL R,src X
         unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd137;
-              MC_PATH_ZERO: prog = 8'd138;
-              MC_PATH_OVERFLOW: prog = 8'd139;
-              default: prog = 8'd137;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd143;
-              MC_PATH_ZERO: prog = 8'd144;
-              MC_PATH_OVERFLOW: prog = 8'd145;
-              default: prog = 8'd143;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd137;
-              MC_PATH_ZERO: prog = 8'd138;
-              MC_PATH_OVERFLOW: prog = 8'd139;
-              default: prog = 8'd137;
-            endcase
+          MC_COL_SS: prog = 8'd125;
+          MC_COL_SL: prog = 8'd127;
+          default: prog = 8'd125;
         endcase
       end
       9'd229: begin  // DIV R,src DA
         unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd149;
-              MC_PATH_ZERO: prog = 8'd150;
-              MC_PATH_OVERFLOW: prog = 8'd151;
-              default: prog = 8'd149;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd152;
-              MC_PATH_ZERO: prog = 8'd153;
-              MC_PATH_OVERFLOW: prog = 8'd154;
-              default: prog = 8'd152;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd146;
-              MC_PATH_ZERO: prog = 8'd147;
-              MC_PATH_OVERFLOW: prog = 8'd148;
-              default: prog = 8'd146;
-            endcase
+          MC_COL_SS: prog = 8'd129;
+          MC_COL_SL: prog = 8'd130;
+          default: prog = 8'd128;
         endcase
       end
       9'd230: begin  // DIV R,src X
         unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd149;
-              MC_PATH_ZERO: prog = 8'd150;
-              MC_PATH_OVERFLOW: prog = 8'd151;
-              default: prog = 8'd149;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd155;
-              MC_PATH_ZERO: prog = 8'd156;
-              MC_PATH_OVERFLOW: prog = 8'd157;
-              default: prog = 8'd155;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd149;
-              MC_PATH_ZERO: prog = 8'd150;
-              MC_PATH_OVERFLOW: prog = 8'd151;
-              default: prog = 8'd149;
-            endcase
+          MC_COL_SS: prog = 8'd129;
+          MC_COL_SL: prog = 8'd131;
+          default: prog = 8'd129;
         endcase
       end
       9'd231: begin  // LDM R,src,n DA
         unique case (col)
-          MC_COL_SS: prog = 8'd91;
-          MC_COL_SL: prog = 8'd92;
-          default: prog = 8'd90;
+          MC_COL_SS: prog = 8'd81;
+          MC_COL_SL: prog = 8'd82;
+          default: prog = 8'd80;
         endcase
       end
       9'd232: begin  // TESTL dst DA
         unique case (col)
-          MC_COL_SS: prog = 8'd158;
-          MC_COL_SL: prog = 8'd101;
-          default: prog = 8'd99;
+          MC_COL_SS: prog = 8'd132;
+          MC_COL_SL: prog = 8'd91;
+          default: prog = 8'd89;
         endcase
       end
       9'd233: begin  // LDM dst,R,n DA
         unique case (col)
-          MC_COL_SS: prog = 8'd94;
-          MC_COL_SL: prog = 8'd95;
-          default: prog = 8'd93;
+          MC_COL_SS: prog = 8'd84;
+          MC_COL_SL: prog = 8'd85;
+          default: prog = 8'd83;
         endcase
       end
       9'd234: begin  // LDM R,src,n X
         unique case (col)
-          MC_COL_SS: prog = 8'd91;
-          MC_COL_SL: prog = 8'd96;
-          default: prog = 8'd91;
+          MC_COL_SS: prog = 8'd81;
+          MC_COL_SL: prog = 8'd86;
+          default: prog = 8'd81;
         endcase
       end
       9'd235: begin  // TESTL dst X
         unique case (col)
-          MC_COL_SS: prog = 8'd158;
-          MC_COL_SL: prog = 8'd159;
-          default: prog = 8'd158;
+          MC_COL_SS: prog = 8'd132;
+          MC_COL_SL: prog = 8'd133;
+          default: prog = 8'd132;
         endcase
       end
       9'd236: begin  // LDM dst,R,n X
         unique case (col)
-          MC_COL_SS: prog = 8'd94;
-          MC_COL_SL: prog = 8'd97;
-          default: prog = 8'd94;
+          MC_COL_SS: prog = 8'd84;
+          MC_COL_SL: prog = 8'd87;
+          default: prog = 8'd84;
         endcase
       end
       9'd237: begin  // LDL dst,R DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd135;
+          MC_COL_SL: prog = 8'd136;
+          default: prog = 8'd134;
+        endcase
+      end
+      9'd238: begin  // LDL dst,R X
+        unique case (col)
+          MC_COL_SS: prog = 8'd135;
+          MC_COL_SL: prog = 8'd137;
+          default: prog = 8'd135;
+        endcase
+      end
+      9'd239: begin  // JP cc,dst DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd139;
+          MC_COL_SL: prog = 8'd140;
+          default: prog = 8'd138;
+        endcase
+      end
+      9'd240: begin  // JP cc,dst X
+        unique case (col)
+          MC_COL_SS: prog = 8'd139;
+          MC_COL_SL: prog = 8'd141;
+          default: prog = 8'd139;
+        endcase
+      end
+      9'd241: begin  // CALL dst DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd142;
+          MC_COL_SL: prog = 8'd143;
+          default: prog = 8'd72;
+        endcase
+      end
+      9'd242: begin  // CALL dst X
+        unique case (col)
+          MC_COL_SS: prog = 8'd142;
+          MC_COL_SL: prog = 8'd145;
+          default: prog = 8'd144;
+        endcase
+      end
+      9'd243: begin  // LDB R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
+        endcase
+      end
+      9'd244: begin  // LDB R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
+        endcase
+      end
+      9'd245: begin  // LD R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd54;
+          default: prog = 8'd52;
+        endcase
+      end
+      9'd246: begin  // LD R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd53;
+          MC_COL_SL: prog = 8'd55;
+          default: prog = 8'd53;
+        endcase
+      end
+      9'd247: begin  // RESB dst,b DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd248: begin  // RESB dst,b X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd249: begin  // RES dst,b DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd250: begin  // RES dst,b X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd251: begin  // SETB dst,b DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd252: begin  // SETB dst,b X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd253: begin  // SET dst,b DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd254: begin  // SET dst,b X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd255: begin  // BITB dst,b DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd62;
+          MC_COL_SL: prog = 8'd151;
+          default: prog = 8'd150;
+        endcase
+      end
+      9'd256: begin  // BITB dst,b X
+        unique case (col)
+          MC_COL_SS: prog = 8'd62;
+          MC_COL_SL: prog = 8'd64;
+          default: prog = 8'd62;
+        endcase
+      end
+      9'd257: begin  // BIT dst,b DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd62;
+          MC_COL_SL: prog = 8'd151;
+          default: prog = 8'd150;
+        endcase
+      end
+      9'd258: begin  // BIT dst,b X
+        unique case (col)
+          MC_COL_SS: prog = 8'd62;
+          MC_COL_SL: prog = 8'd64;
+          default: prog = 8'd62;
+        endcase
+      end
+      9'd259: begin  // INCB dst,n DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd260: begin  // INCB dst,n X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd261: begin  // INC dst,n DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd262: begin  // INC dst,n X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd263: begin  // DECB dst,n DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd264: begin  // DECB dst,n X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd265: begin  // DEC dst,n DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd148;
+          default: prog = 8'd146;
+        endcase
+      end
+      9'd266: begin  // DEC dst,n X
+        unique case (col)
+          MC_COL_SS: prog = 8'd147;
+          MC_COL_SL: prog = 8'd149;
+          default: prog = 8'd147;
+        endcase
+      end
+      9'd267: begin  // EXB R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd153;
+          MC_COL_SL: prog = 8'd154;
+          default: prog = 8'd152;
+        endcase
+      end
+      9'd268: begin  // EXB R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd153;
+          MC_COL_SL: prog = 8'd155;
+          default: prog = 8'd153;
+        endcase
+      end
+      9'd269: begin  // EX R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd153;
+          MC_COL_SL: prog = 8'd154;
+          default: prog = 8'd152;
+        endcase
+      end
+      9'd270: begin  // EX R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd153;
+          MC_COL_SL: prog = 8'd155;
+          default: prog = 8'd153;
+        endcase
+      end
+      9'd271: begin  // LDB dst,R DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd73;
+          default: prog = 8'd71;
+        endcase
+      end
+      9'd272: begin  // LDB dst,R X
+        unique case (col)
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd79;
+          default: prog = 8'd72;
+        endcase
+      end
+      9'd273: begin  // LD dst,R DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd73;
+          default: prog = 8'd71;
+        endcase
+      end
+      9'd274: begin  // LD dst,R X
+        unique case (col)
+          MC_COL_SS: prog = 8'd72;
+          MC_COL_SL: prog = 8'd79;
+          default: prog = 8'd72;
+        endcase
+      end
+      9'd275: prog = 8'd39;  // LDB R,src BX
+      9'd276: prog = 8'd39;  // LD R,src BX
+      9'd277: prog = 8'd40;  // LDB dst,R BX
+      9'd278: prog = 8'd40;  // LD dst,R BX
+      9'd279: prog = 8'd41;  // LDA R,src BX
+      9'd280: prog = 8'd42;  // LDL R,src BX
+      9'd281: begin  // LDA R,src DA
+        unique case (col)
+          MC_COL_SS: prog = 8'd157;
+          MC_COL_SL: prog = 8'd158;
+          default: prog = 8'd156;
+        endcase
+      end
+      9'd282: begin  // LDA R,src X
+        unique case (col)
+          MC_COL_SS: prog = 8'd157;
+          MC_COL_SL: prog = 8'd159;
+          default: prog = 8'd157;
+        endcase
+      end
+      9'd283: prog = 8'd43;  // LDL dst,R BX
+      9'd284: begin  // LDPS src DA
         unique case (col)
           MC_COL_SS: prog = 8'd161;
           MC_COL_SL: prog = 8'd162;
           default: prog = 8'd160;
         endcase
       end
-      9'd238: begin  // LDL dst,R X
-        unique case (col)
-          MC_COL_SS: prog = 8'd161;
-          MC_COL_SL: prog = 8'd163;
-          default: prog = 8'd161;
-        endcase
-      end
-      9'd239: begin  // JP cc,dst DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd165;
-          MC_COL_SL: prog = 8'd166;
-          default: prog = 8'd164;
-        endcase
-      end
-      9'd240: begin  // JP cc,dst X
-        unique case (col)
-          MC_COL_SS: prog = 8'd165;
-          MC_COL_SL: prog = 8'd167;
-          default: prog = 8'd165;
-        endcase
-      end
-      9'd241: begin  // CALL dst DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd168;
-          MC_COL_SL: prog = 8'd169;
-          default: prog = 8'd82;
-        endcase
-      end
-      9'd242: begin  // CALL dst X
-        unique case (col)
-          MC_COL_SS: prog = 8'd168;
-          MC_COL_SL: prog = 8'd171;
-          default: prog = 8'd170;
-        endcase
-      end
-      9'd243: begin  // LDB R,src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
-        endcase
-      end
-      9'd244: begin  // LDB R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
-        endcase
-      end
-      9'd245: begin  // LD R,src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd64;
-          default: prog = 8'd62;
-        endcase
-      end
-      9'd246: begin  // LD R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd63;
-          MC_COL_SL: prog = 8'd65;
-          default: prog = 8'd63;
-        endcase
-      end
-      9'd247: begin  // RESB dst,b DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd248: begin  // RESB dst,b X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd249: begin  // RES dst,b DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd250: begin  // RES dst,b X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd251: begin  // SETB dst,b DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd252: begin  // SETB dst,b X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd253: begin  // SET dst,b DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd254: begin  // SET dst,b X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd255: begin  // BITB dst,b DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd72;
-          MC_COL_SL: prog = 8'd177;
-          default: prog = 8'd176;
-        endcase
-      end
-      9'd256: begin  // BITB dst,b X
-        unique case (col)
-          MC_COL_SS: prog = 8'd72;
-          MC_COL_SL: prog = 8'd74;
-          default: prog = 8'd72;
-        endcase
-      end
-      9'd257: begin  // BIT dst,b DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd72;
-          MC_COL_SL: prog = 8'd177;
-          default: prog = 8'd176;
-        endcase
-      end
-      9'd258: begin  // BIT dst,b X
-        unique case (col)
-          MC_COL_SS: prog = 8'd72;
-          MC_COL_SL: prog = 8'd74;
-          default: prog = 8'd72;
-        endcase
-      end
-      9'd259: begin  // INCB dst,n DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd260: begin  // INCB dst,n X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd261: begin  // INC dst,n DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd262: begin  // INC dst,n X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd263: begin  // DECB dst,n DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd264: begin  // DECB dst,n X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd265: begin  // DEC dst,n DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd174;
-          default: prog = 8'd172;
-        endcase
-      end
-      9'd266: begin  // DEC dst,n X
-        unique case (col)
-          MC_COL_SS: prog = 8'd173;
-          MC_COL_SL: prog = 8'd175;
-          default: prog = 8'd173;
-        endcase
-      end
-      9'd267: begin  // EXB R,src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd179;
-          MC_COL_SL: prog = 8'd180;
-          default: prog = 8'd178;
-        endcase
-      end
-      9'd268: begin  // EXB R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd179;
-          MC_COL_SL: prog = 8'd181;
-          default: prog = 8'd179;
-        endcase
-      end
-      9'd269: begin  // EX R,src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd179;
-          MC_COL_SL: prog = 8'd180;
-          default: prog = 8'd178;
-        endcase
-      end
-      9'd270: begin  // EX R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd179;
-          MC_COL_SL: prog = 8'd181;
-          default: prog = 8'd179;
-        endcase
-      end
-      9'd271: begin  // LDB dst,R DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd83;
-          default: prog = 8'd81;
-        endcase
-      end
-      9'd272: begin  // LDB dst,R X
-        unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd89;
-          default: prog = 8'd82;
-        endcase
-      end
-      9'd273: begin  // LD dst,R DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd83;
-          default: prog = 8'd81;
-        endcase
-      end
-      9'd274: begin  // LD dst,R X
-        unique case (col)
-          MC_COL_SS: prog = 8'd82;
-          MC_COL_SL: prog = 8'd89;
-          default: prog = 8'd82;
-        endcase
-      end
-      9'd275: prog = 8'd49;  // LDB R,src BX
-      9'd276: prog = 8'd49;  // LD R,src BX
-      9'd277: prog = 8'd50;  // LDB dst,R BX
-      9'd278: prog = 8'd50;  // LD dst,R BX
-      9'd279: prog = 8'd51;  // LDA R,src BX
-      9'd280: prog = 8'd52;  // LDL R,src BX
-      9'd281: begin  // LDA R,src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd183;
-          MC_COL_SL: prog = 8'd184;
-          default: prog = 8'd182;
-        endcase
-      end
-      9'd282: begin  // LDA R,src X
-        unique case (col)
-          MC_COL_SS: prog = 8'd183;
-          MC_COL_SL: prog = 8'd185;
-          default: prog = 8'd183;
-        endcase
-      end
-      9'd283: prog = 8'd53;  // LDL dst,R BX
-      9'd284: begin  // LDPS src DA
-        unique case (col)
-          MC_COL_SS: prog = 8'd187;
-          MC_COL_SL: prog = 8'd188;
-          default: prog = 8'd186;
-        endcase
-      end
       9'd285: begin  // LDPS src X
         unique case (col)
-          MC_COL_SS: prog = 8'd187;
-          MC_COL_SL: prog = 8'd190;
-          default: prog = 8'd189;
+          MC_COL_SS: prog = 8'd161;
+          MC_COL_SL: prog = 8'd164;
+          default: prog = 8'd163;
         endcase
       end
-      9'd286: prog = 8'd191;  // HALT -
+      9'd286: prog = 8'd165;  // HALT -
       9'd287: begin  // IRET -
         unique case (col)
-          MC_COL_SS: prog = 8'd193;
-          MC_COL_SL: prog = 8'd193;
-          default: prog = 8'd192;
+          MC_COL_SS: prog = 8'd167;
+          MC_COL_SL: prog = 8'd167;
+          default: prog = 8'd166;
         endcase
       end
-      9'd288: prog = 8'd194;  // MSET -
-      9'd289: prog = 8'd194;  // MRES -
-      9'd290: prog = 8'd43;  // MBIT -
-      9'd291: prog = 8'd195;  // MREQ dst R
-      9'd292: prog = 8'd43;  // DI -
-      9'd293: prog = 8'd43;  // EI -
-      9'd294: prog = 8'd43;  // LDCTL R
-      9'd295: prog = 8'd194;  // SC src IM
-      9'd296: prog = 8'd196;  // ADDB R,src R
-      9'd297: prog = 8'd196;  // ADD R,src R
-      9'd298: prog = 8'd196;  // SUBB R,src R
-      9'd299: prog = 8'd196;  // SUB R,src R
-      9'd300: prog = 8'd196;  // ORB R,src R
-      9'd301: prog = 8'd196;  // OR R,src R
-      9'd302: prog = 8'd196;  // ANDB R,src R
-      9'd303: prog = 8'd196;  // AND R,src R
-      9'd304: prog = 8'd196;  // XORB R,src R
-      9'd305: prog = 8'd196;  // XOR R,src R
-      9'd306: prog = 8'd196;  // CPB R,src R
-      9'd307: prog = 8'd196;  // CP R,src R
-      9'd308: prog = 8'd43;  // COMB dst R
-      9'd309: prog = 8'd43;  // LDCTLB Rb,FLAGS R
-      9'd310: prog = 8'd43;  // NEGB dst R
-      9'd311: prog = 8'd43;  // TESTB dst R
-      9'd312: prog = 8'd43;  // TSETB dst R
-      9'd313: prog = 8'd43;  // CLRB dst R
-      9'd314: prog = 8'd43;  // LDCTLB FLAGS,Rb R
-      9'd315: prog = 8'd43;  // COM dst R
-      9'd316: prog = 8'd43;  // SETFLG -
-      9'd317: prog = 8'd43;  // NEG dst R
-      9'd318: prog = 8'd43;  // RESFLG -
-      9'd319: prog = 8'd43;  // TEST dst R
-      9'd320: prog = 8'd43;  // COMFLG -
-      9'd321: prog = 8'd43;  // TSET dst R
-      9'd322: prog = 8'd43;  // NOP -
-      9'd323: prog = 8'd43;  // CLR dst R
-      9'd324: prog = 8'd197;  // EPU flags -
-      9'd325: prog = 8'd198;  // EPU flags - (internal)
-      9'd326: prog = 8'd199;  // EPU registers R
-      9'd327: prog = 8'd200;  // CPL R,src R
-      9'd328: prog = 8'd201;  // PUSHL IR,src R
-      9'd329: prog = 8'd200;  // SUBL R,src R
-      9'd330: prog = 8'd202;  // PUSH IR,src R
-      9'd331: prog = 8'd194;  // LDL R,src R
-      9'd332: prog = 8'd203;  // POPL dst,IR R
-      9'd333: prog = 8'd200;  // ADDL R,src R
-      9'd334: prog = 8'd204;  // POP dst,IR R
+      9'd288: prog = 8'd168;  // MSET -
+      9'd289: prog = 8'd168;  // MRES -
+      9'd290: prog = 8'd33;  // MBIT -
+      9'd291: prog = 8'd169;  // MREQ dst R
+      9'd292: prog = 8'd33;  // DI -
+      9'd293: prog = 8'd33;  // EI -
+      9'd294: prog = 8'd33;  // LDCTL R
+      9'd295: prog = 8'd168;  // SC src IM
+      9'd296: prog = 8'd170;  // ADDB R,src R
+      9'd297: prog = 8'd170;  // ADD R,src R
+      9'd298: prog = 8'd170;  // SUBB R,src R
+      9'd299: prog = 8'd170;  // SUB R,src R
+      9'd300: prog = 8'd170;  // ORB R,src R
+      9'd301: prog = 8'd170;  // OR R,src R
+      9'd302: prog = 8'd170;  // ANDB R,src R
+      9'd303: prog = 8'd170;  // AND R,src R
+      9'd304: prog = 8'd170;  // XORB R,src R
+      9'd305: prog = 8'd170;  // XOR R,src R
+      9'd306: prog = 8'd170;  // CPB R,src R
+      9'd307: prog = 8'd170;  // CP R,src R
+      9'd308: prog = 8'd33;  // COMB dst R
+      9'd309: prog = 8'd33;  // LDCTLB Rb,FLAGS R
+      9'd310: prog = 8'd33;  // NEGB dst R
+      9'd311: prog = 8'd33;  // TESTB dst R
+      9'd312: prog = 8'd33;  // TSETB dst R
+      9'd313: prog = 8'd33;  // CLRB dst R
+      9'd314: prog = 8'd33;  // LDCTLB FLAGS,Rb R
+      9'd315: prog = 8'd33;  // COM dst R
+      9'd316: prog = 8'd33;  // SETFLG -
+      9'd317: prog = 8'd33;  // NEG dst R
+      9'd318: prog = 8'd33;  // RESFLG -
+      9'd319: prog = 8'd33;  // TEST dst R
+      9'd320: prog = 8'd33;  // COMFLG -
+      9'd321: prog = 8'd33;  // TSET dst R
+      9'd322: prog = 8'd33;  // NOP -
+      9'd323: prog = 8'd33;  // CLR dst R
+      9'd324: prog = 8'd171;  // EPU flags -
+      9'd325: prog = 8'd172;  // EPU flags - (internal)
+      9'd326: prog = 8'd173;  // EPU registers R
+      9'd327: prog = 8'd174;  // CPL R,src R
+      9'd328: prog = 8'd175;  // PUSHL IR,src R
+      9'd329: prog = 8'd174;  // SUBL R,src R
+      9'd330: prog = 8'd176;  // PUSH IR,src R
+      9'd331: prog = 8'd168;  // LDL R,src R
+      9'd332: prog = 8'd177;  // POPL dst,IR R
+      9'd333: prog = 8'd174;  // ADDL R,src R
+      9'd334: prog = 8'd178;  // POP dst,IR R
       9'd335: begin  // MULTL R,src R
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd205;
-              MC_PATH_ZERO: prog = 8'd206;
-              MC_PATH_OVERFLOW: prog = 8'd205;
-              default: prog = 8'd205;
+              MC_PATH_NOT_TAKEN: prog = 8'd179;
+              MC_PATH_ZERO: prog = 8'd180;
+              default: prog = 8'd179;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd205;
-              MC_PATH_ZERO: prog = 8'd206;
-              MC_PATH_OVERFLOW: prog = 8'd205;
-              default: prog = 8'd205;
+              MC_PATH_NOT_TAKEN: prog = 8'd179;
+              MC_PATH_ZERO: prog = 8'd180;
+              default: prog = 8'd179;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd205;
-              MC_PATH_ZERO: prog = 8'd206;
-              MC_PATH_OVERFLOW: prog = 8'd205;
-              default: prog = 8'd205;
+              MC_PATH_NOT_TAKEN: prog = 8'd179;
+              MC_PATH_ZERO: prog = 8'd180;
+              default: prog = 8'd179;
             endcase
         endcase
       end
@@ -2831,210 +2633,156 @@ module z8000_mc_prog_gen
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd207;
-              MC_PATH_ZERO: prog = 8'd208;
-              MC_PATH_OVERFLOW: prog = 8'd207;
-              default: prog = 8'd207;
+              MC_PATH_NOT_TAKEN: prog = 8'd181;
+              MC_PATH_ZERO: prog = 8'd182;
+              default: prog = 8'd181;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd207;
-              MC_PATH_ZERO: prog = 8'd208;
-              MC_PATH_OVERFLOW: prog = 8'd207;
-              default: prog = 8'd207;
+              MC_PATH_NOT_TAKEN: prog = 8'd181;
+              MC_PATH_ZERO: prog = 8'd182;
+              default: prog = 8'd181;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd207;
-              MC_PATH_ZERO: prog = 8'd208;
-              MC_PATH_OVERFLOW: prog = 8'd207;
-              default: prog = 8'd207;
+              MC_PATH_NOT_TAKEN: prog = 8'd181;
+              MC_PATH_ZERO: prog = 8'd182;
+              default: prog = 8'd181;
             endcase
         endcase
       end
-      9'd337: begin  // DIVL R,src R
-        unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd209;
-              MC_PATH_ZERO: prog = 8'd210;
-              MC_PATH_OVERFLOW: prog = 8'd211;
-              default: prog = 8'd209;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd209;
-              MC_PATH_ZERO: prog = 8'd210;
-              MC_PATH_OVERFLOW: prog = 8'd211;
-              default: prog = 8'd209;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd209;
-              MC_PATH_ZERO: prog = 8'd210;
-              MC_PATH_OVERFLOW: prog = 8'd211;
-              default: prog = 8'd209;
-            endcase
-        endcase
-      end
-      9'd338: begin  // DIV R,src R
-        unique case (col)
-          MC_COL_SS:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd212;
-              MC_PATH_ZERO: prog = 8'd213;
-              MC_PATH_OVERFLOW: prog = 8'd214;
-              default: prog = 8'd212;
-            endcase
-          MC_COL_SL:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd212;
-              MC_PATH_ZERO: prog = 8'd213;
-              MC_PATH_OVERFLOW: prog = 8'd214;
-              default: prog = 8'd212;
-            endcase
-          default:
-            unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd212;
-              MC_PATH_ZERO: prog = 8'd213;
-              MC_PATH_OVERFLOW: prog = 8'd214;
-              default: prog = 8'd212;
-            endcase
-        endcase
-      end
-      9'd339: prog = 8'd213;  // TESTL dst R
+      9'd337: prog = 8'd183;  // DIVL R,src R
+      9'd338: prog = 8'd183;  // DIV R,src R
+      9'd339: prog = 8'd184;  // TESTL dst R
       9'd340: begin  // RET cc - (taken)
         unique case (col)
           MC_COL_SS:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd43;
-              MC_PATH_ZERO: prog = 8'd216;
-              MC_PATH_OVERFLOW: prog = 8'd216;
-              default: prog = 8'd216;
+              MC_PATH_NOT_TAKEN: prog = 8'd33;
+              MC_PATH_ZERO: prog = 8'd186;
+              default: prog = 8'd186;
             endcase
           MC_COL_SL:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd43;
-              MC_PATH_ZERO: prog = 8'd216;
-              MC_PATH_OVERFLOW: prog = 8'd216;
-              default: prog = 8'd216;
+              MC_PATH_NOT_TAKEN: prog = 8'd33;
+              MC_PATH_ZERO: prog = 8'd186;
+              default: prog = 8'd186;
             endcase
           default:
             unique case (path)
-              MC_PATH_NOT_TAKEN: prog = 8'd43;
-              MC_PATH_ZERO: prog = 8'd215;
-              MC_PATH_OVERFLOW: prog = 8'd215;
-              default: prog = 8'd215;
+              MC_PATH_NOT_TAKEN: prog = 8'd33;
+              MC_PATH_ZERO: prog = 8'd185;
+              default: prog = 8'd185;
             endcase
         endcase
       end
-      9'd343: prog = 8'd196;  // RESB dst,b R
-      9'd344: prog = 8'd196;  // RES dst,b R
-      9'd345: prog = 8'd196;  // SETB dst,b R
-      9'd346: prog = 8'd196;  // SET dst,b R
-      9'd347: prog = 8'd196;  // BITB dst,b R
-      9'd348: prog = 8'd196;  // BIT dst,b R
-      9'd349: prog = 8'd196;  // INCB dst,n R
-      9'd350: prog = 8'd196;  // INC dst,n R
-      9'd351: prog = 8'd196;  // DECB dst,n R
-      9'd352: prog = 8'd196;  // DEC dst,n R
-      9'd353: prog = 8'd217;  // EXB R,src R
-      9'd354: prog = 8'd217;  // EX R,src R
-      9'd355: prog = 8'd194;  // TCCB cc,dst R
-      9'd356: prog = 8'd194;  // TCC cc,dst R
-      9'd357: prog = 8'd194;  // DAB dst R
-      9'd358: prog = 8'd218;  // EXTSB dst R
-      9'd359: prog = 8'd218;  // EXTSL dst R
-      9'd360: prog = 8'd218;  // EXTS dst R
-      9'd361: prog = 8'd217;  // RLB dst,n R (n=1)
-      9'd362: prog = 8'd219;  // SLLB dst,n R
-      9'd363: prog = 8'd43;  // RLB dst,n R (n=2)
-      9'd364: prog = 8'd220;  // SDLB dst,R R
-      9'd365: prog = 8'd217;  // RRB dst,n R (n=1)
-      9'd366: prog = 8'd43;  // RRB dst,n R (n=2)
-      9'd367: prog = 8'd217;  // RLCB dst,n R (n=1)
-      9'd368: prog = 8'd219;  // SLAB dst,n R
-      9'd369: prog = 8'd43;  // RLCB dst,n R (n=2)
-      9'd370: prog = 8'd220;  // SDAB dst,R R
-      9'd371: prog = 8'd217;  // RRCB dst,n R (n=1)
-      9'd372: prog = 8'd43;  // RRCB dst,n R (n=2)
-      9'd373: prog = 8'd217;  // RL dst,n R (n=1)
-      9'd374: prog = 8'd219;  // SLL dst,n R
-      9'd375: prog = 8'd43;  // RL dst,n R (n=2)
-      9'd376: prog = 8'd220;  // SDL dst,R R
-      9'd377: prog = 8'd217;  // RR dst,n R (n=1)
-      9'd378: prog = 8'd219;  // SLLL dst,n R
-      9'd379: prog = 8'd43;  // RR dst,n R (n=2)
-      9'd380: prog = 8'd220;  // SDLL dst,R R
-      9'd381: prog = 8'd217;  // RLC dst,n R (n=1)
-      9'd382: prog = 8'd219;  // SLA dst,n R
-      9'd383: prog = 8'd43;  // RLC dst,n R (n=2)
-      9'd384: prog = 8'd220;  // SDA dst,R R
-      9'd385: prog = 8'd217;  // RRC dst,n R (n=1)
-      9'd386: prog = 8'd219;  // SLAL dst,n R
-      9'd387: prog = 8'd43;  // RRC dst,n R (n=2)
-      9'd388: prog = 8'd220;  // SDAL dst,R R
-      9'd389: prog = 8'd194;  // ADCB R,src R
-      9'd390: prog = 8'd194;  // ADC R,src R
-      9'd391: prog = 8'd194;  // SBCB R,src R
-      9'd392: prog = 8'd194;  // SBC R,src R
-      9'd393: prog = 8'd221;  // TRIB IR
-      9'd394: prog = 8'd222;  // TRTIB IR
-      9'd395: prog = 8'd223;  // TRIRB IR
-      9'd396: prog = 8'd224;  // TRTIRB IR
-      9'd397: prog = 8'd221;  // TRDB IR
-      9'd398: prog = 8'd222;  // TRTDB IR
-      9'd399: prog = 8'd223;  // TRDRB IR
-      9'd400: prog = 8'd224;  // TRTDRB IR
-      9'd401: prog = 8'd225;  // CPIB IR
-      9'd402: prog = 8'd226;  // LDIB IR
-      9'd403: prog = 8'd227;  // LDIRB IR
-      9'd404: prog = 8'd228;  // CPSIB IR
-      9'd405: prog = 8'd229;  // CPIRB IR
-      9'd406: prog = 8'd230;  // CPSIRB IR
-      9'd407: prog = 8'd225;  // CPDB IR
-      9'd408: prog = 8'd226;  // LDDB IR
-      9'd409: prog = 8'd227;  // LDDRB IR
-      9'd410: prog = 8'd228;  // CPSDB IR
-      9'd411: prog = 8'd229;  // CPDRB IR
-      9'd412: prog = 8'd230;  // CPSDRB IR
-      9'd413: prog = 8'd225;  // CPI IR
-      9'd414: prog = 8'd226;  // LDI IR
-      9'd415: prog = 8'd227;  // LDIR IR
-      9'd416: prog = 8'd228;  // CPSI IR
-      9'd417: prog = 8'd229;  // CPIR IR
-      9'd418: prog = 8'd230;  // CPSIR IR
-      9'd419: prog = 8'd225;  // CPD IR
-      9'd420: prog = 8'd226;  // LDD IR
-      9'd421: prog = 8'd227;  // LDDR IR
-      9'd422: prog = 8'd228;  // CPSD IR
-      9'd423: prog = 8'd229;  // CPDR IR
-      9'd424: prog = 8'd230;  // CPSDR IR
-      9'd425: prog = 8'd231;  // RRDB R,src R
-      9'd426: prog = 8'd194;  // LDK R,src IM
-      9'd427: prog = 8'd231;  // RLDB R,src R
-      9'd428: prog = 8'd194;  // LDB R,src IM (imm8)
+      9'd343: prog = 8'd170;  // RESB dst,b R
+      9'd344: prog = 8'd170;  // RES dst,b R
+      9'd345: prog = 8'd170;  // SETB dst,b R
+      9'd346: prog = 8'd170;  // SET dst,b R
+      9'd347: prog = 8'd170;  // BITB dst,b R
+      9'd348: prog = 8'd170;  // BIT dst,b R
+      9'd349: prog = 8'd170;  // INCB dst,n R
+      9'd350: prog = 8'd170;  // INC dst,n R
+      9'd351: prog = 8'd170;  // DECB dst,n R
+      9'd352: prog = 8'd170;  // DEC dst,n R
+      9'd353: prog = 8'd187;  // EXB R,src R
+      9'd354: prog = 8'd187;  // EX R,src R
+      9'd355: prog = 8'd168;  // TCCB cc,dst R
+      9'd356: prog = 8'd168;  // TCC cc,dst R
+      9'd357: prog = 8'd168;  // DAB dst R
+      9'd358: prog = 8'd188;  // EXTSB dst R
+      9'd359: prog = 8'd188;  // EXTSL dst R
+      9'd360: prog = 8'd188;  // EXTS dst R
+      9'd361: prog = 8'd187;  // RLB dst,n R (n=1)
+      9'd362: prog = 8'd189;  // SLLB dst,n R
+      9'd363: prog = 8'd33;  // RLB dst,n R (n=2)
+      9'd364: prog = 8'd190;  // SDLB dst,R R
+      9'd365: prog = 8'd187;  // RRB dst,n R (n=1)
+      9'd366: prog = 8'd33;  // RRB dst,n R (n=2)
+      9'd367: prog = 8'd187;  // RLCB dst,n R (n=1)
+      9'd368: prog = 8'd189;  // SLAB dst,n R
+      9'd369: prog = 8'd33;  // RLCB dst,n R (n=2)
+      9'd370: prog = 8'd190;  // SDAB dst,R R
+      9'd371: prog = 8'd187;  // RRCB dst,n R (n=1)
+      9'd372: prog = 8'd33;  // RRCB dst,n R (n=2)
+      9'd373: prog = 8'd187;  // RL dst,n R (n=1)
+      9'd374: prog = 8'd189;  // SLL dst,n R
+      9'd375: prog = 8'd33;  // RL dst,n R (n=2)
+      9'd376: prog = 8'd190;  // SDL dst,R R
+      9'd377: prog = 8'd187;  // RR dst,n R (n=1)
+      9'd378: prog = 8'd189;  // SLLL dst,n R
+      9'd379: prog = 8'd33;  // RR dst,n R (n=2)
+      9'd380: prog = 8'd190;  // SDLL dst,R R
+      9'd381: prog = 8'd187;  // RLC dst,n R (n=1)
+      9'd382: prog = 8'd189;  // SLA dst,n R
+      9'd383: prog = 8'd33;  // RLC dst,n R (n=2)
+      9'd384: prog = 8'd190;  // SDA dst,R R
+      9'd385: prog = 8'd187;  // RRC dst,n R (n=1)
+      9'd386: prog = 8'd189;  // SLAL dst,n R
+      9'd387: prog = 8'd33;  // RRC dst,n R (n=2)
+      9'd388: prog = 8'd190;  // SDAL dst,R R
+      9'd389: prog = 8'd168;  // ADCB R,src R
+      9'd390: prog = 8'd168;  // ADC R,src R
+      9'd391: prog = 8'd168;  // SBCB R,src R
+      9'd392: prog = 8'd168;  // SBC R,src R
+      9'd393: prog = 8'd191;  // TRIB IR
+      9'd394: prog = 8'd192;  // TRTIB IR
+      9'd395: prog = 8'd193;  // TRIRB IR
+      9'd396: prog = 8'd194;  // TRTIRB IR
+      9'd397: prog = 8'd191;  // TRDB IR
+      9'd398: prog = 8'd192;  // TRTDB IR
+      9'd399: prog = 8'd193;  // TRDRB IR
+      9'd400: prog = 8'd194;  // TRTDRB IR
+      9'd401: prog = 8'd195;  // CPIB IR
+      9'd402: prog = 8'd196;  // LDIB IR
+      9'd403: prog = 8'd197;  // LDIRB IR
+      9'd404: prog = 8'd198;  // CPSIB IR
+      9'd405: prog = 8'd199;  // CPIRB IR
+      9'd406: prog = 8'd200;  // CPSIRB IR
+      9'd407: prog = 8'd195;  // CPDB IR
+      9'd408: prog = 8'd196;  // LDDB IR
+      9'd409: prog = 8'd197;  // LDDRB IR
+      9'd410: prog = 8'd198;  // CPSDB IR
+      9'd411: prog = 8'd199;  // CPDRB IR
+      9'd412: prog = 8'd200;  // CPSDRB IR
+      9'd413: prog = 8'd195;  // CPI IR
+      9'd414: prog = 8'd196;  // LDI IR
+      9'd415: prog = 8'd197;  // LDIR IR
+      9'd416: prog = 8'd198;  // CPSI IR
+      9'd417: prog = 8'd199;  // CPIR IR
+      9'd418: prog = 8'd200;  // CPSIR IR
+      9'd419: prog = 8'd195;  // CPD IR
+      9'd420: prog = 8'd196;  // LDD IR
+      9'd421: prog = 8'd197;  // LDDR IR
+      9'd422: prog = 8'd198;  // CPSD IR
+      9'd423: prog = 8'd199;  // CPDR IR
+      9'd424: prog = 8'd200;  // CPSDR IR
+      9'd425: prog = 8'd201;  // RRDB R,src R
+      9'd426: prog = 8'd168;  // LDK R,src IM
+      9'd427: prog = 8'd201;  // RLDB R,src R
+      9'd428: prog = 8'd168;  // LDB R,src IM (imm8)
       9'd429: begin  // CALR dst RA
         unique case (col)
-          MC_COL_SS: prog = 8'd46;
-          MC_COL_SL: prog = 8'd46;
-          default: prog = 8'd45;
+          MC_COL_SS: prog = 8'd36;
+          MC_COL_SL: prog = 8'd36;
+          default: prog = 8'd35;
         endcase
       end
-      9'd430: prog = 8'd217;  // JR cc,dst RA
-      9'd431: prog = 8'd218;  // DJNZ R,dst RA
+      9'd430: prog = 8'd187;  // JR cc,dst RA
+      9'd431: prog = 8'd188;  // DJNZ R,dst RA
       9'd432: begin  // (trap entry)
         unique case (col)
-          MC_COL_SS: prog = 8'd233;
-          MC_COL_SL: prog = 8'd233;
-          default: prog = 8'd232;
+          MC_COL_SS: prog = 8'd203;
+          MC_COL_SL: prog = 8'd203;
+          default: prog = 8'd202;
         endcase
       end
       9'd433: begin  // (interrupt entry)
         unique case (col)
-          MC_COL_SS: prog = 8'd235;
-          MC_COL_SL: prog = 8'd235;
-          default: prog = 8'd234;
+          MC_COL_SS: prog = 8'd205;
+          MC_COL_SL: prog = 8'd205;
+          default: prog = 8'd204;
         endcase
       end
       default: ;
@@ -3213,16 +2961,14 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd20: begin  // F1 · Fn · Fn{MD+MO} · I6{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd20: begin  // F1 · Fn · Fn{MD+MO} · I6{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd3};
+          4'd5: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
@@ -3237,16 +2983,14 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd22: begin  // F1+1{P1+MD} · R · R{MD+MO} · I5{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd22: begin  // F1+1{P1+MD} · R · R{MD+MO} · I5{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd5};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd3};
+          4'd5: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
@@ -3261,11 +3005,11 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd24: begin  // F1 · Fn{MD} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd24: begin  // F1 · Fn{MD} · I4x16{D2} / F1 · Fn{MD+MO} · I5{B6+D2+MO} · I6x16{B6+D2} / F1 · Fn{MD+MO} · I7{D2+MO}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd2: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
@@ -3278,12 +3022,11 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd26: begin  // F1+1{P1+MD} · R{MD+MO} · I3{D2+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd26: begin  // F1+1{P1+MD} · R{MD+MO} · I3{D2+MO} · I4x15{D2} / F1+1{P1+MD} · R{MD+MO} · I4{B6+D2+MO} · I6x16{B6+D2} / F1+1{P1+MD} · R{MD+MO} · I6{D2+MO}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd2: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
@@ -3296,131 +3039,25 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd28: begin  // F1 · Fn · Fn{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd28: begin  // F1 · Fn · Fn{MD+MO} · I7x105{D5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd4};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd7};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd29: begin  // F1 · Fn · Fn{MD+MO} · I4{D2+MO} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd4};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
-          default: ;
-        endcase
-      end
-      8'd30: begin  // F1 · Fn · Fn{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd4};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd31: begin  // F1+1{P1+MD} · R · R{MD+MO} · I3{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd29: begin  // F1+1{P1+MD} · R · R{MD+MO} · I6{D5+MO} · I7x104{D5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd7};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd32: begin  // F1+1{P1+MD} · R · R{MD+MO} · I3{D2+MO} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
-          4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
-          default: ;
-        endcase
-      end
-      8'd33: begin  // F1+1{P1+MD} · R · R{MD+MO} · I3{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
-          4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd34: begin  // F1 · Fn{MD+MO} · I5{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd5};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd35: begin  // F1 · Fn{MD+MO} · I7{D2+MO}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd7};
-          default: ;
-        endcase
-      end
-      8'd36: begin  // F1 · Fn{MD+MO} · I7{D2+MO} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd37: begin  // F1+1{P1+MD} · R{MD+MO} · I4{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
-          4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd4};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd38: begin  // F1+1{P1+MD} · R{MD+MO} · I6{D2+MO}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
-          4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd39: begin  // F1+1{P1+MD} · R{MD+MO} · I6{D2+MO} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
-          4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd6};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd40: begin  // F1+1{P1} · R · R+3{P3}
+      8'd30: begin  // F1+1{P1} · R · R+3{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
@@ -3428,7 +3065,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd41: begin  // F1+2{P1+O2} · W · W
+      8'd31: begin  // F1+2{P1+O2} · W · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_W, clocks: 4'd0};
@@ -3436,34 +3073,34 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd42: begin  // F1+2{D2} · I5{D2}
+      8'd32: begin  // F1+2{D2} · I5{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd5};
           default: ;
         endcase
       end
-      8'd43: begin  // F1+4{P1}
+      8'd33: begin  // F1+4{P1}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           default: ;
         endcase
       end
-      8'd44: begin  // F1+2{D2} · I5{D2} · I5{D2}
+      8'd34: begin  // F1+2{D2} · I5x2{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd5};
           default: ;
         endcase
       end
-      8'd45: begin  // F1+4{P1} · W
+      8'd35: begin  // F1+4{P1} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_W, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd46: begin  // F1+4{P1} · W+2{C1} · W
+      8'd36: begin  // F1+4{P1} · W+2{C1} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_W, clocks: 4'd2};
@@ -3471,14 +3108,14 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd47: begin  // F1+1{P1} · Fn+3{P1}
+      8'd37: begin  // F1+1{P1} · Fn+3{P1}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd48: begin  // F1+1{P1} · R+1{P3} · W
+      8'd38: begin  // F1+1{P1} · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd1};
@@ -3486,7 +3123,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd49: begin  // F1+1{P1} · Fn+4{P2} · R
+      8'd39: begin  // F1+1{P1} · Fn+4{P2} · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd4};
@@ -3494,7 +3131,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd50: begin  // F1+1{P1} · Fn+4{P2} · W
+      8'd40: begin  // F1+1{P1} · Fn+4{P2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd4};
@@ -3502,7 +3139,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd51: begin  // F1+4{D3} · Fn+2{P2} · I3{D2}
+      8'd41: begin  // F1+4{D3} · Fn+2{P2} · I3{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd2};
@@ -3510,7 +3147,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd52: begin  // F1+1{P1} · Fn+4{P2} · R · R
+      8'd42: begin  // F1+1{P1} · Fn+4{P2} · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd4};
@@ -3519,7 +3156,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd53: begin  // F1+1{P1} · Fn+4{P2} · W · W
+      8'd43: begin  // F1+1{P1} · Fn+4{P2} · W · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd4};
@@ -3528,7 +3165,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd54: begin  // F1+1{P1} · R · R+2{P3}
+      8'd44: begin  // F1+1{P1} · R · R+2{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
@@ -3536,7 +3173,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd55: begin  // F1+2{P1+U} · R · R{C2} · R+2{P3}
+      8'd45: begin  // F1+2{P1+U} · R · R{C2} · R+2{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
@@ -3545,7 +3182,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd56: begin  // F1 · Fn+1{P1+BR} · IO+3{P3} · W · I4{BR+U}
+      8'd46: begin  // F1 · Fn+1{P1+BR} · IO+3{P3} · W · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3555,7 +3192,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd57: begin  // F1 · Fn+1{P1+BR} | n x (IO+3{P3} · W) · I4{BR+U}
+      8'd47: begin  // F1 · Fn+1{P1+BR} | n x (IO+3{P3} · W) · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3565,7 +3202,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd58: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · IO · I4{BR+U}
+      8'd48: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · IO · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3575,7 +3212,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd59: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · IO) · I4{BR+U}
+      8'd49: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · IO) · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3585,7 +3222,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd60: begin  // F1+2{B3} · Fn{B3} · IO{B3}
+      8'd50: begin  // F1+2{B3} · Fn{B3} · IO{B3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3593,14 +3230,14 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd61: begin  // F1+3{P1} · IO
+      8'd51: begin  // F1+3{P1} · IO
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
           4'd1: cyc = '{kind: MC_IO, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd62: begin  // F1 · Fa · R
+      8'd52: begin  // F1 · Fa · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -3608,7 +3245,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd63: begin  // F1 · Fa+1{S1} · R / F1 · Fa+1{P2} · R
+      8'd53: begin  // F1 · Fa+1{S1} · R / F1 · Fa+1{P2} · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -3616,7 +3253,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd64: begin  // F1 · Fn{S3} · Fa · R
+      8'd54: begin  // F1 · Fn{S3} · Fa · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3625,7 +3262,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd65: begin  // F1 · Fn{S3} · Fa+1{P2} · R
+      8'd55: begin  // F1 · Fn{S3} · Fa+1{P2} · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3634,7 +3271,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd66: begin  // F1 · Fa+2{O2} · R+1{P3} · W
+      8'd56: begin  // F1 · Fa+2{O2} · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -3643,7 +3280,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd67: begin  // F1 · Fa+3{O2+S1} · R+1{P3} · W / F1 · Fa+3{P2+O2} · R+1{P3} · W
+      8'd57: begin  // F1 · Fa+3{O2+S1} · R+1{P3} · W / F1 · Fa+3{P2+O2} · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd3};
@@ -3652,7 +3289,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd68: begin  // F1 · Fn{S3} · Fa+2{O2} · R+1{P3} · W
+      8'd58: begin  // F1 · Fn{S3} · Fa+2{O2} · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3662,7 +3299,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd69: begin  // F1 · Fa+1{O2} · Fn · R+1{P3}
+      8'd59: begin  // F1 · Fa+1{O2} · Fn · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -3671,7 +3308,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd70: begin  // F1 · Fa+2{O2+S1} · Fn · R+1{P3} / F1 · Fa+2{P2+O2} · Fn · R+1{P3}
+      8'd60: begin  // F1 · Fa+2{O2+S1} · Fn · R+1{P3} / F1 · Fa+2{P2+O2} · Fn · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -3680,7 +3317,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd71: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn · R+1{P3}
+      8'd61: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3690,7 +3327,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd72: begin  // F1 · Fa+1{O2} · R+1{P3} / F1 · Fa+1{S1} · R+1{P3} / F1 · Fa+1{P2} · R+1{P3}
+      8'd62: begin  // F1 · Fa+1{O2} · R+1{P3} / F1 · Fa+1{S1} · R+1{P3} / F1 · Fa+1{P2} · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -3698,7 +3335,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd73: begin  // F1 · Fa+2{O2+S1} · R+1{P3} / F1 · Fa+2{P2+O2} · R+1{P3}
+      8'd63: begin  // F1 · Fa+2{O2+S1} · R+1{P3} / F1 · Fa+2{P2+O2} · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -3706,7 +3343,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd74: begin  // F1 · Fn{S3} · Fa+1{O2} · R+1{P3} / F1 · Fn{S3} · Fa+1{P2} · R+1{P3}
+      8'd64: begin  // F1 · Fn{S3} · Fa+1{O2} · R+1{P3} / F1 · Fn{S3} · Fa+1{P2} · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3715,7 +3352,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd75: begin  // F1 · Fa+1{O2} · Fn+1{O2} · W
+      8'd65: begin  // F1 · Fa+1{O2} · Fn+1{O2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -3724,7 +3361,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd76: begin  // F1 · Fa+2{O2+S1} · Fn+1{O2} · W / F1 · Fa+2{P2+O2} · Fn+1{O2} · W
+      8'd66: begin  // F1 · Fa+2{O2+S1} · Fn+1{O2} · W / F1 · Fa+2{P2+O2} · Fn+1{O2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -3733,7 +3370,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd77: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn+1{O2} · W
+      8'd67: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn+1{O2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3743,7 +3380,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd78: begin  // F1 · Fa+2{O2} · R · W
+      8'd68: begin  // F1 · Fa+2{O2} · R · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -3752,7 +3389,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd79: begin  // F1 · Fa+3{O2+S1} · R · W / F1 · Fa+3{P2+O2} · R · W
+      8'd69: begin  // F1 · Fa+3{O2+S1} · R · W / F1 · Fa+3{P2+O2} · R · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd3};
@@ -3761,7 +3398,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd80: begin  // F1 · Fn{S3} · Fa+2{O2} · R · W
+      8'd70: begin  // F1 · Fn{S3} · Fa+2{O2} · R · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3771,7 +3408,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd81: begin  // F1 · Fa+2{O2} · W
+      8'd71: begin  // F1 · Fa+2{O2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -3779,7 +3416,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd82: begin  // F1 · Fa+3{O2+S1} · W / F1 · Fa+3{P2+O2} · W / F1 · Fa+3{P2} · W
+      8'd72: begin  // F1 · Fa+3{O2+S1} · W / F1 · Fa+3{P2+O2} · W / F1 · Fa+3{P2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd3};
@@ -3787,7 +3424,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd83: begin  // F1 · Fn{S3} · Fa+2{O2} · W
+      8'd73: begin  // F1 · Fn{S3} · Fa+2{O2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3796,7 +3433,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd84: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R+1{P3} · W
+      8'd74: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3806,7 +3443,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd85: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn · R+1{P3}
+      8'd75: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3816,7 +3453,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd86: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+1{P3}
+      8'd76: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3825,7 +3462,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd87: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn+1{O2} · W
+      8'd77: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn+1{O2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3835,7 +3472,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd88: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R · W
+      8'd78: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3845,7 +3482,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd89: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W
+      8'd79: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3854,7 +3491,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd90: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (R)
+      8'd80: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (R)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3863,7 +3500,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd91: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (R) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (R)
+      8'd81: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (R) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (R)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3872,7 +3509,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd92: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (R)
+      8'd82: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (R)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3882,7 +3519,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd93: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (W)
+      8'd83: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (W)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3891,7 +3528,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd94: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (W) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (W)
+      8'd84: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (W) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (W)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3900,7 +3537,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd95: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (W)
+      8'd85: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (W)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3910,7 +3547,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd96: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (R)
+      8'd86: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (R)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3920,7 +3557,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd97: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (W)
+      8'd87: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (W)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -3930,7 +3567,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd98: begin  // F1 · Fa · R · R+3{P3}
+      8'd88: begin  // F1 · Fa · R · R+3{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -3939,7 +3576,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd99: begin  // F1 · Fa+1{S1} · R · R+3{P3} / F1 · Fa+1{P2} · R · R+3{P3} / F1 · Fa+1{O2} · R · R+3{P3}
+      8'd89: begin  // F1 · Fa+1{S1} · R · R+3{P3} / F1 · Fa+1{P2} · R · R+3{P3} / F1 · Fa+1{O2} · R · R+3{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -3948,7 +3585,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd100: begin  // F1 · Fn{S3} · Fa · R · R+3{P3}
+      8'd90: begin  // F1 · Fn{S3} · Fa · R · R+3{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3958,7 +3595,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd101: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+3{P3} / F1 · Fn{S3} · Fa+1{O2} · R · R+3{P3}
+      8'd91: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+3{P3} / F1 · Fn{S3} · Fa+1{O2} · R · R+3{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3968,7 +3605,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd102: begin  // F1+1{P1} · Fa+1{O2} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R · W+1{P4} · W
+      8'd92: begin  // F1+1{P1} · Fa+1{O2} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R · W+1{P4} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -3979,7 +3616,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd103: begin  // F1+1{P1} · Fn{S3} · Fa · R · R · W+1{P4} · W
+      8'd93: begin  // F1+1{P1} · Fn{S3} · Fa · R · R · W+1{P4} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -3991,7 +3628,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd104: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R · W+1{P4} · W
+      8'd94: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R · W+1{P4} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4003,7 +3640,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd105: begin  // F1+1{P1} · Fa+1{O2} · R · W / F1+1{P1} · Fa+1{S4} · R · W / F1+1{P1} · Fa+1{P2} · R · W
+      8'd95: begin  // F1+1{P1} · Fa+1{O2} · R · W / F1+1{P1} · Fa+1{S4} · R · W / F1+1{P1} · Fa+1{P2} · R · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4012,7 +3649,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd106: begin  // F1+1{P1} · Fn{S3} · Fa · R · W
+      8'd96: begin  // F1+1{P1} · Fn{S3} · Fa · R · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4022,7 +3659,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd107: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · W
+      8'd97: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4032,7 +3669,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd108: begin  // F1 · Fa · R · R
+      8'd98: begin  // F1 · Fa · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -4041,7 +3678,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd109: begin  // F1 · Fa+1{S1} · R · R / F1 · Fa+1{P2} · R · R
+      8'd99: begin  // F1 · Fa+1{S1} · R · R / F1 · Fa+1{P2} · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4050,7 +3687,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd110: begin  // F1 · Fn{S3} · Fa · R · R
+      8'd100: begin  // F1 · Fn{S3} · Fa · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4060,7 +3697,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd111: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R
+      8'd101: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4070,7 +3707,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd112: begin  // F1+1{P1} · Fa+1{O2} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
+      8'd102: begin  // F1+1{P1} · Fa+1{O2} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4081,7 +3718,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd113: begin  // F1+1{P1} · Fn{S3} · Fa · R · R+2{P3} · W+1{P4} · W
+      8'd103: begin  // F1+1{P1} · Fn{S3} · Fa · R · R+2{P3} · W+1{P4} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4093,7 +3730,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd114: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
+      8'd104: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4105,7 +3742,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd115: begin  // F1+1{P1} · Fa+1{O2} · R+2{P3} · W / F1+1{P1} · Fa+1{S4} · R+2{P3} · W / F1+1{P1} · Fa+1{P2} · R+2{P3} · W
+      8'd105: begin  // F1+1{P1} · Fa+1{O2} · R+2{P3} · W / F1+1{P1} · Fa+1{S4} · R+2{P3} · W / F1+1{P1} · Fa+1{P2} · R+2{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4114,7 +3751,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd116: begin  // F1+1{P1} · Fn{S3} · Fa · R+2{P3} · W
+      8'd106: begin  // F1+1{P1} · Fn{S3} · Fa · R+2{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4124,7 +3761,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd117: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R+2{P3} · W
+      8'd107: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R+2{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4134,7 +3771,19 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd118: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd108: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
+        unique case (pos)
+          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
+          4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
+          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
+          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
+          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
+          default: ;
+        endcase
+      end
+      8'd109: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -4143,38 +3792,22 @@ module z8000_mc_cycle_gen
           4'd4: cyc = '{kind: MC_I, clocks: 4'd4};
           4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
           4'd6: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd8: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd119: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd4};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd7};
-          default: ;
-        endcase
-      end
-      8'd120: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd110: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
           4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd8: cyc = '{kind: MC_I, clocks: 4'd3};
+          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd121: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
+      8'd111: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4186,7 +3819,20 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd122: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd112: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
+        unique case (pos)
+          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
+          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
+          4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
+          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd4: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd5: cyc = '{kind: MC_IU, clocks: 4'd0};
+          4'd6: cyc = '{kind: MC_I, clocks: 4'd8};
+          4'd7: cyc = '{kind: MC_I, clocks: 4'd3};
+          default: ;
+        endcase
+      end
+      8'd113: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4196,40 +3842,23 @@ module z8000_mc_cycle_gen
           4'd5: cyc = '{kind: MC_I, clocks: 4'd4};
           4'd6: cyc = '{kind: MC_I, clocks: 4'd8};
           4'd7: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd8: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd9: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd123: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd4};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd7};
-          default: ;
-        endcase
-      end
-      8'd124: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd114: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
           4'd4: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd5: cyc = '{kind: MC_IU, clocks: 4'd0};
           4'd6: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd8: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd9: cyc = '{kind: MC_I, clocks: 4'd3};
+          4'd7: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd125: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
+      8'd115: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4242,16 +3871,16 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd126: begin  // F1 · Fa · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd116: begin  // F1 · Fa · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd127: begin  // F1 · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd117: begin  // F1 · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -4261,16 +3890,16 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd128: begin  // F1 · Fa+1{S1} · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} / F1 · Fa+1{P2} · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd118: begin  // F1 · Fa+1{S1} · R+2{MD+MO} · I4x15{D2} / F1 · Fa+1{P2} · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd129: begin  // F1 · Fa+1{S1} · R{MD+MO} · I6{D2+MO} · I4{D2} / F1 · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd119: begin  // F1 · Fa+1{S1} · R{MD+MO} · I6{D2+MO} · I4{D2} / F1 · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4280,17 +3909,17 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd130: begin  // F1 · Fn{S3} · Fa · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd120: begin  // F1 · Fn{S3} · Fa · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd131: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd121: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4301,17 +3930,17 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd132: begin  // F1 · Fn{S3} · Fa+1{P2} · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd122: begin  // F1 · Fn{S3} · Fa+1{P2} · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd4};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd133: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd123: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4322,279 +3951,87 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd134: begin  // F1 · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd124: begin  // F1 · Fa · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd7};
+          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd135: begin  // F1 · Fa · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
-          default: ;
-        endcase
-      end
-      8'd136: begin  // F1 · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd137: begin  // F1 · Fa+1{S1} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} / F1 · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd125: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I5{D5+MO} · I7x104{D5} / F1 · Fa+1{P2} · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd7};
+          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd138: begin  // F1 · Fa+1{S1} · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2} / F1 · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
-          default: ;
-        endcase
-      end
-      8'd139: begin  // F1 · Fa+1{S1} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2} / F1 · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd140: begin  // F1 · Fn{S3} · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd126: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd7};
+          4'd4: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd5: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd141: begin  // F1 · Fn{S3} · Fa · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd6};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd3};
-          default: ;
-        endcase
-      end
-      8'd142: begin  // F1 · Fn{S3} · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd143: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd127: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd7};
+          4'd4: cyc = '{kind: MC_R, clocks: 4'd0};
+          4'd5: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd144: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd6};
-          4'd7: cyc = '{kind: MC_I, clocks: 4'd3};
-          default: ;
-        endcase
-      end
-      8'd145: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_R, clocks: 4'd2};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd6};
-          default: ;
-        endcase
-      end
-      8'd146: begin  // F1 · Fa · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd128: begin  // F1 · Fa · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fa · R{MD+MO} · I5{D2+MO}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd147: begin  // F1 · Fa · R{MD+MO} · I5{D2+MO}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd5};
-          default: ;
-        endcase
-      end
-      8'd148: begin  // F1 · Fa · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd5};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd149: begin  // F1 · Fa+1{S1} · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} / F1 · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd129: begin  // F1 · Fa+1{S1} · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fa+1{S1} · R{MD+MO} · I5{D2+MO} / F1 · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd150: begin  // F1 · Fa+1{S1} · R{MD+MO} · I5{D2+MO} / F1 · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd5};
-          default: ;
-        endcase
-      end
-      8'd151: begin  // F1 · Fa+1{S1} · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2} / F1 · Fa+1{P2} · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd2: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd5};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd152: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd130: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fn{S3} · Fa · R{MD+MO} · I5{D2+MO}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd153: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I5{D2+MO}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd5};
-          default: ;
-        endcase
-      end
-      8'd154: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd0};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd5};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd155: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd131: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
           4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
           4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd4: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd156: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd5};
-          default: ;
-        endcase
-      end
-      8'd157: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
-          4'd2: cyc = '{kind: MC_FA, clocks: 4'd1};
-          4'd3: cyc = '{kind: MC_R, clocks: 4'd0};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd5};
-          4'd5: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd6: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd158: begin  // F1 · Fa+2{O2+S1} · R · R+3{P3} / F1 · Fa+2{P2+O2} · R · R+3{P3}
+      8'd132: begin  // F1 · Fa+2{O2+S1} · R · R+3{P3} / F1 · Fa+2{P2+O2} · R · R+3{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -4603,7 +4040,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd159: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R · R+3{P3}
+      8'd133: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R · R+3{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4613,7 +4050,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd160: begin  // F1 · Fa+2{O2} · W · W
+      8'd134: begin  // F1 · Fa+2{O2} · W · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -4622,7 +4059,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd161: begin  // F1 · Fa+3{O2+S1} · W · W / F1 · Fa+3{P2+O2} · W · W
+      8'd135: begin  // F1 · Fa+3{O2+S1} · W · W / F1 · Fa+3{P2+O2} · W · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd3};
@@ -4631,7 +4068,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd162: begin  // F1 · Fn{S3} · Fa+2{O2} · W · W
+      8'd136: begin  // F1 · Fn{S3} · Fa+2{O2} · W · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4641,7 +4078,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd163: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W · W
+      8'd137: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4651,21 +4088,21 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd164: begin  // F1 · Fa+1{P2}
+      8'd138: begin  // F1 · Fa+1{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
           default: ;
         endcase
       end
-      8'd165: begin  // F1 · Fa+2{P2+S1} / F1 · Fa+2{P2}
+      8'd139: begin  // F1 · Fa+2{P2+S1} / F1 · Fa+2{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
           default: ;
         endcase
       end
-      8'd166: begin  // F1 · Fn{S3} · Fa+1{P2}
+      8'd140: begin  // F1 · Fn{S3} · Fa+1{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4673,7 +4110,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd167: begin  // F1 · Fn{S3} · Fa+2{P2}
+      8'd141: begin  // F1 · Fn{S3} · Fa+2{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4681,7 +4118,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd168: begin  // F1 · Fa+4{P2+S1} · W+2{C1} · W / F1 · Fa+4{P2} · W+2{C1} · W
+      8'd142: begin  // F1 · Fa+4{P2+S1} · W+2{C1} · W / F1 · Fa+4{P2} · W+2{C1} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd4};
@@ -4690,7 +4127,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd169: begin  // F1 · Fn{S3} · Fa+3{P2} · W+2{C1} · W
+      8'd143: begin  // F1 · Fn{S3} · Fa+3{P2} · W+2{C1} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4700,7 +4137,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd170: begin  // F1 · Fa+4{P2} · W
+      8'd144: begin  // F1 · Fa+4{P2} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd4};
@@ -4708,7 +4145,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd171: begin  // F1 · Fn{S3} · Fa+4{P2} · W+2{C1} · W
+      8'd145: begin  // F1 · Fn{S3} · Fa+4{P2} · W+2{C1} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4718,7 +4155,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd172: begin  // F1 · Fa · R+1{P3} · W
+      8'd146: begin  // F1 · Fa · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -4727,7 +4164,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd173: begin  // F1 · Fa+1{S1} · R+1{P3} · W / F1 · Fa+1{P2} · R+1{P3} · W
+      8'd147: begin  // F1 · Fa+1{S1} · R+1{P3} · W / F1 · Fa+1{P2} · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4736,7 +4173,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd174: begin  // F1 · Fn{S3} · Fa · R+1{P3} · W
+      8'd148: begin  // F1 · Fn{S3} · Fa · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4746,7 +4183,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd175: begin  // F1 · Fn{S3} · Fa+1{P2} · R+1{P3} · W
+      8'd149: begin  // F1 · Fn{S3} · Fa+1{P2} · R+1{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4756,7 +4193,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd176: begin  // F1 · Fa · R+1{P3}
+      8'd150: begin  // F1 · Fa · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -4764,7 +4201,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd177: begin  // F1 · Fn{S3} · Fa · R+1{P3}
+      8'd151: begin  // F1 · Fn{S3} · Fa · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4773,7 +4210,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd178: begin  // F1 · Fa+1{O2} · R+2{P3} · W
+      8'd152: begin  // F1 · Fa+1{O2} · R+2{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4782,7 +4219,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd179: begin  // F1 · Fa+2{O2+S1} · R+2{P3} · W / F1 · Fa+2{P2+O2} · R+2{P3} · W
+      8'd153: begin  // F1 · Fa+2{O2+S1} · R+2{P3} · W / F1 · Fa+2{P2+O2} · R+2{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
@@ -4791,7 +4228,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd180: begin  // F1 · Fn{S3} · Fa+1{O2} · R+2{P3} · W
+      8'd154: begin  // F1 · Fn{S3} · Fa+1{O2} · R+2{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4801,7 +4238,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd181: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+2{P3} · W
+      8'd155: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+2{P3} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4811,21 +4248,21 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd182: begin  // F1+4{D3} · Fa+2{P2}
+      8'd156: begin  // F1+4{D3} · Fa+2{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd2};
           default: ;
         endcase
       end
-      8'd183: begin  // F1+4{D3} · Fa+3{P2+S1} / F1+4{D3} · Fa+3{P2}
+      8'd157: begin  // F1+4{D3} · Fa+3{P2+S1} / F1+4{D3} · Fa+3{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd184: begin  // F1+4{D3} · Fn{S3} · Fa+2{P2}
+      8'd158: begin  // F1+4{D3} · Fn{S3} · Fa+2{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4833,7 +4270,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd185: begin  // F1+4{D3} · Fn{S3} · Fa+3{P2}
+      8'd159: begin  // F1+4{D3} · Fn{S3} · Fa+3{P2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4841,7 +4278,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd186: begin  // F1+2{U} · Fa · R · R+2{P3}
+      8'd160: begin  // F1+2{U} · Fa · R · R+2{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd0};
@@ -4850,7 +4287,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd187: begin  // F1+2{U} · Fa+1{S1} · R · R{C2} · R+2{P3} / F1+2{U} · Fa+1{P2} · R · R{C2} · R+2{P3}
+      8'd161: begin  // F1+2{U} · Fa+1{S1} · R · R{C2} · R+2{P3} / F1+2{U} · Fa+1{P2} · R · R{C2} · R+2{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4860,7 +4297,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd188: begin  // F1+2{U} · Fn{S3} · Fa · R · R{C2} · R+2{P3}
+      8'd162: begin  // F1+2{U} · Fn{S3} · Fa · R · R{C2} · R+2{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4871,7 +4308,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd189: begin  // F1+2{U} · Fa+1{P2} · R · R+2{P3}
+      8'd163: begin  // F1+2{U} · Fa+1{P2} · R · R+2{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_FA, clocks: 4'd1};
@@ -4880,7 +4317,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd190: begin  // F1+2{U} · Fn{S3} · Fa+1{P2} · R · R{C2} · R+2{P3}
+      8'd164: begin  // F1+2{U} · Fn{S3} · Fa+1{P2} · R · R{C2} · R+2{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd0};
@@ -4891,7 +4328,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd191: begin  // F1+2{B4} · I3{B4} | n x (I3{B4})
+      8'd165: begin  // F1+2{B4} · I3{B4} | n x (I3{B4})
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd3};
@@ -4899,7 +4336,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd192: begin  // F1+1{P1} · R · R · R
+      8'd166: begin  // F1+1{P1} · R · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
@@ -4908,7 +4345,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd193: begin  // F1+1{P1} · R · R · R · R{C2}
+      8'd167: begin  // F1+1{P1} · R · R · R · R{C2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
@@ -4918,13 +4355,13 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd194: begin  // F1+2{P1}
+      8'd168: begin  // F1+2{P1}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           default: ;
         endcase
       end
-      8'd195: begin  // F1+2{D2} | n x (I7{D2}) · I7{D2}
+      8'd169: begin  // F1+2{D2} | n x (I7{D2}) · I7{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd7};
@@ -4932,13 +4369,13 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd196: begin  // F1+1{B2}
+      8'd170: begin  // F1+1{B2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd1};
           default: ;
         endcase
       end
-      8'd197: begin  // F1+4{D3} · Fn+1{P1} · EPU
+      8'd171: begin  // F1+4{D3} · Fn+1{P1} · EPU
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -4946,14 +4383,15 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd198: begin  // F1+4{D3} · Fn+4{U}
+      8'd172: begin  // F1+4{D3} · Fn+1{U} · I4{U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
-          4'd1: cyc = '{kind: MC_FN, clocks: 4'd4};
+          4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
+          4'd2: cyc = '{kind: MC_I, clocks: 4'd4};
           default: ;
         endcase
       end
-      8'd199: begin  // F1+4{D3} · Fn+1{P1} | n x (EPU)
+      8'd173: begin  // F1+4{D3} · Fn+1{P1} | n x (EPU)
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -4961,14 +4399,14 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd200: begin  // F1+2{D2} · I3{D2}
+      8'd174: begin  // F1+2{D2} · I3{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd201: begin  // F1+3{P1} · W · W
+      8'd175: begin  // F1+3{P1} · W · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
           4'd1: cyc = '{kind: MC_W, clocks: 4'd0};
@@ -4976,14 +4414,14 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd202: begin  // F1+3{P1} · W
+      8'd176: begin  // F1+3{P1} · W
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
           4'd1: cyc = '{kind: MC_W, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd203: begin  // F1+2{P1} · R · R+1{P3}
+      8'd177: begin  // F1+2{P1} · R · R+1{P3}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
@@ -4991,102 +4429,67 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd204: begin  // F1+2{P1} · R
+      8'd178: begin  // F1+2{P1} · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd205: begin  // F1+4{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd179: begin  // F1+4{D2} · I8x32{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd7};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd4: cyc = '{kind: MC_I, clocks: 4'd3};
-          default: ;
-        endcase
-      end
-      8'd206: begin  // F1+4{D2} · I8{D2} · I8{D2} · I7{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd7};
-          default: ;
-        endcase
-      end
-      8'd207: begin  // F1+3{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd208: begin  // F1+3{D2} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd4};
-          default: ;
-        endcase
-      end
-      8'd209: begin  // F1+2{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd7};
-          default: ;
-        endcase
-      end
-      8'd210: begin  // F1+2{D2} · I8{D2} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd1: cyc = '{kind: MC_IU, clocks: 4'd0};
+          4'd2: cyc = '{kind: MC_I, clocks: 4'd8};
           4'd3: cyc = '{kind: MC_I, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd211: begin  // F1+2{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
+      8'd180: begin  // F1+4{D2} · I8x2{D2} · I7{D2}
         unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
+          4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd2: cyc = '{kind: MC_I, clocks: 4'd7};
           default: ;
         endcase
       end
-      8'd212: begin  // F1+2{D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd181: begin  // F1+3{D2} · I4x16{D2}
         unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd6};
+          4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
+          4'd1: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd213: begin  // F1+2{D2} · I8{D2}
+      8'd182: begin  // F1+3{D2} · I8{D2} · I4{D2}
         unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
-          4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
-          default: ;
-        endcase
-      end
-      8'd214: begin  // F1+2{D2} · I8{D2} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
+          4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
           4'd2: cyc = '{kind: MC_I, clocks: 4'd4};
           default: ;
         endcase
       end
-      8'd215: begin  // F1+4{D3} · R
+      8'd183: begin  // F1+2{D2} · I4{D5} · I7x105{D5} / F1+2{D2} · I6x17{B6+D2} / F1+2{D2} · I8{D2}
+        unique case (pos)
+          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
+          4'd1: cyc = '{kind: MC_IU, clocks: 4'd0};
+          default: ;
+        endcase
+      end
+      8'd184: begin  // F1+2{D2} · I8{D2}
+        unique case (pos)
+          4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
+          4'd1: cyc = '{kind: MC_I, clocks: 4'd8};
+          default: ;
+        endcase
+      end
+      8'd185: begin  // F1+4{D3} · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd216: begin  // F1+4{D3} · R · R{C2}
+      8'd186: begin  // F1+4{D3} · R · R{C2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_R, clocks: 4'd0};
@@ -5094,37 +4497,37 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd217: begin  // F1+3{P1}
+      8'd187: begin  // F1+3{P1}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd3};
           default: ;
         endcase
       end
-      8'd218: begin  // F1+2{D2} · I6{D2}
+      8'd188: begin  // F1+2{D2} · I6{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd6};
           default: ;
         endcase
       end
-      8'd219: begin  // F1+4{D3} · Fn+3{P1} | n x (I3{D2})
+      8'd189: begin  // F1+4{D3} · Fn+3{P1} | n x (I3{D2})
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd3};
-          4'd2: cyc = '{kind: MC_I, clocks: 4'd3};
+          4'd2: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd220: begin  // F1+4{D3} · Fn+2{P1} · I3{D2} | n x (I3{D2})
+      8'd190: begin  // F1+4{D3} · Fn+2{P1} · I3{D2} | n x (I3{D2})
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd2};
           4'd2: cyc = '{kind: MC_I, clocks: 4'd3};
-          4'd3: cyc = '{kind: MC_I, clocks: 4'd3};
+          4'd3: cyc = '{kind: MC_IU, clocks: 4'd0};
           default: ;
         endcase
       end
-      8'd221: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · W · I4{BR+U}
+      8'd191: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · W · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5135,7 +4538,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd222: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · I3{D2} · I4{BR+U}
+      8'd192: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · I3{D2} · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5146,7 +4549,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd223: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · W) · I4{BR+U}
+      8'd193: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · W) · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5157,7 +4560,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd224: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · I3{D2}) · I4{BR+U}
+      8'd194: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · I3{D2}) · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5168,7 +4571,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd225: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · I3{D2} · I4{BR+U}
+      8'd195: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · I3{D2} · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5178,7 +4581,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd226: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · W · I4{BR+U}
+      8'd196: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · W · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5188,7 +4591,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd227: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · W) · I4{BR+U}
+      8'd197: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · W) · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5198,7 +4601,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd228: begin  // F1 · Fn+1{P1+BR} · R · R+4{P3} · I4{D2} · I4{BR+U}
+      8'd198: begin  // F1 · Fn+1{P1+BR} · R · R+4{P3} · I4{D2} · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5208,7 +4611,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd229: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · I3{D2}) · I4{BR+U}
+      8'd199: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · I3{D2}) · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5218,7 +4621,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd230: begin  // F1 · Fn+1{P1+BR} | n x (R · R+4{P3} · I4{D2}) · I4{BR+U}
+      8'd200: begin  // F1 · Fn+1{P1+BR} | n x (R · R+4{P3} · I4{D2}) · I4{BR+U}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd0};
           4'd1: cyc = '{kind: MC_FN, clocks: 4'd1};
@@ -5229,14 +4632,14 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd231: begin  // F1+2{D2} · I4{D2}
+      8'd201: begin  // F1+2{D2} · I4{D2}
         unique case (pos)
           4'd0: cyc = '{kind: MC_F1, clocks: 4'd2};
           4'd1: cyc = '{kind: MC_I, clocks: 4'd4};
           default: ;
         endcase
       end
-      8'd232: begin  // AF+4{B5t} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
+      8'd202: begin  // AF+4{B5t} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_AF, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_W, clocks: 4'd1};
@@ -5247,7 +4650,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd233: begin  // AF+4{B5t} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
+      8'd203: begin  // AF+4{B5t} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_AF, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_W, clocks: 4'd1};
@@ -5260,7 +4663,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd234: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
+      8'd204: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
         unique case (pos)
           4'd0: cyc = '{kind: MC_AF, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_IA, clocks: 4'd0};
@@ -5272,7 +4675,7 @@ module z8000_mc_cycle_gen
           default: ;
         endcase
       end
-      8'd235: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
+      8'd205: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
         unique case (pos)
           4'd0: cyc = '{kind: MC_AF, clocks: 4'd4};
           4'd1: cyc = '{kind: MC_IA, clocks: 4'd0};
@@ -5306,2232 +4709,1887 @@ module z8000_mc_link_gen
     unique case (prog)
       8'd0: begin  // F1 / F1{B1}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd1: begin  // F1+1{D3} · Fn
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd2: begin  // F1+1{P1} · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd3: begin  // F1+2{P1+O2} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd4: begin  // F1+1{P1} · Fn · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd5: begin  // F1+1{P1} · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd6: begin  // F1+1{P1} · Fn+1{O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd7: begin  // F1+2{P1+O2} · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd8: begin  // F1+2{P1+O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd9: begin  // F1+3{P1} · Fn · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd10: begin  // F1+4{D3} · Fn+1{P1} | n x (R)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd11: begin  // F1+4{D3} · Fn+1{P1} | n x (W)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd12: begin  // F1+1{D3} · Fn · Fn+4{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd13: begin  // F1+1{P1} · R · R+4{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd14: begin  // F1+3{P1} · R · R+1{P3} · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd15: begin  // F1+3{P1} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd16: begin  // F1+1{D3} · Fn · Fn+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd17: begin  // F1+1{P1} · R · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd18: begin  // F1+1{P1} · R · R+2{P3} · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd19: begin  // F1+1{P1} · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd20: begin  // F1 · Fn · Fn{MD+MO} · I6{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd20: begin  // F1 · Fn · Fn{MD+MO} · I6{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd31, next_more: 4'd5, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd2, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd2, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd21: begin  // F1 · Fn · Fn{MD+MO} · I6{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd22: begin  // F1+1{P1+MD} · R · R{MD+MO} · I5{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd22: begin  // F1+1{P1+MD} · R · R{MD+MO} · I5{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd31, next_more: 4'd5, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd2, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd2, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
       8'd23: begin  // F1+1{P1+MD} · R · R{MD+MO} · I5{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd24: begin  // F1 · Fn{MD} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd24: begin  // F1 · Fn{MD} · I4x16{D2} / F1 · Fn{MD+MO} · I5{B6+D2+MO} · I6x16{B6+D2} / F1 · Fn{MD+MO} · I7{D2+MO}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
       8'd25: begin  // F1 · Fn{MD} · I8{D2} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd26: begin  // F1+1{P1+MD} · R{MD+MO} · I3{D2+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd26: begin  // F1+1{P1+MD} · R{MD+MO} · I3{D2+MO} · I4x15{D2} / F1+1{P1+MD} · R{MD+MO} · I4{B6+D2+MO} · I6x16{B6+D2} / F1+1{P1+MD} · R{MD+MO} · I6{D2+MO}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd15, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
       8'd27: begin  // F1+1{P1+MD} · R{MD+MO} · I7{D2+MO} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd28: begin  // F1 · Fn · Fn{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd28: begin  // F1 · Fn · Fn{MD+MO} · I7x105{D5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd7, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd96, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd29: begin  // F1 · Fn · Fn{MD+MO} · I4{D2+MO} · I8{D2} · I6{D2} · I3{D2}
+      8'd29: begin  // F1+1{P1+MD} · R · R{MD+MO} · I6{D5+MO} · I7x104{D5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd30: begin  // F1 · Fn · Fn{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
+      8'd30: begin  // F1+1{P1} · R · R+3{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd4, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd31: begin  // F1+1{P1+MD} · R · R{MD+MO} · I3{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd31: begin  // F1+2{P1+O2} · W · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd7, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd96, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd32: begin  // F1+1{P1+MD} · R · R{MD+MO} · I3{D2+MO} · I8{D2} · I6{D2} · I3{D2}
+      8'd32: begin  // F1+2{D2} · I5{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd33: begin  // F1+1{P1+MD} · R · R{MD+MO} · I3{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
+      8'd33: begin  // F1+4{P1}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd4, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd34: begin  // F1 · Fn{MD+MO} · I5{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd34: begin  // F1+2{D2} · I5x2{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd2, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd35: begin  // F1 · Fn{MD+MO} · I7{D2+MO}
+      8'd35: begin  // F1+4{P1} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd36: begin  // F1 · Fn{MD+MO} · I7{D2+MO} · I8{D2} · I4{D2}
+      8'd36: begin  // F1+4{P1} · W+2{C1} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd37: begin  // F1+1{P1+MD} · R{MD+MO} · I4{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd37: begin  // F1+1{P1} · Fn+3{P1}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd38: begin  // F1+1{P1+MD} · R{MD+MO} · I6{D2+MO}
+      8'd38: begin  // F1+1{P1} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd39: begin  // F1+1{P1+MD} · R{MD+MO} · I6{D2+MO} · I8{D2} · I4{D2}
+      8'd39: begin  // F1+1{P1} · Fn+4{P2} · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd40: begin  // F1+1{P1} · R · R+3{P3}
+      8'd40: begin  // F1+1{P1} · Fn+4{P2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd41: begin  // F1+2{P1+O2} · W · W
+      8'd41: begin  // F1+4{D3} · Fn+2{P2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd42: begin  // F1+2{D2} · I5{D2}
+      8'd42: begin  // F1+1{P1} · Fn+4{P2} · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd43: begin  // F1+4{P1}
+      8'd43: begin  // F1+1{P1} · Fn+4{P2} · W · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd44: begin  // F1+2{D2} · I5{D2} · I5{D2}
+      8'd44: begin  // F1+1{P1} · R · R+2{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd2, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd45: begin  // F1+4{P1} · W
+      8'd45: begin  // F1+2{P1+U} · R · R{C2} · R+2{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd46: begin  // F1+4{P1} · W+2{C1} · W
+      8'd46: begin  // F1 · Fn+1{P1+BR} · IO+3{P3} · W · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd47: begin  // F1+1{P1} · Fn+3{P1}
+      8'd47: begin  // F1 · Fn+1{P1+BR} | n x (IO+3{P3} · W) · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd48: begin  // F1+1{P1} · R+1{P3} · W
+      8'd48: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · IO · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd49: begin  // F1+1{P1} · Fn+4{P2} · R
+      8'd49: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · IO) · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd50: begin  // F1+1{P1} · Fn+4{P2} · W
+      8'd50: begin  // F1+2{B3} · Fn{B3} · IO{B3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd51: begin  // F1+4{D3} · Fn+2{P2} · I3{D2}
+      8'd51: begin  // F1+3{P1} · IO
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd52: begin  // F1+1{P1} · Fn+4{P2} · R · R
+      8'd52: begin  // F1 · Fa · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd53: begin  // F1+1{P1} · Fn+4{P2} · W · W
+      8'd53: begin  // F1 · Fa+1{S1} · R / F1 · Fa+1{P2} · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd54: begin  // F1+1{P1} · R · R+2{P3}
+      8'd54: begin  // F1 · Fn{S3} · Fa · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd55: begin  // F1+2{P1+U} · R · R{C2} · R+2{P3}
+      8'd55: begin  // F1 · Fn{S3} · Fa+1{P2} · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd56: begin  // F1 · Fn+1{P1+BR} · IO+3{P3} · W · I4{BR+U}
+      8'd56: begin  // F1 · Fa+2{O2} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd57: begin  // F1 · Fn+1{P1+BR} | n x (IO+3{P3} · W) · I4{BR+U}
+      8'd57: begin  // F1 · Fa+3{O2+S1} · R+1{P3} · W / F1 · Fa+3{P2+O2} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd58: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · IO · I4{BR+U}
+      8'd58: begin  // F1 · Fn{S3} · Fa+2{O2} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd59: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · IO) · I4{BR+U}
+      8'd59: begin  // F1 · Fa+1{O2} · Fn · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd60: begin  // F1+2{B3} · Fn{B3} · IO{B3}
+      8'd60: begin  // F1 · Fa+2{O2+S1} · Fn · R+1{P3} / F1 · Fa+2{P2+O2} · Fn · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd61: begin  // F1+3{P1} · IO
+      8'd61: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd62: begin  // F1 · Fa · R
+      8'd62: begin  // F1 · Fa+1{O2} · R+1{P3} / F1 · Fa+1{S1} · R+1{P3} / F1 · Fa+1{P2} · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd63: begin  // F1 · Fa+1{S1} · R / F1 · Fa+1{P2} · R
+      8'd63: begin  // F1 · Fa+2{O2+S1} · R+1{P3} / F1 · Fa+2{P2+O2} · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd64: begin  // F1 · Fn{S3} · Fa · R
+      8'd64: begin  // F1 · Fn{S3} · Fa+1{O2} · R+1{P3} / F1 · Fn{S3} · Fa+1{P2} · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd65: begin  // F1 · Fn{S3} · Fa+1{P2} · R
+      8'd65: begin  // F1 · Fa+1{O2} · Fn+1{O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd66: begin  // F1 · Fa+2{O2} · R+1{P3} · W
+      8'd66: begin  // F1 · Fa+2{O2+S1} · Fn+1{O2} · W / F1 · Fa+2{P2+O2} · Fn+1{O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd67: begin  // F1 · Fa+3{O2+S1} · R+1{P3} · W / F1 · Fa+3{P2+O2} · R+1{P3} · W
+      8'd67: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn+1{O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd68: begin  // F1 · Fn{S3} · Fa+2{O2} · R+1{P3} · W
+      8'd68: begin  // F1 · Fa+2{O2} · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd69: begin  // F1 · Fa+1{O2} · Fn · R+1{P3}
+      8'd69: begin  // F1 · Fa+3{O2+S1} · R · W / F1 · Fa+3{P2+O2} · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd70: begin  // F1 · Fa+2{O2+S1} · Fn · R+1{P3} / F1 · Fa+2{P2+O2} · Fn · R+1{P3}
+      8'd70: begin  // F1 · Fn{S3} · Fa+2{O2} · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd71: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn · R+1{P3}
+      8'd71: begin  // F1 · Fa+2{O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd72: begin  // F1 · Fa+1{O2} · R+1{P3} / F1 · Fa+1{S1} · R+1{P3} / F1 · Fa+1{P2} · R+1{P3}
+      8'd72: begin  // F1 · Fa+3{O2+S1} · W / F1 · Fa+3{P2+O2} · W / F1 · Fa+3{P2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd73: begin  // F1 · Fa+2{O2+S1} · R+1{P3} / F1 · Fa+2{P2+O2} · R+1{P3}
+      8'd73: begin  // F1 · Fn{S3} · Fa+2{O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd74: begin  // F1 · Fn{S3} · Fa+1{O2} · R+1{P3} / F1 · Fn{S3} · Fa+1{P2} · R+1{P3}
+      8'd74: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd75: begin  // F1 · Fa+1{O2} · Fn+1{O2} · W
+      8'd75: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd76: begin  // F1 · Fa+2{O2+S1} · Fn+1{O2} · W / F1 · Fa+2{P2+O2} · Fn+1{O2} · W
+      8'd76: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd77: begin  // F1 · Fn{S3} · Fa+1{O2} · Fn+1{O2} · W
+      8'd77: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn+1{O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd78: begin  // F1 · Fa+2{O2} · R · W
+      8'd78: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd79: begin  // F1 · Fa+3{O2+S1} · R · W / F1 · Fa+3{P2+O2} · R · W
+      8'd79: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd80: begin  // F1 · Fn{S3} · Fa+2{O2} · R · W
+      8'd80: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (R)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd81: begin  // F1 · Fa+2{O2} · W
+      8'd81: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (R) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (R)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd82: begin  // F1 · Fa+3{O2+S1} · W / F1 · Fa+3{P2+O2} · W / F1 · Fa+3{P2} · W
+      8'd82: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (R)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd83: begin  // F1 · Fn{S3} · Fa+2{O2} · W
+      8'd83: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (W)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd84: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R+1{P3} · W
+      8'd84: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (W) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (W)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd85: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn · R+1{P3}
+      8'd85: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (W)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd86: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+1{P3}
+      8'd86: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (R)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd87: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · Fn+1{O2} · W
+      8'd87: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (W)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd88: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · R · W
+      8'd88: begin  // F1 · Fa · R · R+3{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd89: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W
+      8'd89: begin  // F1 · Fa+1{S1} · R · R+3{P3} / F1 · Fa+1{P2} · R · R+3{P3} / F1 · Fa+1{O2} · R · R+3{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd90: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (R)
+      8'd90: begin  // F1 · Fn{S3} · Fa · R · R+3{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd91: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (R) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (R)
+      8'd91: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+3{P3} / F1 · Fn{S3} · Fa+1{O2} · R · R+3{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd92: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (R)
+      8'd92: begin  // F1+1{P1} · Fa+1{O2} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd93: begin  // F1+4{D3} · Fn+1{P1} · Fa | n x (W)
+      8'd93: begin  // F1+1{P1} · Fn{S3} · Fa · R · R · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd94: begin  // F1+4{D3} · Fn+1{P1} · Fa+1{S1} | n x (W) / F1+4{D3} · Fn+1{P1} · Fa+1{P2} | n x (W)
+      8'd94: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd95: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa | n x (W)
+      8'd95: begin  // F1+1{P1} · Fa+1{O2} · R · W / F1+1{P1} · Fa+1{S4} · R · W / F1+1{P1} · Fa+1{P2} · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd96: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (R)
+      8'd96: begin  // F1+1{P1} · Fn{S3} · Fa · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd97: begin  // F1+4{D3} · Fn+1{P1} · Fn{S3} · Fa+1{P2} | n x (W)
+      8'd97: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd98: begin  // F1 · Fa · R · R+3{P3}
+      8'd98: begin  // F1 · Fa · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd99: begin  // F1 · Fa+1{S1} · R · R+3{P3} / F1 · Fa+1{P2} · R · R+3{P3} / F1 · Fa+1{O2} · R · R+3{P3}
+      8'd99: begin  // F1 · Fa+1{S1} · R · R / F1 · Fa+1{P2} · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd100: begin  // F1 · Fn{S3} · Fa · R · R+3{P3}
+      8'd100: begin  // F1 · Fn{S3} · Fa · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd101: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+3{P3} / F1 · Fn{S3} · Fa+1{O2} · R · R+3{P3}
+      8'd101: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd102: begin  // F1+1{P1} · Fa+1{O2} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R · W+1{P4} · W
+      8'd102: begin  // F1+1{P1} · Fa+1{O2} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd103: begin  // F1+1{P1} · Fn{S3} · Fa · R · R · W+1{P4} · W
+      8'd103: begin  // F1+1{P1} · Fn{S3} · Fa · R · R+2{P3} · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd104: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R · W+1{P4} · W
+      8'd104: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd105: begin  // F1+1{P1} · Fa+1{O2} · R · W / F1+1{P1} · Fa+1{S4} · R · W / F1+1{P1} · Fa+1{P2} · R · W
+      8'd105: begin  // F1+1{P1} · Fa+1{O2} · R+2{P3} · W / F1+1{P1} · Fa+1{S4} · R+2{P3} · W / F1+1{P1} · Fa+1{P2} · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd106: begin  // F1+1{P1} · Fn{S3} · Fa · R · W
+      8'd106: begin  // F1+1{P1} · Fn{S3} · Fa · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd107: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · W
+      8'd107: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd108: begin  // F1 · Fa · R · R
+      8'd108: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd2, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd109: begin  // F1 · Fa+1{S1} · R · R / F1 · Fa+1{P2} · R · R
+      8'd109: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd110: begin  // F1 · Fn{S3} · Fa · R · R
+      8'd110: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd2, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd111: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R
+      8'd111: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd112: begin  // F1+1{P1} · Fa+1{O2} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{S4} · R · R+2{P3} · W+1{P4} · W / F1+1{P1} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
+      8'd112: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd2, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
+          4'd7: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd113: begin  // F1+1{P1} · Fn{S3} · Fa · R · R+2{P3} · W+1{P4} · W
+      8'd113: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
+          4'd7: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd114: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R · R+2{P3} · W+1{P4} · W
+      8'd114: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8x31{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd2, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
+          4'd7: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd115: begin  // F1+1{P1} · Fa+1{O2} · R+2{P3} · W / F1+1{P1} · Fa+1{S4} · R+2{P3} · W / F1+1{P1} · Fa+1{P2} · R+2{P3} · W
+      8'd115: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
+          4'd7: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd116: begin  // F1+1{P1} · Fn{S3} · Fa · R+2{P3} · W
+      8'd116: begin  // F1 · Fa · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd117: begin  // F1+1{P1} · Fn{S3} · Fa+1{P2} · R+2{P3} · W
+      8'd117: begin  // F1 · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd118: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd118: begin  // F1 · Fa+1{S1} · R+2{MD+MO} · I4x15{D2} / F1 · Fa+1{P2} · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd31, next_more: 4'd6, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd2, next_more: 4'd8, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
-          4'd8: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd119: begin  // F1 · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
+      8'd119: begin  // F1 · Fa+1{S1} · R{MD+MO} · I6{D2+MO} · I4{D2} / F1 · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd120: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd120: begin  // F1 · Fn{S3} · Fa · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd31, next_more: 4'd6, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd2, next_more: 4'd8, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
-          4'd8: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd121: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2} / F1 · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
+      8'd121: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd122: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd122: begin  // F1 · Fn{S3} · Fa+1{P2} · R+2{MD+MO} · I4x15{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd31, next_more: 4'd7, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
-          4'd8: link = '{reps: 7'd2, next_more: 4'd9, next_done: 4'd9, fin_more: 1'b0, fin_done: 1'b0};
-          4'd9: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd123: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
+      8'd123: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd124: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd124: begin  // F1 · Fa · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd31, next_more: 4'd7, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
-          4'd8: link = '{reps: 7'd2, next_more: 4'd9, next_done: 4'd9, fin_more: 1'b0, fin_done: 1'b0};
-          4'd9: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd125: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I4{D2+MO} · I8{D2} · I7{D2}
+      8'd125: begin  // F1 · Fa+1{S1} · R · R{MD+MO} · I5{D5+MO} · I7x104{D5} / F1 · Fa+1{P2} · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd126: begin  // F1 · Fa · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd126: begin  // F1 · Fn{S3} · Fa · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd15, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd127: begin  // F1 · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd127: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R{MD+MO} · I5{D5+MO} · I7x104{D5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd128: begin  // F1 · Fa+1{S1} · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} / F1 · Fa+1{P2} · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd128: begin  // F1 · Fa · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fa · R{MD+MO} · I5{D2+MO}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd15, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd129: begin  // F1 · Fa+1{S1} · R{MD+MO} · I6{D2+MO} · I4{D2} / F1 · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd129: begin  // F1 · Fa+1{S1} · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fa+1{S1} · R{MD+MO} · I5{D2+MO} / F1 · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd130: begin  // F1 · Fn{S3} · Fa · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd130: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fn{S3} · Fa · R{MD+MO} · I5{D2+MO}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd15, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd131: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd131: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6x16{B6+D2} / F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd132: begin  // F1 · Fn{S3} · Fa+1{P2} · R+2{MD+MO} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
+      8'd132: begin  // F1 · Fa+2{O2+S1} · R · R+3{P3} / F1 · Fa+2{P2+O2} · R · R+3{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd15, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd133: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I6{D2+MO} · I4{D2}
+      8'd133: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R · R+3{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd134: begin  // F1 · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd134: begin  // F1 · Fa+2{O2} · W · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd7, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd96, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd135: begin  // F1 · Fa · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
+      8'd135: begin  // F1 · Fa+3{O2+S1} · W · W / F1 · Fa+3{P2+O2} · W · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd136: begin  // F1 · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
+      8'd136: begin  // F1 · Fn{S3} · Fa+2{O2} · W · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd4, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd137: begin  // F1 · Fa+1{S1} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} / F1 · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd137: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd7, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd96, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd138: begin  // F1 · Fa+1{S1} · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2} / F1 · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
+      8'd138: begin  // F1 · Fa+1{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd139: begin  // F1 · Fa+1{S1} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2} / F1 · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
+      8'd139: begin  // F1 · Fa+2{P2+S1} / F1 · Fa+2{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd4, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd140: begin  // F1 · Fn{S3} · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd140: begin  // F1 · Fn{S3} · Fa+1{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd7, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd96, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd141: begin  // F1 · Fn{S3} · Fa · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
+      8'd141: begin  // F1 · Fn{S3} · Fa+2{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd142: begin  // F1 · Fn{S3} · Fa · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
+      8'd142: begin  // F1 · Fa+4{P2+S1} · W+2{C1} · W / F1 · Fa+4{P2} · W+2{C1} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd4, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd143: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
+      8'd143: begin  // F1 · Fn{S3} · Fa+3{P2} · W+2{C1} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd7, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd96, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd144: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I6{D2} · I3{D2}
+      8'd144: begin  // F1 · Fa+4{P2} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd145: begin  // F1 · Fn{S3} · Fa+1{P2} · R · R+2{MD+MO} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
+      8'd145: begin  // F1 · Fn{S3} · Fa+4{P2} · W+2{C1} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd4, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd146: begin  // F1 · Fa · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd146: begin  // F1 · Fa · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd147: begin  // F1 · Fa · R{MD+MO} · I5{D2+MO}
+      8'd147: begin  // F1 · Fa+1{S1} · R+1{P3} · W / F1 · Fa+1{P2} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd148: begin  // F1 · Fa · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
+      8'd148: begin  // F1 · Fn{S3} · Fa · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd149: begin  // F1 · Fa+1{S1} · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} / F1 · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd149: begin  // F1 · Fn{S3} · Fa+1{P2} · R+1{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd150: begin  // F1 · Fa+1{S1} · R{MD+MO} · I5{D2+MO} / F1 · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
+      8'd150: begin  // F1 · Fa · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd151: begin  // F1 · Fa+1{S1} · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2} / F1 · Fa+1{P2} · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
+      8'd151: begin  // F1 · Fn{S3} · Fa · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd152: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd152: begin  // F1 · Fa+1{O2} · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd153: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I5{D2+MO}
+      8'd153: begin  // F1 · Fa+2{O2+S1} · R+2{P3} · W / F1 · Fa+2{P2+O2} · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd154: begin  // F1 · Fn{S3} · Fa · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
+      8'd154: begin  // F1 · Fn{S3} · Fa+1{O2} · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd155: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I3{B6+D2+MO} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
+      8'd155: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+2{P3} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd156: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I5{D2+MO}
+      8'd156: begin  // F1+4{D3} · Fa+2{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd157: begin  // F1 · Fn{S3} · Fa+1{P2} · R{MD+MO} · I5{D2+MO} · I8{D2} · I4{D2}
+      8'd157: begin  // F1+4{D3} · Fa+3{P2+S1} / F1+4{D3} · Fa+3{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd158: begin  // F1 · Fa+2{O2+S1} · R · R+3{P3} / F1 · Fa+2{P2+O2} · R · R+3{P3}
+      8'd158: begin  // F1+4{D3} · Fn{S3} · Fa+2{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd159: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R · R+3{P3}
+      8'd159: begin  // F1+4{D3} · Fn{S3} · Fa+3{P2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd160: begin  // F1 · Fa+2{O2} · W · W
+      8'd160: begin  // F1+2{U} · Fa · R · R+2{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd161: begin  // F1 · Fa+3{O2+S1} · W · W / F1 · Fa+3{P2+O2} · W · W
+      8'd161: begin  // F1+2{U} · Fa+1{S1} · R · R{C2} · R+2{P3} / F1+2{U} · Fa+1{P2} · R · R{C2} · R+2{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd162: begin  // F1 · Fn{S3} · Fa+2{O2} · W · W
+      8'd162: begin  // F1+2{U} · Fn{S3} · Fa · R · R{C2} · R+2{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd163: begin  // F1 · Fn{S3} · Fa+3{P2+O2} · W · W
+      8'd163: begin  // F1+2{U} · Fa+1{P2} · R · R+2{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd164: begin  // F1 · Fa+1{P2}
+      8'd164: begin  // F1+2{U} · Fn{S3} · Fa+1{P2} · R · R{C2} · R+2{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd165: begin  // F1 · Fa+2{P2+S1} / F1 · Fa+2{P2}
+      8'd165: begin  // F1+2{B4} · I3{B4} | n x (I3{B4})
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd166: begin  // F1 · Fn{S3} · Fa+1{P2}
+      8'd166: begin  // F1+1{P1} · R · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd167: begin  // F1 · Fn{S3} · Fa+2{P2}
+      8'd167: begin  // F1+1{P1} · R · R · R · R{C2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd168: begin  // F1 · Fa+4{P2+S1} · W+2{C1} · W / F1 · Fa+4{P2} · W+2{C1} · W
+      8'd168: begin  // F1+2{P1}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd169: begin  // F1 · Fn{S3} · Fa+3{P2} · W+2{C1} · W
+      8'd169: begin  // F1+2{D2} | n x (I7{D2}) · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd170: begin  // F1 · Fa+4{P2} · W
+      8'd170: begin  // F1+1{B2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd171: begin  // F1 · Fn{S3} · Fa+4{P2} · W+2{C1} · W
+      8'd171: begin  // F1+4{D3} · Fn+1{P1} · EPU
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd172: begin  // F1 · Fa · R+1{P3} · W
+      8'd172: begin  // F1+4{D3} · Fn+1{U} · I4{U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd173: begin  // F1 · Fa+1{S1} · R+1{P3} · W / F1 · Fa+1{P2} · R+1{P3} · W
+      8'd173: begin  // F1+4{D3} · Fn+1{P1} | n x (EPU)
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd174: begin  // F1 · Fn{S3} · Fa · R+1{P3} · W
+      8'd174: begin  // F1+2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd175: begin  // F1 · Fn{S3} · Fa+1{P2} · R+1{P3} · W
+      8'd175: begin  // F1+3{P1} · W · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd176: begin  // F1 · Fa · R+1{P3}
+      8'd176: begin  // F1+3{P1} · W
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd177: begin  // F1 · Fn{S3} · Fa · R+1{P3}
+      8'd177: begin  // F1+2{P1} · R · R+1{P3}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd178: begin  // F1 · Fa+1{O2} · R+2{P3} · W
+      8'd178: begin  // F1+2{P1} · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd179: begin  // F1 · Fa+2{O2+S1} · R+2{P3} · W / F1 · Fa+2{P2+O2} · R+2{P3} · W
+      8'd179: begin  // F1+4{D2} · I8x32{D2} with n x I7{D4} inline · I8x2{D2} · I3{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd2, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd180: begin  // F1 · Fn{S3} · Fa+1{O2} · R+2{P3} · W
+      8'd180: begin  // F1+4{D2} · I8x2{D2} · I7{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd2, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd181: begin  // F1 · Fn{S3} · Fa+2{P2+O2} · R+2{P3} · W
+      8'd181: begin  // F1+3{D2} · I4x16{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd182: begin  // F1+4{D3} · Fa+2{P2}
+      8'd182: begin  // F1+3{D2} · I8{D2} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd183: begin  // F1+4{D3} · Fa+3{P2+S1} / F1+4{D3} · Fa+3{P2}
+      8'd183: begin  // F1+2{D2} · I4{D5} · I7x105{D5} / F1+2{D2} · I6x17{B6+D2} / F1+2{D2} · I8{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd184: begin  // F1+4{D3} · Fn{S3} · Fa+2{P2}
+      8'd184: begin  // F1+2{D2} · I8{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd185: begin  // F1+4{D3} · Fn{S3} · Fa+3{P2}
+      8'd185: begin  // F1+4{D3} · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd186: begin  // F1+2{U} · Fa · R · R+2{P3}
+      8'd186: begin  // F1+4{D3} · R · R{C2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd187: begin  // F1+2{U} · Fa+1{S1} · R · R{C2} · R+2{P3} / F1+2{U} · Fa+1{P2} · R · R{C2} · R+2{P3}
+      8'd187: begin  // F1+3{P1}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd188: begin  // F1+2{U} · Fn{S3} · Fa · R · R{C2} · R+2{P3}
+      8'd188: begin  // F1+2{D2} · I6{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd189: begin  // F1+2{U} · Fa+1{P2} · R · R+2{P3}
+      8'd189: begin  // F1+4{D3} · Fn+3{P1} | n x (I3{D2})
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd190: begin  // F1+2{U} · Fn{S3} · Fa+1{P2} · R · R{C2} · R+2{P3}
+      8'd190: begin  // F1+4{D3} · Fn+2{P1} · I3{D2} | n x (I3{D2})
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
           default: ;
         endcase
       end
-      8'd191: begin  // F1+2{B4} · I3{B4} | n x (I3{B4})
+      8'd191: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · W · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd192: begin  // F1+1{P1} · R · R · R
+      8'd192: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · I3{D2} · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd193: begin  // F1+1{P1} · R · R · R · R{C2}
+      8'd193: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · W) · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd194: begin  // F1+2{P1}
+      8'd194: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · I3{D2}) · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd195: begin  // F1+2{D2} | n x (I7{D2}) · I7{D2}
+      8'd195: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · I3{D2} · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd196: begin  // F1+1{B2}
+      8'd196: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · W · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd197: begin  // F1+4{D3} · Fn+1{P1} · EPU
+      8'd197: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · W) · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd198: begin  // F1+4{D3} · Fn+4{U}
+      8'd198: begin  // F1 · Fn+1{P1+BR} · R · R+4{P3} · I4{D2} · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd2, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd199: begin  // F1+4{D3} · Fn+1{P1} | n x (EPU)
+      8'd199: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · I3{D2}) · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd200: begin  // F1+2{D2} · I3{D2}
+      8'd200: begin  // F1 · Fn+1{P1+BR} | n x (R · R+4{P3} · I4{D2}) · I4{BR+U}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd201: begin  // F1+3{P1} · W · W
+      8'd201: begin  // F1+2{D2} · I4{D2}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd202: begin  // F1+3{P1} · W
+      8'd202: begin  // AF+4{B5t} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd203: begin  // F1+2{P1} · R · R+1{P3}
+      8'd203: begin  // AF+4{B5t} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
+          4'd7: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd204: begin  // F1+2{P1} · R
+      8'd204: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end
-      8'd205: begin  // F1+4{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} | n x (I7{D2}) · I8{D2} · I8{D2} · I3{D2}
+      8'd205: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
         unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd32, next_more: 4'd2, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd2, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd206: begin  // F1+4{D2} · I8{D2} · I8{D2} · I7{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd2, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd207: begin  // F1+3{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2} · I4{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd16, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd208: begin  // F1+3{D2} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd209: begin  // F1+2{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I3{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2} · I7{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd8, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd96, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd210: begin  // F1+2{D2} · I8{D2} · I8{D2} · I6{D2} · I3{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd2, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd211: begin  // F1+2{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I8{D2} · I6{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd5, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd212: begin  // F1+2{D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2} · I6{B6+D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd17, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd213: begin  // F1+2{D2} · I8{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd214: begin  // F1+2{D2} · I8{D2} · I8{D2} · I4{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd2, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd215: begin  // F1+4{D3} · R
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd216: begin  // F1+4{D3} · R · R{C2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd217: begin  // F1+3{P1}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd218: begin  // F1+2{D2} · I6{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd219: begin  // F1+4{D3} · Fn+3{P1} | n x (I3{D2})
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd220: begin  // F1+4{D3} · Fn+2{P1} · I3{D2} | n x (I3{D2})
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd0, fin_more: 1'b0, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd221: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · W · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd222: begin  // F1 · Fn+1{P1+BR} · R+2{P2} · R+3{P3} · I3{D2} · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd223: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · W) · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd224: begin  // F1 · Fn+1{P1+BR} | n x (R+2{P2} · R+3{P3} · I3{D2}) · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd225: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · I3{D2} · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd226: begin  // F1 · Fn+1{P1+BR} · R+3{P3} · W · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd227: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · W) · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd228: begin  // F1 · Fn+1{P1+BR} · R · R+4{P3} · I4{D2} · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd2, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd229: begin  // F1 · Fn+1{P1+BR} | n x (R+3{P3} · I3{D2}) · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd230: begin  // F1 · Fn+1{P1+BR} | n x (R · R+4{P3} · I4{D2}) · I4{BR+U}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd231: begin  // F1+2{D2} · I4{D2}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd232: begin  // AF+4{B5t} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd233: begin  // AF+4{B5t} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd234: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W+1{B5} · W+4{B5} · R · R
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
-          default: ;
-        endcase
-      end
-      8'd235: begin  // AF+4{B5t} · IA{B5} · W+1{B5} · W{B5} · W+1{B5} · W+4{B5} · R · R · R{B5}
-        unique case (pos)
-          4'd0: link = '{reps: 7'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
-          4'd1: link = '{reps: 7'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
-          4'd2: link = '{reps: 7'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
-          4'd3: link = '{reps: 7'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
-          4'd4: link = '{reps: 7'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
-          4'd5: link = '{reps: 7'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
-          4'd6: link = '{reps: 7'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
-          4'd7: link = '{reps: 7'd1, next_more: 4'd8, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
-          4'd8: link = '{reps: 7'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
+          4'd0: link = '{reps: 2'd1, next_more: 4'd1, next_done: 4'd1, fin_more: 1'b0, fin_done: 1'b0};
+          4'd1: link = '{reps: 2'd1, next_more: 4'd2, next_done: 4'd2, fin_more: 1'b0, fin_done: 1'b0};
+          4'd2: link = '{reps: 2'd1, next_more: 4'd3, next_done: 4'd3, fin_more: 1'b0, fin_done: 1'b0};
+          4'd3: link = '{reps: 2'd1, next_more: 4'd4, next_done: 4'd4, fin_more: 1'b0, fin_done: 1'b0};
+          4'd4: link = '{reps: 2'd1, next_more: 4'd5, next_done: 4'd5, fin_more: 1'b0, fin_done: 1'b0};
+          4'd5: link = '{reps: 2'd1, next_more: 4'd6, next_done: 4'd6, fin_more: 1'b0, fin_done: 1'b0};
+          4'd6: link = '{reps: 2'd1, next_more: 4'd7, next_done: 4'd7, fin_more: 1'b0, fin_done: 1'b0};
+          4'd7: link = '{reps: 2'd1, next_more: 4'd8, next_done: 4'd8, fin_more: 1'b0, fin_done: 1'b0};
+          4'd8: link = '{reps: 2'd1, next_more: 4'd0, next_done: 4'd0, fin_more: 1'b1, fin_done: 1'b1};
           default: ;
         endcase
       end

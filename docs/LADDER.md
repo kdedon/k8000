@@ -69,7 +69,7 @@ enum in `rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv`), `width` (byte or word),
 `a`, `b`, `cin` -> `value`, `flags[15:0]`, `flags_mask[15:0]`. Plain `+`,
 not a ripple carry chain. `flags_mask` (which flags the op writes) is
 compared EXACTLY: right value, wrong mask fails. Only what the CPU issues:
-multi-bit shifts and EXTS live in `z8000_shift` / the EXTS class, rotates
+multi-bit shifts and EXTS live in `z8000_serial` / the EXTS class, rotates
 take a count of 1 or 2, bit numbers are 0-15. Long ADD/SUB/CP/TEST/LD are
 two word passes; the composition rule is in the module header.
 
@@ -84,15 +84,16 @@ are skipped and the tally is printed. Clean before rung 3.
 arithmetic, parity for byte logicals; DAB and the BCD rotates read D and H.
 Source of truth: Go `sim/cpu/alu/alu.go` and its `FlagWritesFor` PLA.
 
-## A3. `z8000_mult.sv` / `z8000_div.sv` / `z8000_shift.sv` -- `make test-serial`
+## A3. `z8000_serial.sv` -- `make test-serial`
 
-**Implement.** Three bit-serial FSMs, one protocol: `start` pulse, second
-operand `delay` ticks later with `src_valid`, `done` after an EXACT tick
+**Implement.** One serial unit (multiply, divide, shifts) on one adder and
+rotate, one protocol: `start` pulse, the second operand `delay` ticks later
+with `src_valid` (a long's high word first, with `src_hi`), `done` after an EXACT tick
 count, `remaining` decrementing every tick (recorded in the serial
 vectors, so it is contract).
 
 **Acceptance.** `make test-serial` (`vectors/k800x_cpu/serial/random.vec`).
-`+only=M|D|S` selects one unit.
+`+only=M|D|S` selects one operation class.
 
 **Watch out.** The units step on the CPU's machine-cycle cadence: one step
 per internal cycle, its work on the cycle's last clock. MULT: setup 3, 16
@@ -104,12 +105,11 @@ Multiplier 0 replaces the steps with 12 (MULT) / 23 (MULTL); divisor 0
 with 8 / 25, overflow with 20 / 46. An operand arriving after setup picks
 the path then, the clocks waited counting toward it while the work left
 after the arrival fits; each clock past that adds one. Every path needs
-1 clock from the arrival except overflow, N/2 + 3 (11 DIV, 19 DIVL: the
-arrival, quotient bit N, the other bits two per clock, the signs). Latest
-free arrival, in ticks: MULT 6, multiplier 0 14; MULTL 11, multiplier 0
-26; DIV trial 7, divisor 0 9, overflow 11; DIVL trial 68, divisor 0 26,
-overflow 29. Case 3 does no quotient work but shares case 4's overflow
-count and bound (one path, one program); no CPU program reaches a bound.
+1 clock from the arrival. Latest free arrival, in ticks: MULT 6,
+multiplier 0 14; MULTL 11, multiplier 0 26; DIV trial 7, divisor 0 9,
+overflow 21; DIVL trial 68, divisor 0 26, overflow 47. Overflow is case 3
+alone; case 4 takes the trial and the quotient bits. No CPU program
+reaches a bound.
 With the IF1 these give the table totals: MULT 70, MULTL 282+7n, DIV 107,
 DIVL 744, shifts 13+3n static and 15+3n dynamic (ledger items 49, 50).
 
@@ -324,8 +324,8 @@ Acceptance: `make mmu ONLY=TestReset`.
 Latch `sn`/`ad`/`st`/`r_w`/`n_s` at the /AS fall; drive `pa` and
 `pa_drive` from the /AS RISE; float `pa` at the /DS rise (AC #6 TdDS(Af)).
 `pa = {base,8'h00} + offset`, one comparator tree.
-Acceptance: `make mmu ONLY=TestBasicTranslation`, then `TestReadWrite*`,
-`TestSegmentBoundaries`; `make test-mmu-timing` section [2].
+Acceptance: `make mmu ONLY=TestBasicTranslation`, then `TestChangedFlag`,
+`TestPhysicalAddress16BitBase`; `make test-mmu-timing` section [2].
 
 ## M3. Command engine (Special I/O)
 `executeCommand`'s 22-entry table: command latched at the /AS rise (`cs_n`

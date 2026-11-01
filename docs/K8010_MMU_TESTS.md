@@ -42,10 +42,11 @@ END
 
 ### `T` record
 
-`T <in_bits:2hex> <AD:4hex> <SN:2hex> <ST:1hex> <out_bits:1hex> <PA:6hex> <Data:4hex>`
+`T <in_bits:2hex> <AD:4hex> <SN:2hex> <ST:1hex> <out_bits:1hex> <PA:6hex> <Data:4hex> <DataMask:2hex>`
 
 `in_bits` (bit 7 = MSB): `CLK RESET_n AS_n DS_n RW NS CS_n DMASYNC`
 `out_bits` (bit 3 = MSB): `PADrive SEGT_n SUP_n DataDrive`
+`DataMask`: which of AD15:8 are driven (bit n = AD line 8+n).
 
 Exactly the Go pin seam (mmu.go Inputs/Outputs): every Tick call verbatim
 (`clkStep` calls Tick twice per clock, CLK=0 then CLK=1).
@@ -82,7 +83,7 @@ poke of internal state (<fields>)`.
   The datasheet ties CS to reset RELEASE (TsCS(RST) setup to RESET rise,
   ThRST(CSn) hold from it, AC #37/#38 p.573): sample cs_n at reset
   release, not assertion.
-* **Compared always:** PADrive, SEGT_n, SUP_n, DataDrive.
+* **Compared always:** PADrive, SEGT_n, SUP_n, DataDrive, DataMask.
 * **PA only while PADrive=1, Data only while DataDrive=1.** Go's `m.out`
   persists after PADrive drops; the undriven value is not a pin.
 * **SEGT_n / SUP_n**: the resolved open-drain level with the board pull-up

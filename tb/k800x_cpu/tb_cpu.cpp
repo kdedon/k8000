@@ -273,7 +273,9 @@ int main(int argc, char** argv) {
             auto fail = [&](const std::string& m) { finalFails++; if (finalFails <= 20) finalMsg += "  final " + m + "\n"; };
             if (what == "REGS") {
                 for (int i = 0; i < 16; i++) {
-                    std::string h; ss >> h; uint16_t e = strtoul(h.c_str(), nullptr, 16), g = dut.reg(i);
+                    std::string h; ss >> h;
+                    if (h == "----") continue;   // left undefined
+                    uint16_t e = strtoul(h.c_str(), nullptr, 16), g = dut.reg(i);
                     if (e != g) { char b[96]; snprintf(b, sizeof b, "R%d exp=%04X got=%04X", i, e, g); fail(b); }
                 }
             } else {

@@ -25,9 +25,8 @@ rtl/k800x_cpu/        the CPU -- Z8001/2/3/4 in one core
   z8000_cpu.sv          top: pins == sim/cpu/pins.go; SEGMENTED / VMPU params
   z8000_regfile.sv      16x16 register file (registers.File)
   z8000_alu.sv          combinational ALU (alu.GoALU.Execute)
-  z8000_mult.sv         bit-serial multiplier (alu.MultState)
-  z8000_div.sv          bit-serial divider (alu.DivState)
-  z8000_shift.sv        bit-serial shifter (alu.ShiftState)
+  z8000_serial.sv       serial unit: multiply, divide, shifts (alu.MultState,
+                        alu.DivState, alu.ShiftState) on one adder and rotate
   z8000_decode.sv       decode wrapper around the generated ROM
   z8000_decode_table.txt  the decode ROM symbolically: 476 control words,
                         every field NAMED, over 8446 first-word ranges.

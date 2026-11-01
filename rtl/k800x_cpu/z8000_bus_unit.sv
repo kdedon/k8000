@@ -18,9 +18,15 @@
 //        during that clock. /AS /DS /MREQ High, AD released; ST, N/S, R/W,
 //        B/W and SN hold.
 //
-// An internal operation (ST=0000) is `len` clocks, 3 to 8: an /AS pulse
-// with `req_addr` on AD, then AD released. /DS and /MREQ stay High, /WAIT
-// is ignored, N/S and SN hold.
+// An internal operation (ST=0000) is 3 to 8 clocks: an /AS pulse with
+// `req_addr` on AD, then AD released. /DS and /MREQ stay High, /WAIT is
+// ignored, N/S and SN hold. Its T-state is counted: one of `len` ends at
+// Tlen (the baseline's /AS placement, no work of its own); a unit-ended
+// one (`req_unit`) where the serial unit says, from T3 on. The unit gives
+// its end two edges ahead (`unit_end3`), or one ahead from a pass
+// (`unit_end2`); in an internal operation of `len` only its last end
+// (`unit_last`) is taken, which may come before Tlen. `cyc_iop` is High
+// through an internal operation.
 //
 // /WAIT is specified at the T2 falling edge; with outputs changing only on
 // rising edges, that sample is the edge that would open T3. /ABORT is
@@ -61,6 +67,10 @@ module z8000_bus_unit
   input  logic        req_epu_drives, // the EPU supplies the write data
   input  logic        req_normal,     // N/S for the cycle (1 = normal)
   input  logic [3:0]  req_len,        // internal operation length
+  input  logic        req_unit,       // ... or ended by the serial unit
+  input  logic        unit_end3,      // the serial unit's cycle ends on the third edge from now
+  input  logic        unit_end2,      // ... on the second, from a pass this clock
+  input  logic        unit_last,      // ... and that end is the program's
   input  logic [2:0]  tail,           // read in a transaction's T3 clock
   input  logic        gnt,            // a bus request is granted at a boundary now
   input  logic        busreq,         // /BUSREQ asserted as of this edge
@@ -71,6 +81,7 @@ module z8000_bus_unit
   output logic        twait,          // this clock is a wait state
   output logic        abt_smp,        // /ABORT is sampled on this edge
   output logic        held,           // this clock the bus is granted or just back
+  output logic        cyc_iop,        // this clock is an internal operation's
   output logic [15:0] rdata,          // read data, valid with done
 
   // pins
@@ -106,7 +117,12 @@ module z8000_bus_unit
   bus_state_e  state_q, state_d;
   logic        trail_q, trail_d;     // /DS /MREQ still Low from the last T3
   logic [2:0]  taw_q, taw_d;         // automatic waits left
-  logic [3:0]  rest_q, rest_d;       // HOLD clocks after this one
+  logic [3:0]  rest_q, rest_d;       // tail clocks after this one
+  logic        iop_q, iop_d;         // HOLD is an internal operation
+  logic [2:0]  t_q, t_d;             // its T-state less one
+  logic [2:0]  tlen_q, tlen_d;       // its last T-state less one, for `len`
+  logic        unit_q, unit_d;       // it is unit-ended
+  logic        ue2_q, ue2_d, ue1_q, ue1_d;  // the unit's end two edges, one edge ahead
   logic        rel_q, rel_d;         // /BUSREQ seen High while granted
   logic [3:0]  cyc_st_q, cyc_st_d;   // status of the cycle in flight
   logic        cyc_write_q, cyc_write_d;
@@ -128,16 +144,21 @@ module z8000_bus_unit
       BUS_IDLE,
       BUS_REL:   bound = 1'b1;
       BUS_T3CLK: bound = tail == 3'd0;
-      BUS_HOLD:  bound = rest_q == 4'd0;
+      BUS_HOLD:  bound = !iop_q ? rest_q == 4'd0 : ue1_q || (!unit_q && t_q == tlen_q);
       default:   bound = 1'b0;
     endcase
   end
   assign cyc_end = bound && !gnt;
 
+  // The unit's end, taken in an internal operation from its T1: the end it
+  // gives there is T3's. An operation of `len` takes only the last.
+  logic ue_take;
+  assign ue_take = iop_q && unit_end3 && (unit_q || unit_last);
+
   always_comb begin
     unique case (state_q)
       BUS_T3CLK: cyc_end3 = tail == 3'd2;
-      BUS_HOLD:  cyc_end3 = rest_q == 4'd2;
+      BUS_HOLD:  cyc_end3 = !iop_q ? rest_q == 4'd2 : ue_take || (!unit_q && t_q + 3'd2 == tlen_q);
       default:   cyc_end3 = 1'b0;
     endcase
   end
@@ -168,7 +189,8 @@ module z8000_bus_unit
   assign wbyte     = cyc_odd_q ? cyc_wdata_q[7:0] : cyc_wdata_q[15:8];
   assign wdata_bus = (cyc_byte_q && !cyc_io && !cyc_epux) ? {wbyte, wbyte} : cyc_wdata_q;
 
-  assign held  = state_q == BUS_GRANT || state_q == BUS_REL;
+  assign held    = state_q == BUS_GRANT || state_q == BUS_REL;
+  assign cyc_iop = state_q == BUS_HOLD && iop_q;
   assign done  = state_q == BUS_T3 && wait_n;
   assign twait = state_q == BUS_T3 && !wait_n;
   assign rdata = ad_in;
@@ -187,6 +209,12 @@ module z8000_bus_unit
     state_d     = state_q;
     taw_d       = taw_q;
     rest_d      = rest_q;
+    iop_d       = iop_q;
+    t_d         = t_q;
+    tlen_d      = tlen_q;
+    unit_d      = unit_q;
+    ue2_d       = 1'b0;
+    ue1_d       = 1'b0;
     cyc_st_d    = cyc_st_q;
     cyc_write_d = cyc_write_q;
     cyc_epu_d   = cyc_epu_q;
@@ -203,7 +231,10 @@ module z8000_bus_unit
       cyc_nod_d   = req_nodata;
       state_d     = BUS_T2;
     end else if (start_iop) begin
-      rest_d  = req_len - 4'd1;
+      iop_d   = 1'b1;
+      t_d     = 3'd0;
+      tlen_d  = 3'(req_len - 4'd1);
+      unit_d  = req_unit;
       state_d = BUS_HOLD;
     end else begin
       unique case (state_q)
@@ -230,11 +261,17 @@ module z8000_bus_unit
         BUS_T3:    if (wait_n) state_d = BUS_T3CLK;
         BUS_T3CLK: begin
           rest_d  = {1'b0, tail} - 4'd1;
+          iop_d   = 1'b0;
           state_d = (tail == 3'd0) ? BUS_IDLE : BUS_HOLD;
         end
         BUS_HOLD: begin
           rest_d = rest_q - 4'd1;
-          if (rest_q == 4'd0) state_d = BUS_IDLE;
+          t_d    = t_q + 3'd1;
+          if (iop_q) begin
+            ue2_d = ue_take;
+            ue1_d = ue2_q || (unit_end2 && t_q != 3'd0 && (unit_q || unit_last));
+          end
+          if (bound) state_d = BUS_IDLE;
         end
         // Released: /BUSACK rises on the second edge that sees /BUSREQ
         // High and the next cycle opens on the edge after.
@@ -333,6 +370,12 @@ module z8000_bus_unit
       state_q     <= BUS_IDLE;
       taw_q       <= 3'd0;
       rest_q      <= 4'd0;
+      iop_q       <= 1'b0;
+      t_q         <= 3'd0;
+      tlen_q      <= 3'd0;
+      unit_q      <= 1'b0;
+      ue2_q       <= 1'b0;
+      ue1_q       <= 1'b0;
       rel_q       <= 1'b0;
       busack_n    <= 1'b1;
       bus_drive   <= 1'b1;
@@ -347,6 +390,12 @@ module z8000_bus_unit
       state_q     <= state_d;
       taw_q       <= taw_d;
       rest_q      <= rest_d;
+      iop_q       <= iop_d;
+      t_q         <= t_d;
+      tlen_q      <= tlen_d;
+      unit_q      <= unit_d;
+      ue2_q       <= ue2_d;
+      ue1_q       <= ue1_d;
       rel_q       <= rel_d;
       busack_n    <= state_d != BUS_GRANT;
       bus_drive   <= state_d != BUS_GRANT;
@@ -389,5 +438,28 @@ module z8000_bus_unit
       st       <= st_d;
     end
   end
+
+  // synthesis translate_off
+  // A unit-ended internal operation is at most eight clocks.
+  // verilator lint_off UNUSEDSIGNAL
+  logic check_q = 1'b0;
+  // verilator lint_on UNUSEDSIGNAL
+  always_ff @(posedge clk) begin
+    if (state_q == BUS_HOLD && iop_q && unit_q && t_q == 3'd7 && !bound) begin
+      $display("%%Error: %m: unit-ended internal operation past T8");
+      check_q <= 1'b1;
+    end
+    // An end from a pass is taken from T2: one in T1 is lost.
+    if (cyc_iop && unit_end2 && t_q == 3'd0 && (unit_q || unit_last)) begin
+      $display("%%Error: %m: unit end from a pass in T1");
+      check_q <= 1'b1;
+    end
+    // The program's last end comes two edges ahead, for its last clocks.
+    if (cyc_iop && unit_end2 && t_q != 3'd0 && unit_last) begin
+      $display("%%Error: %m: unit's last end from a pass");
+      check_q <= 1'b1;
+    end
+  end
+  // synthesis translate_on
 
 endmodule

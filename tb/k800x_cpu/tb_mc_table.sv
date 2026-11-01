@@ -30,7 +30,8 @@ module tb_mc_table
   z8000_mc_cycle_gen u_cycle (.prog(cprog), .pos(pos), .cyc(cyc));
   z8000_mc_link_gen  u_link  (.prog(cprog), .pos(pos), .link(link));
 
-  string tblfile, line, w1tok, colt, patht, kindt;
+  string tblfile, line, w1tok, colt, patht, kindt, fname;
+  int    trap_f = -1, int_f = -1, want;
   int    fd, n, total, bad, shown, nforms, nprog, ncyc, nrange, nkeyed;
   int    f, p, ps, clocks, reps, nm, nd, fm, fdn, k, k0, k1;
   int unsigned lo, hi, iw;
@@ -50,6 +51,7 @@ module tb_mc_table
       "AF":    return MC_AF;
       "I":     return MC_I;
       "IA":    return MC_IA;
+      "IU":    return MC_IU;
       default: return MC_F1;
     endcase
   endfunction
@@ -59,8 +61,7 @@ module tb_mc_table
   endfunction
 
   function automatic mc_path_e path_of(input string s);
-    return (s == "not_taken") ? MC_PATH_NOT_TAKEN : (s == "zero") ? MC_PATH_ZERO :
-           (s == "overflow") ? MC_PATH_OVERFLOW : MC_PATH_DEFAULT;
+    return (s == "not_taken") ? MC_PATH_NOT_TAKEN : (s == "zero") ? MC_PATH_ZERO : MC_PATH_DEFAULT;
   endfunction
 
   task automatic fail(input string what);
@@ -82,8 +83,10 @@ module tb_mc_table
     for (iw = 0; iw < 65536; iw++) seen_w1[iw] = 16'h0000;
     total = 0; bad = 0; shown = 0; nforms = 0; nprog = 0; ncyc = 0; nrange = 0;
     while ($fgets(line, fd) != 0) begin
-      if ($sscanf(line, "form %d", f) == 1) begin
+      if ($sscanf(line, "form %d %s", f, fname) >= 1) begin
         nforms++;
+        if (fname == "(trap") trap_f = f;
+        if (fname == "(interrupt") int_f = f;
         continue;
       end
       n = $sscanf(line, "prog %d %s %s %d", f, colt, patht, p);
@@ -98,6 +101,13 @@ module tb_mc_table
         seen_prog[f * 16 + int'(col) * 4 + int'(path)] = 1'b1;
         if (prog !== MC_PROG_W'(p))
           fail($sformatf("prog %0d %s %s: table %0d, ROM %0d", f, colt, patht, p, prog));
+        // The entry programs the sequencer names.
+        if ((f == trap_f || f == int_f) && (colt == "NS" || colt == "SS") && patht == "default") begin
+          want = (f == trap_f) ? (colt == "NS" ? MC_PROG_TRAP_NS : MC_PROG_TRAP_SEG)
+                               : (colt == "NS" ? MC_PROG_INT_NS : MC_PROG_INT_SEG);
+          total++;
+          if (p != want) fail($sformatf("prog %0d %s: entry program %0d, package %0d", f, colt, p, want));
+        end
         continue;
       end
       n = $sscanf(line, "cycle %d %d %s %d %d %d %d %d %d", p, ps, kindt, clocks, reps, nm, nd, fm, fdn);
@@ -142,7 +152,7 @@ module tb_mc_table
         fail($sformatf("first word %04X: w1 nibbles %04X only", iw, seen_w1[iw]));
       else if (keyed[iw]) nkeyed++;
     end
-    if (nprog != nforms * 12)
+    if (nprog != nforms * 9)
       fail($sformatf("%0d prog records for %0d forms", nprog, nforms));
     if (nforms == 0 || ncyc == 0 || nrange == 0)
       fail($sformatf("%0d forms, %0d cycles, %0d ranges", nforms, ncyc, nrange));

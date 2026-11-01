@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fit one unit on Cyclone V and summarize area and timing.
-#   quartus/build.sh <unit> [period_ns]     unit: regfile | alu | mult | div | shift | execute | cpu
+#   quartus/build.sh <unit> [period_ns]     unit: regfile | alu | serial | execute | cpu | mmu | cio | scc
 # Default period is 48 MHz, an exact multiple of every C900 clock.
+# SEED=<n> picks the fitter seed (default 1) and keeps its own work directory.
 # Uses quartus_sh on PATH, else the pinned Quartus Lite 17.0.2 image.
 set -euo pipefail
 
@@ -9,24 +10,27 @@ repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 image="${QUARTUS_IMAGE:-theypsilon/quartus-lite-c5@sha256:f638634df509786bc7507dbcb45673acd6adf32e5278c7b4e64ce67ae8ac2c70}"
 unit="${1:?usage: $0 <unit> [period_ns]}"
 period="${2:-20.833}"
+seed="${SEED:-1}"
+tag="${unit}${SEED:+_s${SEED}}"
 
 case "${unit}" in
   regfile) srcs=(rtl/k800x_cpu/z8000_regfile.sv) ;;
   alu)     srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/z8000_alu.sv) ;;
-  mult)    srcs=(rtl/k800x_cpu/z8000_mult.sv) ;;
-  div)     srcs=(rtl/k800x_cpu/z8000_div.sv) ;;
-  shift)   srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/z8000_shift.sv) ;;
+  serial)  srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/z8000_serial.sv) ;;
   execute) srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
                  rtl/k800x_cpu/z8000_{regfile,alu,execute}.sv) ;;
   cpu)     srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
                  rtl/k800x_cpu/gen/z8000_mc_pkg.sv rtl/k800x_cpu/gen/z8000_decode_rom_gen.sv rtl/k800x_cpu/gen/z8000_mc_rom_gen.sv
-                 rtl/k800x_cpu/z8000_{regfile,decode,bus_unit,sequencer,cond,refresh,alu,execute,mult,div,shift,int_unit,cpu}.sv) ;;
+                 rtl/k800x_cpu/z8000_{regfile,decode,bus_unit,sequencer,cond,refresh,alu,execute,serial,int_unit,cpu}.sv) ;;
+  mmu)     srcs=(rtl/k8010_mmu/z8010_mmu.sv) ;;
+  cio)     srcs=(rtl/k8036_cio/z8036_cio.sv) ;;
+  scc)     srcs=(rtl/k8030_scc/z8030_scc_channel.sv rtl/k8030_scc/z8030_scc.sv) ;;
   *) echo "unknown unit: ${unit}" >&2; exit 2 ;;
 esac
 top="z8000_${unit}_measure"
 srcs+=("quartus/measure/${top}.sv")
 
-work="obj_dir/quartus/${unit}"
+work="obj_dir/quartus/${tag}"
 rm -rf "${repo:?}/${work}"
 mkdir -p "${repo}/${work}" "${repo}/results/quartus"
 
@@ -35,7 +39,7 @@ mkdir -p "${repo}/${work}" "${repo}/results/quartus"
   echo 'set_global_assignment -name DEVICE 5CSEBA6U23I7'
   echo "set_global_assignment -name TOP_LEVEL_ENTITY ${top}"
   echo 'set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files'
-  echo 'set_global_assignment -name SEED 1'
+  echo "set_global_assignment -name SEED ${seed}"
   echo 'set_global_assignment -name NUM_PARALLEL_PROCESSORS 4'
   echo 'set_global_assignment -name SDC_FILE unit.sdc'
   for s in "${srcs[@]}"; do echo "set_global_assignment -name SYSTEMVERILOG_FILE ../../../${s}"; done
@@ -86,17 +90,17 @@ if ! grep -Eq 'Implemented 1 input pins' "${out}/unit.map.rpt" ||
   echo "ERROR: physical pins used; check the VIRTUAL_PIN assignments" >&2; exit 1
 fi
 
-summary="${repo}/results/quartus/${unit}.txt"
+summary="${repo}/results/quartus/${tag}.txt"
 {
-  echo "unit ${unit}  period ${period} ns  $(date -I)"
+  echo "unit ${unit}  period ${period} ns  seed ${seed}  $(date -I)"
   grep -E 'Logic utilization|Total registers|Total block memory bits|Total DSP Blocks' "${out}/unit.fit.summary"
   grep -E 'Worst-case (setup|hold) slack|Timing requirements (not )?met' "${out}/unit.sta.rpt" | sort -u
   grep -A3 '; Fmax' "${out}/unit.sta.rpt" | grep -E '^; [0-9]' | head -4
   grep -E '^(Critical )?Warning' "${out}"/unit.{map,fit,sta}.rpt | sed 's/^/  /'
-  echo "worst setup paths (slack from -> to; detail in ${unit}_paths.txt):"
+  echo "worst setup paths (slack from -> to; detail in ${tag}_paths.txt):"
   grep -E '^; -?[0-9.]+ +; ' "${repo}/${work}/paths.txt" |
     awk -F';' 'NF >= 10 && $5 ~ /[a-z]/ {gsub(/ +/, "", $2); gsub(/ +/, "", $3); gsub(/ +/, "", $4); print $2, $3, "->", $4}' |
     sort -n | head -3 | sed 's/^/  /'
 } > "${summary}"
-cp "${repo}/${work}/paths.txt" "${repo}/results/quartus/${unit}_paths.txt"
+cp "${repo}/${work}/paths.txt" "${repo}/results/quartus/${tag}_paths.txt"
 cat "${summary}"

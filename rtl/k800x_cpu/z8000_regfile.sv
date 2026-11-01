@@ -12,6 +12,9 @@
 //
 // `r` has no reset: the Z8000 leaves the general registers undefined.
 // Reads come straight off `r`, so a read in a write cycle sees the old value.
+//
+// `nz` holds each byte's nonzero bit ([1] high, [0] low) as `r` stood the
+// clock before, so a register's zero test needs no read.
 
 module z8000_regfile (
   input  logic        clk,
@@ -24,7 +27,8 @@ module z8000_regfile (
   output logic [63:0] rdata,    // right-aligned like wdata; unused upper bits zero
   input  logic        rbyte_b,  // 1 = byte, 0 = word
   input  logic [3:0]  rsel_b,
-  output logic [15:0] rdata_b
+  output logic [15:0] rdata_b,
+  output logic [15:0][1:0] nz
 );
 
   localparam logic [1:0] W_BYTE = 2'd0;
@@ -58,6 +62,7 @@ module z8000_regfile (
 
   always_ff @(posedge clk) begin
     if (we) r <= r_d;
+    for (int i = 0; i < 16; i++) nz[i] <= {r[i][15:8] != 8'h00, r[i][7:0] != 8'h00};
   end
 
   // Byte reads: RH/RL n is the high or low half of R n, n < 8.

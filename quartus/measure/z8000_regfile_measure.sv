@@ -4,16 +4,17 @@
 module z8000_regfile_measure (
   input  logic        clk,
   input  logic [81:0] in_i,
-  output logic [79:0] out_o
+  output logic [111:0] out_o
 );
 
   logic [81:0] in_q;
   logic [63:0] rdata;
   logic [15:0] rdata_b;
+  logic [15:0][1:0] nz;
 
   always_ff @(posedge clk) begin
     in_q  <= in_i;
-    out_o <= {rdata_b, rdata};
+    out_o <= {nz, rdata_b, rdata};
   end
 
   z8000_regfile dut (
@@ -27,7 +28,8 @@ module z8000_regfile_measure (
     .rwidth (in_q[5:4]),
     .rsel   (in_q[3:0]),
     .rdata  (rdata),
-    .rdata_b(rdata_b)
+    .rdata_b(rdata_b),
+    .nz     (nz)
   );
 
 endmodule

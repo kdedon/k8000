@@ -14,10 +14,13 @@ module tb_regfile;
   logic        rbyte_b;
   logic [3:0]  rsel_b;
   logic [15:0] rdata_b;
+  logic [15:0][1:0] nz;
+  logic [15:0] r_was [16];    // the registers a clock ago, which nz follows
+  always @(posedge clk) r_was <= dut.r;
 
   z8000_regfile dut (.clk(clk), .we(we), .wwidth(wwidth), .wsel(wsel), .wdata(wdata),
                      .rwidth(rwidth), .rsel(rsel), .rdata(rdata),
-                     .rbyte_b(rbyte_b), .rsel_b(rsel_b), .rdata_b(rdata_b));
+                     .rbyte_b(rbyte_b), .rsel_b(rsel_b), .rdata_b(rdata_b), .nz(nz));
 
   int fails = 0, checks = 0;
 
@@ -47,6 +50,11 @@ module tb_regfile;
       fails++;
       if (fails <= 20) $display("  FAIL %s port B: got %h want %h", name, rdata_b, want[15:0]);
     end
+    for (int i = 0; i < 16; i++)
+      if (nz[i] !== {r_was[i][15:8] != 8'h00, r_was[i][7:0] != 8'h00}) begin
+        fails++;
+        if (fails <= 20) $display("  FAIL %s: R%0d nonzero bits %b", name, i, nz[i]);
+      end
   endtask
 
   always #5 clk <= ~clk;

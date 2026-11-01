@@ -2,3 +2,4 @@ obj_dir/
 results/
 *.vcd
 bench/c900/expected/gen/c900expected
+.claude/

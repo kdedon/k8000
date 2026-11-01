@@ -1,12 +1,13 @@
-// tb_serial -- bit-serial MULT / DIV / SHIFT sequencers vs the Go golden
+// tb_serial -- the serial unit's MULT / DIV / SHIFT routines vs the Go golden
 // MultState / DivState / ShiftState (sim/cpu/alu/alu.go).
 //
 // Replays vectors/k800x_cpu/serial/random.vec. Per record the contract is: the
 // operand-load protocol, the EXACT tick count to done (cycle counts must
 // EMERGE from the FSM), the Remaining() lower bound after each tick (the
 // CPU's internal-op bus dressing consults it), and the result/flag fields.
-// Protocol (see rtl/k800x_cpu/z8000_mult.sv header): start pulse at edge E0 (Go
-// Start), ticks are the following edges, src_valid during the edge of tick
+// Protocol (see rtl/k800x_cpu/z8000_serial.sv header): start pulse at edge E0 (Go
+// Start), ticks are the following edges, a long's high word (x_hi) the edge
+// before its low word, src_valid during the edge of tick
 // (delay+1) (Go SetMultiplier/SetDivisor before that Tick).
 //   obj_dir/tb_serial/tb_serial +vec=vectors/k800x_cpu/serial/random.vec [+only=M|D|S]
 
@@ -16,26 +17,20 @@ module tb_serial
   logic clk = 0, reset_n = 0;
   always #5 clk <= ~clk;
 
+  // One unit; `kind` says which driver set feeds it: 1 multiply, 2 divide, 0 shift.
+  int          kind = 0;
+  logic        x_done, x_fin, x_hi = 0;   // x_hi: a long's high word is given
+  logic [63:0] x_words;
   // ---- mult ----
   logic        m_start, m_width32, m_src_valid, m_done, m_fin;
   logic [31:0] m_dst, m_src;
   logic [63:0] m_product;
-  logic [9:0]  m_remaining;
-  logic        m_pick_zero, m_adds_more;  // CPU hookup only
-  z8000_mult u_mult (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(m_start), .width32(m_width32), .dst(m_dst),
-                     .src_valid(m_src_valid), .src(m_src), .done(m_done), .fin(m_fin), .product(m_product), .remaining(m_remaining),
-                     .pick_zero(m_pick_zero), .adds_more(m_adds_more));
+  logic        m_more;   // CPU hookup only
+  logic        m_flag_c, m_flag_z;
   // ---- div ----
   logic        d_start, d_n32, d_src_valid, d_done, d_fin, d_dbz, d_ovf, d_wide, d_qneg, d_qzero;
   logic [63:0] d_dividend;
   logic [31:0] d_divisor, d_quot, d_rem;
-  logic [9:0]  d_remaining;
-  logic        d_pick_zero, d_pick_ovf;   // CPU hookup only
-  z8000_div u_div (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(d_start), .n32(d_n32), .dividend(d_dividend),
-                   .src_valid(d_src_valid), .divisor(d_divisor), .done(d_done), .fin(d_fin), .div_by_zero(d_dbz),
-                   .overflow(d_ovf), .wide_quot(d_wide), .quot_neg(d_qneg), .quot_zero(d_qzero),
-                   .quotient(d_quot), .remainder(d_rem), .remaining(d_remaining),
-                   .pick_zero(d_pick_zero), .pick_ovf(d_pick_ovf));
   // ---- shift ----
   logic        s_start, s_done;
   logic [1:0]  s_width;
@@ -43,8 +38,28 @@ module tb_serial
   logic [31:0] s_val, s_result;
   logic [5:0]  s_count;
   logic [15:0] s_flags, s_mask;
-  z8000_shift u_shift (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(s_start), .width(s_width), .op(s_op), .val(s_val),
-                       .count(s_count), .done(s_done), .result(s_result), .flags(s_flags), .flags_mask(s_mask));
+  logic        x_end3, x_end2, x_last;   // CPU hookup only
+  z8000_serial u_serial (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(m_start || d_start || s_start),
+                         .mul(kind == 1), .div(kind == 2), .wide(kind == 1 ? m_width32 : d_n32),
+                         .dst(kind == 1 ? {32'd0, m_dst} : kind == 2 ? d_dividend : {32'd0, s_val}),
+                         .src_hi(x_hi), .src_valid(m_src_valid || d_src_valid),
+                         .src(x_hi ? x_src32[31:16] : x_src32[15:0]),
+                         .width(s_width), .op(s_op), .count(s_count),
+                         .done(x_done), .fin(x_fin), .words(x_words), .flag_c(m_flag_c), .flag_z(m_flag_z),
+                         .more(m_more), .div_by_zero(d_dbz), .overflow(d_ovf),
+                         .wide_quot(d_wide), .quot_neg(d_qneg), .quot_zero(d_qzero),
+                         .sh_flags(s_flags), .sh_mask(s_mask), .end3(x_end3), .end2(x_end2), .last(x_last));
+  logic [31:0] x_src32;
+  assign x_src32   = kind == 1 ? m_src : d_divisor;
+  assign m_done    = x_done;
+  assign m_fin     = x_fin;
+  assign m_product = m_width32 ? x_words : {32'd0, x_words[63:32]};
+  assign d_done    = x_done;
+  assign d_fin     = x_fin;
+  assign d_quot    = d_n32 ? x_words[31:0] : {16'h0000, x_words[47:32]};
+  assign d_rem     = d_n32 ? x_words[63:32] : {16'h0000, x_words[63:48]};
+  assign s_done    = x_done;
+  assign s_result  = x_words[31:0];
 
   string vecfile, only, tok;
   int fd, n, total, bad, shown, ticks, delay, exp_ticks, remv, k;
@@ -52,9 +67,7 @@ module tb_serial
   logic [63:0] r_dst, r_src, r_product, r_dividend, r_divisor, r_quot, r_rem, r_val, r_result;
   logic [15:0] r_flags, r_mask;
   bit fail_this;
-  // fin: the results are final on the clock before done. Only a zero path
-  // the wait covers (done on arrival) and a wide quotient whose late
-  // operand leaves just its work clocks may end without it.
+  // fin: the results are final on the clock before done.
   int fin_at, fin_late;
   logic [63:0] fin_res;
   logic [4:0]  fin_flg;
@@ -67,6 +80,14 @@ module tb_serial
       if (fin_res !== res || fin_flg !== flg) mismatch($sformatf("%s: results at fin differ from done", what));
     end
   endtask
+
+  // Multiplier arrival as the CPU gives it, as a tick after the start
+  // edge: register, IM, IR, DA/X.
+  int m_arr_w[4] = '{0, 1, 2, 3};
+  int m_arr_l[4] = '{0, 4, 5, 6};
+  function automatic logic [15:0] m_abs16(input logic [15:0] v);
+    return v[15] ? 16'h0000 - v : v;
+  endfunction
 
   task automatic report(input string what);
     total++;
@@ -126,21 +147,26 @@ module tb_serial
     return !ref_flg[4] && !ref_flg[3];
   endfunction
 
-  // delay < 0: src_valid with start. delay2: tick of a second pulse carrying src2.
+  // delay < 0: src_valid with start (a word only: a long's two words cannot
+  // arrive on the start edge through one 16-bit port). delay2: tick of a
+  // second pulse carrying src2.
   // Stops after limit ticks, or at done.
   task automatic run_m(input bit fresh, input bit w32, input logic [31:0] dst, src, input int dly,
                        input logic [31:0] src2, input int delay2, input int limit);
     if (fresh) reset_dut();
     @(negedge clk);
+    // A long is given a word at a time, its high word first.
     m_width32 = w32; m_dst = dst; m_src = src;
-    m_start = 1; m_src_valid = (dly < 0); tick(); m_start = 0; m_src_valid = 0;
+    kind = 1; m_start = 1; m_src_valid = (dly < 0); x_hi = w32 && dly == 0;
+    tick(); m_start = 0; m_src_valid = 0; x_hi = 0;
     run_ticks = 0;
     while (!m_done && run_ticks < limit) begin
       @(negedge clk);
       m_src_valid = (run_ticks == dly) || (run_ticks == delay2);
       m_src = (run_ticks == delay2) ? src2 : src;
-      tick(); m_src_valid = 0;
-      run_rem[run_ticks] = int'(m_remaining); run_ticks++;
+      x_hi  = w32 && run_ticks == dly - 1;
+      tick(); m_src_valid = 0; x_hi = 0;
+      run_rem[run_ticks] = 0; run_ticks++;
     end
     run_done = m_done; run_res = m_product; run_flg = 0;
   endtask
@@ -150,14 +176,16 @@ module tb_serial
     if (fresh) reset_dut();
     @(negedge clk);
     d_n32 = l; d_dividend = dvd; d_divisor = dvr;
-    d_start = 1; d_src_valid = (dly < 0); tick(); d_start = 0; d_src_valid = 0;
+    kind = 2; d_start = 1; d_src_valid = (dly < 0); x_hi = l && dly == 0;
+    tick(); d_start = 0; d_src_valid = 0; x_hi = 0;
     run_ticks = 0;
     while (!d_done && run_ticks < limit) begin
       @(negedge clk);
       d_src_valid = (run_ticks == dly) || (run_ticks == delay2);
       d_divisor = (run_ticks == delay2) ? dvr2 : dvr;
-      tick(); d_src_valid = 0;
-      run_rem[run_ticks] = int'(d_remaining); run_ticks++;
+      x_hi = l && run_ticks == dly - 1;
+      tick(); d_src_valid = 0; x_hi = 0;
+      run_rem[run_ticks] = 0; run_ticks++;
     end
     run_done = d_done; run_res = {d_quot, d_rem}; run_flg = {11'd0, d_dbz, d_ovf, d_wide, d_qneg, d_qzero};
   endtask
@@ -166,13 +194,13 @@ module tb_serial
     string id = $sformatf("M w=%0d dst=%h src=%h", w32 ? 32 : 16, dst, src);
     // 1. arrival with start == delay 0
     run_m(1, w32, dst, src, 0, 0, -1, MAXT); save_ref();
-    run_m(1, w32, dst, src, -1, 0, -1, MAXT); compare({id, " with start"}, 1);
+    if (!w32) begin run_m(1, w32, dst, src, -1, 0, -1, MAXT); compare({id, " with start"}, 1); end
     // back to back: start from done, without reset
     run_m(1, w32, dst_b, src_b, 0, 0, -1, MAXT);
     run_m(0, w32, dst, src, 0, 0, -1, MAXT); compare({id, " after another op"}, 1);
     // 2. Later pulses are ignored: a unit takes one operand per start, and the
     // CPU never sends a second.
-    run_m(1, w32, dst, src, -1, src2, 0, MAXT); compare({id, " with start, 2nd pulse +1"}, 1);
+    if (!w32) begin run_m(1, w32, dst, src, -1, src2, 0, MAXT); compare({id, " with start, 2nd pulse +1"}, 1); end
     run_m(1, w32, dst, src, 0, src2, 1, MAXT); compare({id, " 2nd pulse +1"}, 1);
     run_m(1, w32, dst, src, 0, src2, 6, MAXT); compare({id, " 2nd pulse +6"}, 1);
     run_m(1, w32, dst, src, 5, 0, -1, MAXT); save_ref();
@@ -183,7 +211,7 @@ module tb_serial
     run_m(1, w32, dst, src, 0, 0, -1, 12);
     run_m(0, w32, dst_b, src_b, 0, 0, -1, MAXT); compare({id, " restart mid-iteration"}, 1);
     run_m(1, w32, dst, src, 0, 0, -1, 12);
-    run_m(0, w32, dst_b, src_b, -1, 0, -1, MAXT); compare({id, " with start, restart mid-iteration"}, 1);
+    if (!w32) begin run_m(0, w32, dst_b, src_b, -1, 0, -1, MAXT); compare({id, " with start, restart mid-iteration"}, 1); end
     run_m(1, w32, dst, src, MAXT, 0, -1, 6);
     run_m(0, w32, dst_b, src_b, 0, 0, -1, MAXT); compare({id, " restart while waiting"}, 1);
     run_m(1, w32, dst, src, 0, 0, -1, MAXT);
@@ -194,10 +222,10 @@ module tb_serial
                           input logic [63:0] dvd_b, input logic [31:0] dvr_b);
     string id = $sformatf("D n=%0d dvd=%h dvr=%h", l ? 32 : 16, dvd, dvr);
     run_d(1, l, dvd, dvr, 0, 0, -1, MAXT); save_ref();
-    run_d(1, l, dvd, dvr, -1, 0, -1, MAXT); compare({id, " with start"}, res_defined());
+    if (!l) begin run_d(1, l, dvd, dvr, -1, 0, -1, MAXT); compare({id, " with start"}, res_defined()); end
     run_d(1, l, dvd_b, dvr_b, 0, 0, -1, MAXT);
     run_d(0, l, dvd, dvr, 0, 0, -1, MAXT); compare({id, " after another op"}, res_defined());
-    run_d(1, l, dvd, dvr, -1, dvr2, 0, MAXT); compare({id, " with start, 2nd pulse +1"}, res_defined());
+    if (!l) begin run_d(1, l, dvd, dvr, -1, dvr2, 0, MAXT); compare({id, " with start, 2nd pulse +1"}, res_defined()); end
     run_d(1, l, dvd, dvr, 0, dvr2, 1, MAXT); compare({id, " 2nd pulse +1"}, res_defined());
     run_d(1, l, dvd, dvr, 0, dvr2, 6, MAXT); compare({id, " 2nd pulse +6"}, res_defined());
     run_d(1, l, dvd, dvr, 30, 0, -1, MAXT); save_ref();
@@ -207,7 +235,7 @@ module tb_serial
     run_d(1, l, dvd, dvr, 0, 0, -1, 60);
     run_d(0, l, dvd_b, dvr_b, 0, 0, -1, MAXT); compare({id, " restart mid-iteration"}, res_defined());
     run_d(1, l, dvd, dvr, 0, 0, -1, 60);
-    run_d(0, l, dvd_b, dvr_b, -1, 0, -1, MAXT); compare({id, " with start, restart mid-iteration"}, res_defined());
+    if (!l) begin run_d(0, l, dvd_b, dvr_b, -1, 0, -1, MAXT); compare({id, " with start, restart mid-iteration"}, res_defined()); end
     run_d(1, l, dvd, dvr, MAXT, 0, -1, 40);
     run_d(0, l, dvd_b, dvr_b, 0, 0, -1, MAXT); compare({id, " restart while waiting"}, res_defined());
     run_d(1, l, dvd, dvr, 0, 0, -1, MAXT);
@@ -219,7 +247,7 @@ module tb_serial
     if (fresh) reset_dut();
     @(negedge clk);
     s_width = w; s_op = op; s_val = val; s_count = cnt;
-    s_start = 1; tick(); s_start = 0;
+    kind = 0; s_start = 1; tick(); s_start = 0;
     run_ticks = 0;
     while (!s_done && run_ticks < MAXT) begin
       tick(); run_rem[run_ticks] = 0; run_ticks++;
@@ -247,12 +275,12 @@ module tb_serial
     reset_dut();
     @(negedge clk);
     s_width = w; s_op = op; s_val = val; s_count = cnt;
-    s_start = 1; tick(); s_start = 0;
+    kind = 0; s_start = 1; tick(); s_start = 0;
     for (int i = 0; i < 200 && !s_done; i++) tick();
     if (!s_done) mismatch({id, ": not done"});
     f = s_flags; fm = s_mask;
     @(negedge clk);
-    s_width = w_next; s_op = OP_SRL; s_val = ~val; s_count = 6'd3; s_start = 1;
+    s_width = w_next; s_op = OP_SRL; s_val = ~val; s_count = 6'd3; kind = 0; s_start = 1;
     #4;  // just before the start edge
     if (s_flags !== f || s_mask !== fm)
       mismatch($sformatf("%s: flags/mask %04X/%04X became %04X/%04X", id, f, fm, s_flags, s_mask));
@@ -274,57 +302,69 @@ module tb_serial
       if (tok == "END") break;
       fail_this = 0;
       if (tok == "M") begin
+        // The Go record's own operand delay and Remaining() run are not the
+        // CPU's; the unit is run with the multiplier arriving where the CPU
+        // gives it (register, IM, IR, DA/X), the clocks to done must be the
+        // CPU's (Jan83 6-99 less the program's 3), and the result is final
+        // on the clock before done.
         n = $fscanf(fd, "%d %h %h %d %d %h", r_width, r_dst, r_src, r_delay, r_ticks, r_product);
-        exp_ticks = r_ticks;
-        // consume the Remaining() sequence while running the DUT
+        for (k = 0; k < r_ticks; k++) n = $fscanf(fd, "%d", remv);
+        r_delay = (r_width == 32) ? m_arr_l[total % 4] : m_arr_w[total % 4];
+        if (r_width == 32) exp_ticks = (r_src[31:0] == 0) ? 27 : 279 + 7 * $countones(m_abs16(r_dst[15:0]));
+        else               exp_ticks = (r_src[15:0] == 0) ? 15 : 67;
         reset_dut();
         @(negedge clk);
         m_width32 = (r_width == 32); m_dst = r_dst[31:0]; m_src = r_src[31:0];
-        m_start = 1; tick(); m_start = 0;                       // E0: load
+        kind = 1; m_start = 1; x_hi = m_width32 && r_delay == 0;
+        tick(); m_start = 0; x_hi = 0;                                    // E0: load
         ticks = 0; fin_at = -1;
         for (k = 0; k < exp_ticks; k++) begin
-          n = $fscanf(fd, "%d", remv);
           @(negedge clk);
           m_src_valid = (k == r_delay);
-          tick(); m_src_valid = 0; ticks++;
+          x_hi = m_width32 && k == r_delay - 1;
+          tick(); m_src_valid = 0; x_hi = 0; ticks++;
           if (only == "" || only == "M") begin
             if (m_fin) begin fin_at = k; fin_res = m_product; fin_flg = 0; end
             if (m_done && k != exp_ticks - 1)
               mismatch($sformatf("M w=%0d dst=%h src=%h delay=%0d: done early at tick %0d (exp %0d)", r_width, r_dst, r_src, r_delay, ticks, exp_ticks));
-            if (int'(m_remaining) != remv)
-              mismatch($sformatf("M w=%0d dst=%h src=%h delay=%0d tick %0d: remaining exp=%0d got=%0d", r_width, r_dst, r_src, r_delay, ticks, remv, m_remaining));
           end
         end
         if (only == "" || only == "M") begin
           if (!m_done) mismatch($sformatf("M w=%0d dst=%h src=%h delay=%0d: not done after %0d ticks", r_width, r_dst, r_src, r_delay, exp_ticks));
           if ((r_width == 16 ? m_product[31:0] : m_product) !== (r_width == 16 ? r_product[31:0] : r_product))
             mismatch($sformatf("M w=%0d dst=%h src=%h: product exp=%h got=%h", r_width, r_dst, r_src, r_product, m_product));
-          fin_check($sformatf("M w=%0d dst=%h src=%h delay=%0d", r_width, r_dst, r_src, r_delay),
-                    r_product == 0 && r_delay == exp_ticks - 1, m_product, 0);
+          if (r_width == 32 && (m_flag_c !== (r_product[63:31] != {33{r_product[63]}}) || m_flag_z !== (r_product == 0)))
+            mismatch($sformatf("M w=32 dst=%h src=%h: C/Z got %b%b", r_dst, r_src, m_flag_c, m_flag_z));
+          fin_check($sformatf("M w=%0d dst=%h src=%h delay=%0d", r_width, r_dst, r_src, r_delay), 0, m_product, 0);
           report("M");
         end
       end else if (tok == "D") begin
         n = $fscanf(fd, "%d %h %h %d %d %d %d %d %d %d %h %h", r_width, r_dividend, r_divisor, r_delay, r_ticks,
                     r_dbz, r_ovf, r_wide, r_qneg, r_qzero, r_quot, r_rem);
-        exp_ticks = r_ticks;
+        // As for M: the divisor arrives where the CPU gives it, and the
+        // clocks to done are the CPU's (Jan83 6-47/6-48 less the program's 3).
+        for (k = 0; k < r_ticks; k++) n = $fscanf(fd, "%d", remv);
+        r_delay = (r_width == 32) ? m_arr_l[total % 4] : m_arr_w[total % 4];
+        if (r_dbz[0])                exp_ticks = (r_width == 32) ? 27 : 10;
+        else if (r_ovf[0])           exp_ticks = (r_width == 32) ? 48 : 22;
+        else                         exp_ticks = (r_width == 32) ? 741 : 104;
         reset_dut();
         @(negedge clk);
         d_n32 = (r_width == 32); d_dividend = r_dividend; d_divisor = r_divisor[31:0];
-        d_start = 1; tick(); d_start = 0;
+        kind = 2; d_start = 1; x_hi = d_n32 && r_delay == 0;
+        tick(); d_start = 0; x_hi = 0;
         ticks = 0; fin_at = -1;
         for (k = 0; k < exp_ticks; k++) begin
-          n = $fscanf(fd, "%d", remv);
           @(negedge clk);
           d_src_valid = (k == r_delay);
-          tick(); d_src_valid = 0; ticks++;
+          x_hi = d_n32 && k == r_delay - 1;
+          tick(); d_src_valid = 0; x_hi = 0; ticks++;
           if (only == "" || only == "D") begin
             if (d_fin) begin
               fin_at = k; fin_res = {d_quot, d_rem}; fin_flg = {d_dbz, d_ovf, d_wide, d_qneg, d_qzero};
             end
             if (d_done && k != exp_ticks - 1)
               mismatch($sformatf("D n=%0d dvd=%h dvr=%h delay=%0d: done early at tick %0d (exp %0d)", r_width, r_dividend, r_divisor, r_delay, ticks, exp_ticks));
-            if (int'(d_remaining) != remv)
-              mismatch($sformatf("D n=%0d dvd=%h dvr=%h delay=%0d tick %0d: remaining exp=%0d got=%0d", r_width, r_dividend, r_divisor, r_delay, ticks, remv, d_remaining));
           end
         end
         if (only == "" || only == "D") begin
@@ -332,6 +372,11 @@ module tb_serial
           if (d_dbz != r_dbz[0] || d_ovf != r_ovf[0] || d_wide != r_wide[0] || d_qneg != r_qneg[0] || d_qzero != r_qzero[0])
             mismatch($sformatf("D n=%0d dvd=%h dvr=%h: flags dbz/ovf/wide/qneg/qzero exp=%0d%0d%0d%0d%0d got=%0d%0d%0d%0d%0d",
                      r_width, r_dividend, r_divisor, r_dbz, r_ovf, r_wide, r_qneg, r_qzero, d_dbz, d_ovf, d_wide, d_qneg, d_qzero));
+          // Divide by zero hands the dividend back unchanged.
+          if (r_dbz[0]) begin
+            if (r_width == 16 ? {d_rem[15:0], d_quot[15:0]} !== r_dividend[31:0] : {d_rem, d_quot} !== r_dividend[63:0])
+              mismatch($sformatf("D n=%0d dvd=%h dvr=%h: dividend back exp=%h got=%h:%h", r_width, r_dividend, r_divisor, r_dividend, d_rem, d_quot));
+          end
           if (!r_dbz[0] && !r_ovf[0]) begin
             if ((r_width == 16 ? 32'(d_quot[15:0]) : d_quot) !== (r_width == 16 ? 32'(r_quot[15:0]) : r_quot[31:0]))
               mismatch($sformatf("D n=%0d dvd=%h dvr=%h: quotient exp=%h got=%h", r_width, r_dividend, r_divisor, r_quot, d_quot));
@@ -339,8 +384,7 @@ module tb_serial
               mismatch($sformatf("D n=%0d dvd=%h dvr=%h: remainder exp=%h got=%h", r_width, r_dividend, r_divisor, r_rem, d_rem));
           end
           fin_check($sformatf("D n=%0d dvd=%h dvr=%h delay=%0d", r_width, r_dividend, r_divisor, r_delay),
-                    (r_dbz[0] && r_delay == exp_ticks - 1) ||
-                    (r_wide[0] && exp_ticks - r_delay == (r_width == 32 ? 19 : 11)), {d_quot, d_rem}, {d_dbz, d_ovf, d_wide, d_qneg, d_qzero});
+                    0, {d_quot, d_rem}, {d_dbz, d_ovf, d_wide, d_qneg, d_qzero});
           report("D");
         end
       end else if (tok == "S") begin
@@ -350,7 +394,7 @@ module tb_serial
         @(negedge clk);
         s_width = (r_width == 8) ? WIDTH_BYTE : (r_width == 16) ? WIDTH_WORD : WIDTH_LONG;
         s_op = r_op[ALUOP_W-1:0]; s_val = r_val[31:0]; s_count = r_count[5:0];
-        s_start = 1; tick(); s_start = 0;
+        kind = 0; s_start = 1; tick(); s_start = 0;
         ticks = 0;
         for (k = 0; k < exp_ticks; k++) begin
           @(negedge clk); tick(); ticks++;
