@@ -94,7 +94,7 @@ static void driveIn(Vz8030_scc* t, const In& i) {
     t->intack_n = i.intack_n; t->iei = i.iei; t->ad_in = i.ad;
     t->rxd = (i.rxd[1] << 1) | i.rxd[0]; t->cts_n = (i.cts_n[1] << 1) | i.cts_n[0];
     t->dcd_n = (i.dcd_n[1] << 1) | i.dcd_n[0]; t->trxc_in = (i.trxc[1] << 1) | i.trxc[0];
-    t->txc_in = (i.txc[1] << 1) | i.txc[0]; t->rxc_in = (i.rxc[1] << 1) | i.rxc[0];
+    t->rxc_in = (i.rxc[1] << 1) | i.rxc[0];
     t->sync_in = (i.sync[1] << 1) | i.sync[0];
 }
 
@@ -155,12 +155,18 @@ int main(int argc, char** argv) {
 #endif
 
     // Quiescent start == Go defaultInputs(): strobes negated, deselected,
-    // serial lines marking, PCLK low. No reset pin: the RTL powers up in
-    // the Go New() state.
+    // serial lines marking, PCLK low. One clock of rst_n Low leaves the
+    // Go New() state.
     In idle{}; idle.pclk = false; idle.as_n = idle.ds_n = idle.cs0_n = idle.intack_n = idle.iei = true;
     idle.r_w = true; idle.cs1 = false; idle.ad = 0;
     for (int c = 0; c < 2; c++) { idle.rxd[c] = idle.cts_n[c] = idle.dcd_n[c] = true; }
     driveIn(top, idle);
+    top->rst_n = 0;
+    top->clk = 0;
+    top->eval();
+    top->clk = 1;
+    top->eval();
+    top->rst_n = 1;
     top->clk = 0;
     top->eval();
     dump();

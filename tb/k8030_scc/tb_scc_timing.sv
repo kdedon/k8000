@@ -17,6 +17,7 @@
 module tb_scc_timing;
 
   logic clk = 1'b0;
+  logic rst_n = 1'b0;
   always #5 clk = ~clk;
 
   logic [7:0] ad_in    = 8'h00;
@@ -32,7 +33,6 @@ module tb_scc_timing;
   logic [1:0] cts_n    = 2'b11;
   logic [1:0] dcd_n    = 2'b11;
   logic [1:0] trxc_in  = 2'b00;
-  logic [1:0] txc_in   = 2'b00;
   logic [1:0] rxc_in   = 2'b00;
   logic [1:0] sync_in  = 2'b11;
 
@@ -41,11 +41,11 @@ module tb_scc_timing;
   logic [1:0] txd, rts_n, dtr_n, trxc_out, trxc_drive, sync_out, sync_drive;
 
   z8030_scc dut (
-    .clk(clk),
+    .clk(clk), .rst_n(rst_n),
     .ad_in(ad_in), .as_n(as_n), .ds_n(ds_n), .r_w(r_w),
     .cs0_n(cs0_n), .cs1(cs1), .intack_n(intack_n), .iei(iei), .pclk(pclk),
     .rxd(rxd), .cts_n(cts_n), .dcd_n(dcd_n),
-    .trxc_in(trxc_in), .txc_in(txc_in), .rxc_in(rxc_in), .sync_in(sync_in),
+    .trxc_in(trxc_in), .rxc_in(rxc_in), .sync_in(sync_in),
     .ad_out(ad_out), .ad_drive(ad_drive), .int_n(int_n), .ieo(ieo),
     .txd(txd), .rts_n(rts_n), .dtr_n(dtr_n),
     .trxc_out(trxc_out), .trxc_drive(trxc_drive),
@@ -74,14 +74,16 @@ module tb_scc_timing;
   endtask
 
   // One bus phase = PCLK Low sample then PCLK High sample.
+  // Inputs change 1 ns after the edge, so the chip samples them at the next
+  // posedge whatever earlier #1 waits have done to the alignment.
   task automatic phase();
-    pclk = 1'b0; @(posedge clk);
-    pclk = 1'b1; @(posedge clk);
+    pclk = 1'b0; @(posedge clk); #1;
+    pclk = 1'b1; @(posedge clk); #1;
   endtask
   // One extra sample with PCLK unchanged (no PCLK rise): used to prove that
   // a behaviour is combinational on the strobe, not clocked.
   task automatic hold();
-    @(posedge clk);
+    @(posedge clk); #1;
   endtask
 
   task automatic scc_write(input int ch, input int reg_no, input logic [7:0] val);
@@ -113,7 +115,9 @@ module tb_scc_timing;
     // The Z8030 has NO reset pin (p.633 pin list): the only reset is /AS and
     // /DS Low together.  Start from it so the bench begins in the datasheet's
     // reset state, then honour the internal 4-5 PCLK stretch (UM010903 p.26).
-    repeat (2) @(posedge clk);
+    @(posedge clk); #1; rst_n = 1'b1;
+    @(posedge clk);
+    #1;
     as_n = 1'b0; ds_n = 1'b0;                                                 phase();
                                                                               phase();
     as_n = 1'b1; ds_n = 1'b1;                                                 phase();
@@ -198,7 +202,7 @@ module tb_scc_timing;
     as_n = 1'b1; ds_n = 1'b1;                                                 phase();
     #1;
     ck(rts_n[CH_A] && dtr_n[CH_A], "the /AS+/DS reset deasserts /RTS and /DTR",
-       "p.644 reset table: WR5 resets to 0x60, clearing RTS and DTR",
+       "UM010903 p.26-27 reset table: WR5 D7 (DTR) and D1 (RTS) clear",
        $sformatf("rts_n=%0b dtr_n=%0b after the reset", rts_n[CH_A], dtr_n[CH_A]));
     // "The reset condition is stretched internally for an additional four to
     // five PCLK cycles. During this time, any attempt to access is ignored"
@@ -206,12 +210,12 @@ module tb_scc_timing;
     repeat (6) phase();
     scc_read(CH_A, 15, rd, drove);
     ck(rd == 8'hF8, "RR15 holds its reset value after the /AS+/DS reset",
-       "p.644 reset table: WR15 (read back as RR15) resets to 0xF8",
+       "UM010903 p.26-27 reset table: WR15 (read back as RR15) resets to 0xF8",
        $sformatf("RR15=%02h, want F8", rd));
     scc_read(CH_A, 12, rd, drove);
-    ck(rd == 8'h00, "the reset clears the BRG time constant",
-       "p.644 reset table: a hardware reset clears WR12/WR13",
-       $sformatf("RR12=%02h after the reset, want 00", rd));
+    ck(rd == 8'h7F, "the reset leaves the BRG time constant alone",
+       "UM010903 p.26-27 reset table: WR12/WR13 are X (not affected) under both resets",
+       $sformatf("RR12=%02h after the reset, want 7F", rd));
 
     $display("");
     $display("[6] a BRIEF /AS+/DS overlap is a bus turnaround, not a reset");
