@@ -250,6 +250,8 @@ module tb_cio_timing;
     // The probe is the pattern-match IP bit, because it is STATE: a bus
     // read is itself an /AS cycle, so a probe that only looked at the data
     // register could not tell the two clocks apart.
+    bus_write(REG_MICR,    8'h00);   // leave the reset of [5]
+    bus_write(REG_MCCR,    8'h04);   // PAE: a disabled port does not match
     bus_write(REG_PA_DIR,  8'hFF);   // Port A all inputs
     bus_write(REG_PA_PT,   8'h00);   // level match ...
     bus_write(REG_PA_PP,   8'h3C);   // ... against 0x3C
