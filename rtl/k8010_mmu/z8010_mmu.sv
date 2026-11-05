@@ -1,63 +1,96 @@
 // z8010_mmu -- Zilog Z8010 Memory Management Unit, top level.
 //
-// Pin seam == ~/git/z8000/sim/mmu/mmu.go Inputs (mmu.go:17-36) / Outputs
-// (mmu.go:39-46), one-for-one. The lockstep contract is per-edge pin
-// equality against the Go model: tb/k8010_mmu/tb_mmu.cpp replays vectors/k8010_mmu/*.vec
-// through these ports (docs/K8010_MMU_TESTS.md).
+// Pins: z8010_mmu.pdf (Z8010 Product Specification) p.559 Fig 2 and the
+// p.571 Pin Description. Lockstep contract: tb/k8010_mmu/tb_mmu.cpp replays
+// vectors/k8010_mmu/*.vec (docs/K8010_MMU_TESTS.md).
 //
-// Implementation order (FPGA_BIBLE Ch.3.4):
-//   1. Port list (done) + Ch.2 strobe capture: sample as_n/ds_n/dmasync
-//      with clk, edge-detect from the previous sample (Go prevAS_n/prevDS_n/
-//      prevDMASYNC, mmu.go tick: asFallingEdge/asRisingEdge/dsRisingEdge).
-//      Latch sn/ad/st/r_w/n_s at AS fall (mmu.go "asFallingEdge" block).
-//      Combinational translate: physAddr = {base,8'h00} + offset, 24-bit;
-//      violation checks as one always_comb comparator tree
-//      (translate(), mmu.go translate / translateDMA).
-//   2. Descriptor store + SAR/DSC command engine: executeCommand
-//      (mmu.go, the 22-entry case table; 0x0D = Limit+incSAR, 0x0E =
-//      Attr+incSAR per UM010401 Table 3-6). Command data rides ad[15:8]
-//      ONLY (the Z8010 has no AD0-7 pins).
-//   3. Trap/suppress FSM: segt_n asserted while trap_pending; sup_n per
-//      cycle (sup_held, released at DS rise) plus until-end-of-instruction
-//      hold (sup_instr_hold, cleared on the next ST=1101 AS fall);
-//      SEGT-ack: at the AS-rise sample of a latched ST=0100 cycle,
-//      ack_pending <= trap_pending, trap_pending <= 0 (SEGT released,
-//      Fig.12 p.570); while ds_n is low drive ad line 8+ID = ack_pending
-//      (every enabled MMU drives, 1 = trapped / 0 = not); at the DS-rise
-//      sample ack_pending <= 0 and data_drive <= 0. Only line 8+ID is
-//      driven on the ack, so several MMUs share AD15:8 per line.
-//      dummy-fetch-ignore: the ST=1101 fetch while trap_pending.
-//      pa_drive and data_drive drop at the DS-rise sample (TdDS(Af),
-//      TdDSR(RDf)); command reads drive data only while ds_n is low
-//      (TdDSR(RDv)) and both reads and writes execute at the first
-//      DS-low sample after the AS-rise that latched the command (cs_n is
-//      sampled at that AS rise only).
-//   4. DMASYNC path: >=2 low samples then a rising edge -> DMA translate,
-//      suppress-only, no SEGT / no VTR capture (translateDMA).
-//   5. Reset: Go reset(csN) -- everything cleared; if cs_n is LOW while
-//      reset_n is low, mode_reg powers up with MSEN (bit 7) = 1
-//      (pass-through). Reset acts on every Go Tick regardless of CLK
-//      (asynchronous). Note the vectors always hold reset across at least
-//      one posedge, so a synchronous sample of cs_n during reset is
-//      observably equivalent.
-//   6. Open-drain segt_n/sup_n: internally an out+oe pair (lesson
-//      sv-30-open-drain). At THIS port the pin is presented as the
-//      resolved level with the board pull-up (0 = this chip drives low,
-//      1 = released), which is exactly the Go bool. The system top can
-//      wire-OR several MMUs by AND-ing these outputs.
+// Clocking: every flop runs on the board master clock `clk`. `clk_in` is the
+// CLK pin as the board's rising-edge pulse (High for the one master clock in
+// which CLK rises; it may be High every master clock). /AS and /DS are
+// strobes: their edges are seen on the master clock, independently of CLK.
 //
-// Harness contract (tb/k8010_mmu/mmu_access.h peeks/pokes these by hierarchical name;
-// keep the names or update mmu_access.h in the same change):
+// Which edge each input is taken on (AC Characteristics p.573, waveforms
+// p.572; 4 MHz column):
+//   AD15-AD8 (offset)  latched at the /AS rise. p.571: "The rising edge of AS
+//                      indicates that AD0-AD15, ST0-ST3, R/W and N/S are
+//                      valid"; #13 TsOFF(AS) 45 ns setup / #14 ThAS(OFFn)
+//                      60 ns hold around the /AS rise. Modelled as a latch
+//                      that follows the pins while /AS is Low and holds from
+//                      the first master clock that sees /AS High.
+//   ST3-ST0, R/W, N/S  the same latch (p.571; #21 TdSTNR(AS) valid 50 ns
+//                      before the /AS rise; #23 TsST(C) and #24 TdDS(STn)
+//                      keep them valid through the next CLK rise to the /DS
+//                      rise, so the /AS-rise value is the one the chip uses).
+//   /CS                the same latch (#34 TsCS(AS) / #35 ThAS(CSn)).
+//   SN6-SN0            taken at every CLK rise (#18 TsSN(C) setup to the CLK
+//                      rise of T1, #19 ThC(SNn) held past the CLK rise of
+//                      T2); a cycle uses the value from the last CLK rise
+//                      before its /AS rise is seen.
+//   DMASYNC            at the CLK rise (#20 TdDMAS(C), #22 TdC(DMA)).
+//   /RESET             level, every master clock (p.570: asynchronous).
+//                      /CS is taken with it: the last value before the
+//                      /RESET rise sets MSEN (#37 TsCS(RST) / #38).
+//   write data         command write: AD15-AD8 while /DS is Low.
+//
+// Outputs:
+//   A23-A8   driven here from the /AS rise (the chip starts driving at the
+//            /AS fall, #28 TdAS(Ad)); valid at the latest
+//            one CLK after the T1 rise (#29 TdC(Av) 255 ns from the CLK rise
+//            under /AS, #25 TdOFF(Av) from the offset, #26 TdST(Ad) from
+//            status). PA is combinational from the latch, SN and the
+//            descriptor in the master clock that sees the /AS rise and held
+//            from then on, so a CPU sharing CLK reads a valid PA at its next
+//            CLK rise even at one master clock per CLK. Floats at the /DS
+//            rise (#27 TdDS(Af)) and at the next /AS fall.
+//   /SEGT    asserted from the /AS rise of the violating access (#30
+//            TdAS(SEGT)), in the master clock that sees it; released at the
+//            third CLK rise from the /AS rise of the trap-acknowledge cycle
+//            (the T2 rise is the first; INFERRED from Fig.12 p.570, which
+//            draws it rising from the CLK edge that opens the second wait
+//            state; #31 TdC(SEGT) is CLK-referenced).
+//   /SUP     asserted from the /AS rise (#32 TdAS(SUP)), in the master clock
+//            that sees it; released at the /DS rise (#33 TdDS(SUP)).
+//   AD15-AD8 command read data / trap-ack identifier from the /DS fall, in
+//            the master clock that sees it (#8 TdDSR(RDv), #6 TdDSA(RDv));
+//            float at the /DS rise (#9, #7).
+//
+// Functional behaviour (unchanged): one descriptor lookup shared by
+// translation and the command port; A23..A8 = base + offset[15:8], or
+// {0, SN, offset[15:8]} with TRNS clear (p.562 Fig 4, p.564); the 22-entry
+// command table (0x0D = Limit+incSAR, 0x0E = Attr+incSAR, UM010401 Table
+// 3-6); violation capture (first wins, later ones OR into VTR); suppress
+// until the end of the instruction; trap acknowledge: every enabled MMU
+// drives AD line 8+ID; DMA: DMASYNC High after >= 2 Low samples presents a
+// DMA address, suppress only, no SEGT / capture. Reset with /CS Low powers
+// the mode register up with MSEN set. /SEGT and /SUP are open drain,
+// presented as the resolved level (0 = this chip drives Low).
+//
+// Descriptor storage: base, limit and six attribute bits live in four 64-word
+// RAMs with an asynchronous read (MLAB on Cyclone V), so the lookup stays
+// combinational in the master clock that sees the /AS rise, exactly as with
+// registers. A synchronous (M10K) read would need its address one master
+// clock earlier, and a DMA address (DMASYNC at a CLK rise) is translated
+// from the pins in the master clock that samples them. What a RAM cannot do
+// stays in flops: desc_ok (reset leaves every descriptor reading zero; the
+// first write to a cleared descriptor zero-fills its other fields) and the
+// CPU-Inhibit / DMA-Inhibit bits (commands 15 and 16 set them in all 64
+// descriptors at once). One write port: a command write and a REF/CHG update
+// in the same master clock (a command whose /DS falls after the next cycle's
+// /AS rise, which a Z-Bus CPU never produces) keeps the command write.
+// Confirmed on MLAB in the Quartus fit (unit.map.rpt altdpram x4).
+//
+// Harness contract (tb/k8010_mmu/mmu_access.h peeks/pokes these by
+// hierarchical name; keep the names or update mmu_access.h in the same change):
 //   mode_reg sar dsc viol_type viol_sn viol_off viol_overflow isn ioffset
 //   bcsr trap_pending viol_captured addr_latched latched_st ack_pending
-//   desc_base[64] desc_limit[64] desc_attr[64]
+//   desc_bh[64] desc_bl[64] desc_lm[64] desc_at[64] desc_ok desc_cpui desc_dmai
 
 module z8010_mmu (
-  input  logic        clk,
-  input  logic        reset_n,    // active low, sampled at clk
+  input  logic        clk,        // board master clock; every flop runs on it
+  input  logic        clk_in,     // CLK pin as its rising-edge pulse (one master clock)
+  input  logic        reset_n,    // /RESET, level
 
-  // Inputs (mmu.go Inputs)
-  input  logic [15:0] ad,         // AD15..AD0 as seen by the chip (only [15:8] exist on silicon)
+  input  logic [7:0]  ad,         // AD15..AD8 (the chip has no AD7..AD0)
   input  logic [6:0]  sn,         // SN6..SN0
   input  logic [3:0]  st,         // ST3..ST0
   input  logic        as_n,
@@ -67,50 +100,65 @@ module z8010_mmu (
   input  logic        cs_n,       // chip select for command (special I/O) access
   input  logic        dmasync,    // DMA segment number valid (active high)
 
-  // Outputs (mmu.go Outputs) -- PA and Data as value+drive pairs, no tri-state
-  output logic [23:0] pa,
+  // PA and Data as value+drive pairs, no tri-state
+  output logic [15:0] pa,         // A23..A8
   output logic        pa_drive,
-  output logic        segt_n,     // open drain, resolved level (see header note 6)
+  output logic        segt_n,     // open drain, resolved level
   output logic        sup_n,      // open drain, resolved level
-  output logic [15:0] data,       // driven onto AD during command reads / SEGT ack
+  output logic [7:0]  data,       // AD15..AD8, driven during command reads / SEGT ack
   output logic [7:0]  data_drive  // per-line drive of AD15:8 (bit n = AD line 8+n)
 );
 
-  // ---- register inventory (snapshot.go Snapshot == the register list) ------
-  logic [15:0] desc_base  [64];
-  logic [7:0]  desc_limit [64];
-  logic [7:0]  desc_attr  [64];   // 7=REF 6=CHG 5=DIRW 4=DMAI 3=EXC 2=CPUI 1=SYS 0=RD
+  // ---- register inventory --------------------------------------------------
+  // Descriptor RAMs (attribute 7=REF 6=CHG 5=DIRW 4=DMAI 3=EXC 2=CPUI 1=SYS
+  // 0=RD; desc_at holds {REF, CHG, DIRW, EXC, SYS, RD}).
+  (* ramstyle = "MLAB, no_rw_check" *) logic [7:0] desc_bh [64];   // base high
+  (* ramstyle = "MLAB, no_rw_check" *) logic [7:0] desc_bl [64];   // base low
+  (* ramstyle = "MLAB, no_rw_check" *) logic [7:0] desc_lm [64];   // limit
+  (* ramstyle = "MLAB, no_rw_check" *) logic [5:0] desc_at [64];   // attribute less CPUI, DMAI
+  // Justification: (reg-a) descriptor written since /RESET (else reads zero).
+  logic [63:0] desc_ok;
+  // Justification: (reg-a) CPU-Inhibit / DMA-Inhibit, set in all 64 by one command.
+  logic [63:0] desc_cpui;
+  logic [63:0] desc_dmai;
   logic [7:0]  mode_reg;          // 7=MSEN 6=TRNS 5=URS 4=MST 3=NMS 2:0=ID
   logic [5:0]  sar;
   logic [1:0]  dsc;
   logic [7:0]  viol_type;         // 7=FATL 6=SWW 5=PWW 4=EXCV 3=CPUIV 2=SLV 1=SYSV 0=RDV
   logic [6:0]  viol_sn;
-  logic [15:0] viol_off;
+  logic [7:0]  viol_off;          // offset AD15..AD8 of the violating access
   logic        viol_overflow;
   logic [6:0]  isn;
   logic [7:0]  ioffset;
   logic [7:0]  bcsr;
   logic        trap_pending;
   logic        viol_captured;
-  logic        addr_latched;
-  logic [3:0]  latched_st;
+  logic        addr_latched;      // an /AS cycle is open: /AS fell, its /DS has not risen
   logic        ack_pending;       // our trap is the one being acknowledged (identifier phase)
+  logic [1:0]  ack_wait;          // CLK rises left before the acknowledge releases /SEGT; 0 = none
   logic        sup_held;          // SUP for this cycle, released at the /DS rise
   logic        sup_instr_hold;    // SUP every memory cycle until the next first-word fetch
 
-  // ---- strobe samples and the address latched at the /AS fall ----------------
-  logic        prev_as;           // /AS was Low last clock (0 at power-up: High)
-  logic        prev_ds;
-  logic [6:0]  latched_sn;
-  logic [15:0] latched_ad;
+  // ---- strobes, seen on the master clock --------------------------------------
+  // Justification: (reg-a) /AS and /DS were Low at the last master clock.
+  logic        as_low_q;
+  logic        ds_low_q;
+  wire as_fall = ~as_low_q & ~as_n;
+  wire as_rise = as_low_q & as_n;
+  wire ds_rise = ds_low_q & ds_n;
+
+  // ---- the /AS latch: follows the pins while /AS is Low, holds after its rise --
+  logic [7:0]  latched_ad;
+  logic [3:0]  latched_st;
   logic        latched_rw;
   logic        latched_ns;
-  logic [23:0] pa_q;
+  logic        latched_cs_n;
+  // Justification: (reg-a) SN as of the last CLK rise.
+  logic [6:0]  sn_clk;
+  logic [15:0] pa_q;
   logic        pa_drive_q;
 
-  wire as_fall = ~prev_as & ~as_n;
-  wire as_rise = prev_as & as_n;
-  wire ds_rise = prev_ds & ds_n;
+  wire clk_en = clk_in;
 
   // DMA: DMASYNC rising after two or more Low samples presents a DMA address.
   // The DMA cycle owns the bus until its /DS rise, or until DMASYNC has been
@@ -118,12 +166,12 @@ module z8010_mmu (
   logic [1:0]  dma_low;
   logic        dma_active;
   logic        dma_high;
-  wire dma_go  = dmasync & dma_low[1];
+  wire dma_go  = clk_en & dmasync & dma_low[1];
   wire dma_blk = (dma_active & ~ds_rise) | dma_go;
 
   // A DMA address is translated in the sample it arrives, straight off the pins.
-  wire [6:0]  x_sn = dma_go ? sn   : latched_sn;
-  wire [15:0] x_ad = dma_go ? ad   : latched_ad;
+  wire [6:0]  x_sn = dma_go ? sn   : sn_clk;
+  wire [7:0]  x_ad = dma_go ? ad   : latched_ad;
   wire [3:0]  x_st = dma_go ? st   : latched_st;
   wire        x_rw = dma_go ? r_w  : latched_rw;
   wire        x_ns = dma_go ? n_s  : latched_ns;
@@ -132,10 +180,12 @@ module z8010_mmu (
   // Translation and command access never overlap, so they share one lookup.
   wire [5:0]  seg    = x_sn[5:0];
   wire [5:0]  d_idx  = (x_st == 4'h3) ? sar : seg;
-  wire [15:0] t_base = desc_base[d_idx];
-  wire [7:0]  t_lim  = desc_limit[d_idx];
-  wire [7:0]  t_attr = desc_attr[d_idx];
-  wire [7:0]  page   = x_ad[15:8];
+  wire        d_ok   = desc_ok[d_idx];
+  wire [5:0]  r_at   = d_ok ? desc_at[d_idx] : 6'd0;
+  wire [15:0] t_base = d_ok ? {desc_bh[d_idx], desc_bl[d_idx]} : 16'h0000;
+  wire [7:0]  t_lim  = d_ok ? desc_lm[d_idx] : 8'h00;
+  wire [7:0]  t_attr = {r_at[5:3], desc_dmai[d_idx], r_at[2], desc_cpui[d_idx], r_at[1:0]};
+  wire [7:0]  page   = x_ad;
   wire        fetch  = (latched_st == 4'hC) | (latched_st == 4'hD);
 
   wire mem_cycle = (x_st >= 4'h8) & (x_st <= 4'hD);
@@ -151,11 +201,16 @@ module z8010_mmu (
   // no REF/CHG. Word fetches of the violating instruction are still checked.
   wire checked = ~(trap_pending & (latched_st == 4'hD));
 
-  wire [23:0] phys = {t_base, 8'h00} + {8'h00, x_ad};
-  wire [23:0] pass = {1'b0, x_sn, x_ad};
+  // A7..A0 bypass the chip: the base's low byte is zero, so no carry.
+  wire [15:0] phys = t_base + {8'h00, x_ad};
+  wire [15:0] pass = {1'b0, x_sn, x_ad};
+  wire [15:0] x_pa = translating ? phys : pass;
 
-  wire drive_pa = as_rise & addr_latched & responds & ~dma_blk;
-  wire ack_start = as_rise & addr_latched & (latched_st == 4'h4) & mode_reg[7] & ~dma_blk;
+  wire as_cyc    = as_rise & addr_latched & ~dma_blk;
+  wire drive_pa  = as_cyc & responds;
+  wire ack_start = as_cyc & (latched_st == 4'h4) & mode_reg[7];
+  localparam logic [1:0] ACK_RELEASE_RISE = 2'd3;
+  wire [1:0] ack_cnt = ack_start ? ACK_RELEASE_RISE : ack_wait;
 
   // DMA checks: DMA Inhibit in place of CPU Inhibit, and DMA never fetches.
   wire dma_drive = dma_go & responds;
@@ -179,13 +234,12 @@ module z8010_mmu (
   wire        req   = ~viol_type[7] & ~viol_type[6] & ~fatl;
   wire [7:0]  vt_next = (viol_captured ? (viol_type | vbit) : vbit) | {fatl, sww, 6'b0};
 
-  // ---- command port: opcode at the /AS rise, data byte while /DS is Low -------
-  // /CS counts only at the /AS rise; it may be High again before /DS falls.
-  wire [7:0] cmd       = latched_ad[15:8];
-  wire       cmd_start = as_rise & addr_latched & (latched_st == 4'h3) & ~cs_n & ~dma_blk;
+  // ---- command port: opcode and /CS at the /AS rise, data while /DS is Low -----
+  wire [7:0] cmd       = latched_ad;
+  wire       cmd_start = as_cyc & (latched_st == 4'h3) & ~latched_cs_n;
   logic      cmd_pending;
   wire       cmd_exec  = (cmd_pending | cmd_start) & ~ds_n;
-  wire [7:0] din       = ad[15:8];
+  wire [7:0] din       = ad;
 
   // Descriptor commands 08-0F: bit 2 = increment SAR at the end of the field,
   // bits 1:0 = base / limit / attribute / whole descriptor.
@@ -220,7 +274,7 @@ module z8010_mmu (
         8'h20:   rd_byte = {6'b0, dsc};
         8'h02:   rd_byte = viol_type;
         8'h03:   rd_byte = {1'b0, viol_sn};
-        8'h04:   rd_byte = viol_off[15:8];
+        8'h04:   rd_byte = viol_off;
         8'h05:   rd_byte = bcsr;
         8'h06:   rd_byte = {1'b0, isn};
         8'h07:   rd_byte = ioffset;
@@ -229,24 +283,66 @@ module z8010_mmu (
     end
   end
 
-  logic [15:0] data_q;
+  // ---- descriptor RAM write port --------------------------------------------
+  // A command write puts one byte in its field at SAR. A clean access sets
+  // REF (and CHG on a write) in the looked-up descriptor (p.566), here a
+  // read-modify-write of desc_at through the asynchronous read; d_idx is
+  // that descriptor (seg, the DMA pins' SN in a DMA sample). A descriptor
+  // not written since /RESET gets zeros in its other fields.
+  wire       cmd_wr  = reset_n & cmd_exec & ~latched_rw & is_desc;
+  wire       ref_cpu = drive_pa & translating & checked & ~viol;
+  wire       ref_dma = dma_drive & translating & ~dma_viol;
+  wire       ref_wr  = reset_n & ~cmd_wr & (ref_cpu | ref_dma);
+  wire       ref_chg = ref_dma ? ~r_w : ~latched_rw;
+  wire       d_we    = cmd_wr | ref_wr;
+  wire [5:0] d_wa    = cmd_wr ? sar : d_idx;
+  wire       wa_ok   = desc_ok[d_wa];
+  logic [3:0] f_we;       // base high, base low, limit, attribute
+  logic [7:0] w_byte;
+  logic [5:0] w_at;
+  always_comb begin
+    f_we   = 4'b0000;
+    w_byte = din;
+    w_at   = {din[7:5], din[3], din[1:0]};
+    if (cmd_wr) begin
+      unique case (fld)
+        2'd0: f_we = 4'b1000;
+        2'd1: f_we = 4'b0100;
+        2'd2: f_we = 4'b0010;
+        2'd3: f_we = 4'b0001;
+      endcase
+    end else if (ref_wr) begin
+      f_we = 4'b0001;
+      w_at = {1'b1, r_at[4] | ref_chg, r_at[3:0]};
+    end
+    if (d_we && !wa_ok)
+      f_we = 4'b1111;     // the untouched fields are written with zero
+  end
+  wire [7:0] w_bh = (cmd_wr && fld == 2'd0) ? w_byte : 8'h00;
+  wire [7:0] w_bl = (cmd_wr && fld == 2'd1) ? w_byte : 8'h00;
+  wire [7:0] w_lm = (cmd_wr && fld == 2'd2) ? w_byte : 8'h00;
+  wire [5:0] w_a6 = ((cmd_wr && fld == 2'd3) || ref_wr) ? w_at : 6'd0;
+  always_ff @(posedge clk) begin
+    if (f_we[3]) desc_bh[d_wa] <= w_bh;
+    if (f_we[2]) desc_bl[d_wa] <= w_bl;
+    if (f_we[1]) desc_lm[d_wa] <= w_lm;
+    if (f_we[0]) desc_at[d_wa] <= w_a6;
+  end
+
+  logic [7:0]  data_q;
   logic [7:0]  data_drive_q;
 
-  // ---- reset (Go reset(csN)) ------------------------------------------------
-  // Reset is sampled like any other pin. CS low at the last reset sample
-  // powers the mode register up with MSEN set.
+  // ---- one state block: /RESET first, then the strobe and CLK events -----------
   always_ff @(posedge clk) begin
     if (!reset_n) begin
-      for (int i = 0; i < 64; i++) begin
-        desc_base[i]  <= 16'h0000;
-        desc_limit[i] <= 8'h00;
-        desc_attr[i]  <= 8'h00;
-      end
+      desc_ok       <= 64'd0;
+      desc_cpui     <= 64'd0;
+      desc_dmai     <= 64'd0;
       sar           <= 6'd0;
       dsc           <= 2'd0;
       viol_type     <= 8'h00;
       viol_sn       <= 7'd0;
-      viol_off      <= 16'h0000;
+      viol_off      <= 8'h00;
       viol_overflow <= 1'b0;
       isn           <= 7'd0;
       ioffset       <= 8'h00;
@@ -256,21 +352,24 @@ module z8010_mmu (
       addr_latched  <= 1'b0;
       latched_st    <= 4'd0;
       ack_pending   <= 1'b0;
+      ack_wait      <= 2'd0;
       sup_held      <= 1'b0;
       sup_instr_hold <= 1'b0;
       mode_reg      <= {~cs_n, 7'b0};
-      prev_as       <= 1'b0;
-      prev_ds       <= 1'b0;
+      as_low_q      <= 1'b0;
+      ds_low_q      <= 1'b0;
       pa_drive_q    <= 1'b0;
       cmd_pending   <= 1'b0;
-      data_q        <= 16'h0000;
+      data_q        <= 8'h00;
       data_drive_q  <= 8'h00;
       dma_low       <= 2'd0;
       dma_active    <= 1'b0;
       dma_high      <= 1'b0;
     end else begin
-      prev_as <= ~as_n;
-      prev_ds <= ~ds_n;
+      as_low_q <= ~as_n;
+      ds_low_q <= ~ds_n;
+      if (clk_en)
+        sn_clk <= sn;
 
       // End of cycle first: a new cycle may start in the same sample.
       // A command that never saw its data phase is dropped.
@@ -279,16 +378,24 @@ module z8010_mmu (
         data_drive_q <= 8'h00;
         cmd_pending  <= 1'b0;
         ack_pending  <= 1'b0;
+        ack_wait     <= 2'd0;
+        if (ack_wait != 2'd0)
+          trap_pending <= 1'b0;
         sup_held     <= 1'b0;
         dma_active   <= 1'b0;
       end
 
-      dma_low <= dmasync ? 2'd0 : (dma_low[1] ? 2'd2 : dma_low + 2'd1);
-      dma_high <= dmasync & dma_active & ~dma_go;
-      if (dmasync && dma_active && dma_high)
-        dma_active <= 1'b0;
+      if (clk_en) begin
+        dma_low  <= dmasync ? 2'd0 : (dma_low[1] ? 2'd2 : dma_low + 2'd1);
+        dma_high <= dmasync & dma_active & ~dma_go;
+        // The DMA cycle ends, and its suppress with it (p.565: "during
+        // that cycle only").
+        if (dmasync && dma_active && dma_high) begin
+          dma_active <= 1'b0;
+          sup_held   <= 1'b0;
+        end
+      end
       if (dma_go) begin
-        latched_sn   <= sn;
         latched_ad   <= ad;
         latched_st   <= st;
         latched_rw   <= r_w;
@@ -300,21 +407,16 @@ module z8010_mmu (
         // Violations only suppress this access: no trap, no capture.
         // TRNS governs DMA as it does the CPU.
         if (dma_drive) begin
-          pa_q       <= translating ? phys : pass;
+          pa_q       <= x_pa;
           pa_drive_q <= 1'b1;
           if (translating && dma_viol)
             sup_held <= 1'b1;
-          else if (translating) begin
-            desc_attr[seg][7] <= 1'b1;
-            if (!r_w)
-              desc_attr[seg][6] <= 1'b1;
-          end
         end
       end
 
       // Trap acknowledge identifier: every enabled MMU drives its own line.
       if (addr_latched && latched_st == 4'h4 && !ds_n && mode_reg[7]) begin
-        data_q       <= ack_pending ? (16'h0100 << mode_reg[2:0]) : 16'h0000;
+        data_q       <= ack_pending ? (8'h01 << mode_reg[2:0]) : 8'h00;
         data_drive_q <= 8'h01 << mode_reg[2:0];
       end
 
@@ -330,7 +432,7 @@ module z8010_mmu (
         cmd_pending <= 1'b0;
         if (latched_rw) begin
           if (rd_ok) begin
-            data_q       <= {rd_byte, 8'h00};
+            data_q       <= rd_byte;
             data_drive_q <= 8'hFF;
           end
         end else begin
@@ -348,17 +450,13 @@ module z8010_mmu (
             end
             8'h13: viol_type[6] <= 1'b0;
             8'h14: viol_type[7] <= 1'b0;
-            8'h15: for (int i = 0; i < 64; i++) desc_attr[i][2] <= 1'b1;
-            8'h16: for (int i = 0; i < 64; i++) desc_attr[i][4] <= 1'b1;
+            8'h15: desc_cpui <= '1;
+            8'h16: desc_dmai <= '1;
             default: ;
           endcase
-          if (is_desc) begin
-            unique case (fld)
-              2'd0: desc_base[sar][15:8] <= din;
-              2'd1: desc_base[sar][7:0]  <= din;
-              2'd2: desc_limit[sar]      <= din;
-              2'd3: desc_attr[sar]       <= din;
-            endcase
+          if (is_desc && fld == 2'd3) begin
+            desc_cpui[sar] <= din[2];
+            desc_dmai[sar] <= din[4];
           end
         end
         if (is_desc) begin
@@ -368,47 +466,55 @@ module z8010_mmu (
         end
       end
 
-      if (as_fall) begin
-        if (!dma_blk) begin
-          latched_sn   <= sn;
-          latched_ad   <= ad;
-          latched_st   <= st;
-          latched_rw   <= r_w;
-          latched_ns   <= n_s;
-          addr_latched <= 1'b1;
-          // A first-word fetch starts the next instruction and ends the hold.
-          if (st == 4'hD)
-            sup_instr_hold <= 1'b0;
-          else if (sup_instr_hold && st >= 4'h8 && st <= 4'hD)
-            sup_held <= 1'b1;
-          if (st == 4'hD && !viol_captured) begin
-            isn     <= sn;
-            ioffset <= ad[15:8];
-          end
-        end
-      end else if (ds_rise) begin
+      // The /AS latch is open while /AS is Low.
+      if (!as_n && !dma_blk) begin
+        latched_ad   <= ad;
+        latched_st   <= st;
+        latched_rw   <= r_w;
+        latched_ns   <= n_s;
+        latched_cs_n <= cs_n;
+      end
+      if (as_fall && !dma_blk)
+        addr_latched <= 1'b1;
+      else if (ds_rise)
         addr_latched <= 1'b0;
+
+      if (as_cyc) begin
+        // A first-word fetch starts the next instruction and ends the hold.
+        if (latched_st == 4'hD)
+          sup_instr_hold <= 1'b0;
+        else if (sup_instr_hold && latched_st >= 4'h8 && latched_st <= 4'hD)
+          sup_held <= 1'b1;
+        if (latched_st == 4'hD && !viol_captured) begin
+          isn     <= sn_clk;
+          ioffset <= latched_ad;
+        end
       end
 
       if (drive_pa) begin
-        pa_q       <= translating ? phys : pass;
+        pa_q       <= x_pa;
         pa_drive_q <= 1'b1;
-        if (translating && checked && !viol) begin
-          desc_attr[seg][7] <= 1'b1;
-          if (!latched_rw)
-            desc_attr[seg][6] <= 1'b1;
-        end
       end
+      if (d_we)
+        desc_ok[d_wa] <= 1'b1;
 
+      // Trap acknowledge: /SEGT is released at the third CLK rise from the
+      // acknowledge's /AS rise (INFERRED, ACK_RELEASE_RISE; the T2 rise is
+      // the first), a /DS rise that comes first releases it there.
       if (ack_start) begin
-        ack_pending  <= trap_pending;
-        trap_pending <= 1'b0;
+        ack_pending <= trap_pending;
+        ack_wait    <= ACK_RELEASE_RISE;
+      end
+      if (ack_cnt != 2'd0 && clk_en) begin
+        ack_wait <= ack_cnt - 2'd1;
+        if (ack_cnt == 2'd1)
+          trap_pending <= 1'b0;
       end
 
       if (trap) begin
         viol_type <= vt_next;
         if (!viol_captured) begin
-          viol_sn       <= latched_sn;
+          viol_sn       <= sn_clk;
           viol_off      <= latched_ad;
           bcsr          <= {2'b00, latched_ns, latched_rw, latched_st};
           viol_captured <= 1'b1;
@@ -425,21 +531,29 @@ module z8010_mmu (
     end
   end
 
-  // ---- pins: released the moment reset goes Low (Go DefaultOutputs) ----------
+  // ---- pins: each output follows its strobe edge in the same master clock
+  // (PA, /SEGT, /SUP the /AS rise; command data and the identifier the /DS
+  // fall), then holds from its register; all are released while /RESET is Low.
+  wire       sup_now  = (trap & viol)
+                      | (as_cyc & (latched_st != 4'hD) & sup_instr_hold
+                         & (latched_st >= 4'h8) & (latched_st <= 4'hC));
+  wire       segt_now = trap & req;
+  wire       rd_now   = cmd_exec & latched_rw & rd_ok;
+  wire       id_now   = addr_latched & (latched_st == 4'h4) & ~ds_n & mode_reg[7];
+  wire [7:0] id_line  = 8'h01 << mode_reg[2:0];
   always_comb begin
-    pa         = pa_q;
-    pa_drive   = pa_drive_q & reset_n;
-    segt_n     = ~(trap_pending & reset_n);
-    sup_n      = ~(sup_held & reset_n);
-    data       = data_q;
-    data_drive = data_drive_q & {8{reset_n}};
+    pa         = drive_pa ? x_pa : pa_q;
+    pa_drive   = (pa_drive_q | drive_pa) & reset_n;
+    segt_n     = ~((trap_pending | segt_now) & reset_n);
+    sup_n      = ~((sup_held | sup_now) & reset_n);
+    data       = rd_now ? rd_byte : id_now ? (ack_pending ? id_line : 8'h00) : data_q;
+    data_drive = (data_drive_q | {8{rd_now}} | (id_now ? id_line : 8'h00)) & {8{reset_n}};
   end
 
-  // ---- scaffold-only lint waivers: remove as each input gains a consumer ----
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
   always_comb begin
-    unused_ok = ^{viol_off[7:0], viol_overflow, t_attr[7:6]};
+    unused_ok = ^{viol_overflow, t_attr[7:6]};
   end
   // verilator lint_on UNUSEDSIGNAL
 

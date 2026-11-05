@@ -14,6 +14,15 @@ module tb_seq_paths
 ;
   logic clk = 1'b0;
   always #5 clk = ~clk;
+  // Master clock: 5 per CLK, off CLK's edges.
+  logic mclk = 1'b0;
+  initial begin #0.5; forever #1 mclk = ~mclk; end
+  // The board's CLK edge pulses: High for the master clock in which CLK is
+  // first seen High, or Low.
+  logic clk_pq = 1'b0;
+  always @(posedge mclk) clk_pq <= clk;
+  wire  clk_rise = clk & ~clk_pq;
+  wire  clk_fall = ~clk & clk_pq;
 
   logic        reset_n;
   logic [15:0] ad_in;
@@ -22,24 +31,27 @@ module tb_seq_paths
   logic [6:0]  sn;
   logic        as_n, ds_n, mreq_n, r_w, b_w, n_s;
   logic [3:0]  st;
-  logic        busack_n, mo_n, bus_lock;
+  logic        busack_n, mo_n;
 
   z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
-    .clk(clk), .reset_n(reset_n),
+    .clk(mclk), .clk_rise(clk_rise), .clk_fall(clk_fall), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(1'b1), .wait_n(1'b1), .busreq_n(1'b1),
     .nmi_n(1'b1), .nvi_n(1'b1), .vi_n(1'b1), .segt_n(1'b1),
     .abort_n(1'b1), .mi_n(1'b1),
     .ad_out(ad_out), .ad_drive(ad_drive), .bus_drive(bus_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
     .r_w(r_w), .b_w(b_w), .n_s(n_s), .st(st),
-    .busack_n(busack_n), .bus_lock(bus_lock), .mo_n(mo_n)
+    .busack_n(busack_n), .mo_n(mo_n)
   );
 
   localparam logic [15:0] PROG = 16'h0100;
   logic [15:0] mem [0:255];
   logic [15:0] lat_addr;
   logic        as_q;
-  always @(posedge clk) begin
+  logic        if1_now = 1'b0;   // an IF1 /AS fall in this clock
+  // Sampled mid-clock: /AS is Low only in T1's first half.
+  always @(negedge clk) begin
+    if1_now <= as_q && !as_n && st == ST_INSTR_FETCH_FIRST;
     if (as_q && !as_n && ad_drive) lat_addr <= ad_out;
     as_q <= as_n;
   end
@@ -82,9 +94,9 @@ module tb_seq_paths
     reset_n = 1'b1;
     t0 = -1;
     for (i = 0; i < 400; i++) begin
-      @(posedge clk);
+      @(negedge clk);
       #1;
-      if (as_q && !as_n && st == ST_INSTR_FETCH_FIRST) begin
+      if (if1_now) begin
         if (t0 >= 0) break;
         t0 = i;
       end
@@ -113,7 +125,7 @@ module tb_seq_paths
     bad = 0;
     for (k = 0; k <= 17; k++) begin
       force dut.u_sequencer.iter_q = 6'(k);
-      #1;
+      #0.01;   // all counts inside the one clock
       if (dut.more !== (k < n)) bad++;
     end
     release dut.u_sequencer.iter_q;

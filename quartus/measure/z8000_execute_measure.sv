@@ -25,6 +25,7 @@ module z8000_execute_measure (
 
   z8000_regfile u_regfile (
     .clk     (clk),
+    .clk_en  (1'b1),
     .we      (rf_we),
     .wwidth  (rf_wwidth),
     .wsel    (rf_wsel),
@@ -39,6 +40,7 @@ module z8000_execute_measure (
 
   z8000_execute dut (
     .clk        (clk),
+    .clk_en     (1'b1),
     .reset_n    (in_q[77]),
     .start      (in_q[76]),
     .w0         (in_q[75:64]),

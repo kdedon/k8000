@@ -13,7 +13,7 @@
 //
 //   mode_reg sar dsc viol_type viol_sn viol_off viol_overflow isn ioffset
 //   bcsr trap_pending viol_captured addr_latched latched_st ack_pending
-//   desc_base[64] desc_limit[64] desc_attr[64]
+//   desc_bh[64] desc_bl[64] desc_lm[64] desc_at[64] desc_ok desc_cpui desc_dmai
 //
 // If SEGT_n is a separately registered output in your RTL (as Go's
 // out.SEGT_n is) rather than derived from trap_pending, extend ack() to
@@ -39,13 +39,30 @@ struct MmuAccess {
     uint8_t  dsc() const                { return top->rootp->z8010_mmu__DOT__dsc; }
     void     set_dsc(uint8_t v)         { top->rootp->z8010_mmu__DOT__dsc = v & 0x03; }
 
-    uint16_t desc_base(int i) const     { return top->rootp->z8010_mmu__DOT__desc_base[i]; }
-    uint8_t  desc_limit(int i) const    { return top->rootp->z8010_mmu__DOT__desc_limit[i]; }
-    uint8_t  desc_attr(int i) const     { return top->rootp->z8010_mmu__DOT__desc_attr[i]; }
+    // Descriptors: four RAMs plus flops (z8010_mmu.sv "Descriptor storage").
+    bool     desc_ok(int i) const       { return top->rootp->z8010_mmu__DOT__desc_ok >> i & 1; }
+    uint16_t desc_base(int i) const {
+        if (!desc_ok(i)) return 0;
+        return (uint16_t)(top->rootp->z8010_mmu__DOT__desc_bh[i] << 8 | top->rootp->z8010_mmu__DOT__desc_bl[i]);
+    }
+    uint8_t  desc_limit(int i) const    { return desc_ok(i) ? top->rootp->z8010_mmu__DOT__desc_lm[i] : 0; }
+    uint8_t  desc_attr(int i) const {
+        uint8_t a = desc_ok(i) ? top->rootp->z8010_mmu__DOT__desc_at[i] : 0;   // REF CHG DIRW EXC SYS RD
+        uint8_t v = (uint8_t)((a & 0x38) << 2 | (a & 0x04) << 1 | (a & 0x03));
+        v |= (uint8_t)((top->rootp->z8010_mmu__DOT__desc_cpui >> i & 1) << 2);
+        v |= (uint8_t)((top->rootp->z8010_mmu__DOT__desc_dmai >> i & 1) << 4);
+        return v;
+    }
     void     set_desc(int i, uint16_t base, uint8_t limit, uint8_t attr) {
-        top->rootp->z8010_mmu__DOT__desc_base[i]  = base;
-        top->rootp->z8010_mmu__DOT__desc_limit[i] = limit;
-        top->rootp->z8010_mmu__DOT__desc_attr[i]  = attr;
+        auto* r = top->rootp;
+        r->z8010_mmu__DOT__desc_bh[i] = base >> 8;
+        r->z8010_mmu__DOT__desc_bl[i] = base & 0xFF;
+        r->z8010_mmu__DOT__desc_lm[i] = limit;
+        r->z8010_mmu__DOT__desc_at[i] = (uint8_t)((attr >> 2 & 0x38) | (attr >> 1 & 0x04) | (attr & 0x03));
+        const uint64_t bit = 1ULL << i;
+        r->z8010_mmu__DOT__desc_ok |= bit;
+        r->z8010_mmu__DOT__desc_cpui = (r->z8010_mmu__DOT__desc_cpui & ~bit) | ((attr >> 2 & 1ULL) << i);
+        r->z8010_mmu__DOT__desc_dmai = (r->z8010_mmu__DOT__desc_dmai & ~bit) | ((attr >> 4 & 1ULL) << i);
     }
 
     uint8_t  viol_type() const          { return top->rootp->z8010_mmu__DOT__viol_type; }

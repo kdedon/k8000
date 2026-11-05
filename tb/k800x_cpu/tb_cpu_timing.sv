@@ -22,6 +22,15 @@ module tb_cpu_timing
   // ---- clock / reset ---------------------------------------------------------
   logic clk = 1'b0;
   always #5 clk = ~clk;
+  // Master clock: 5 per CLK, off CLK's edges.
+  logic mclk = 1'b0;
+  initial begin #0.5; forever #1 mclk = ~mclk; end
+  // The board's CLK edge pulses: High for the master clock in which CLK is
+  // first seen High, or Low.
+  logic clk_pq = 1'b0;
+  always @(posedge mclk) clk_pq <= clk;
+  wire  clk_rise = clk & ~clk_pq;
+  wire  clk_fall = ~clk & clk_pq;
 
   logic reset_n = 1'b0;
 
@@ -42,17 +51,17 @@ module tb_cpu_timing
   logic [6:0]  sn;
   logic        as_n, ds_n, mreq_n, r_w, b_w, n_s;
   logic [3:0]  st;
-  logic        busack_n, mo_n, bus_lock;
+  logic        busack_n, mo_n;
 
   z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
-    .clk(clk), .reset_n(reset_n),
+    .clk(mclk), .clk_rise(clk_rise), .clk_fall(clk_fall), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(stop_n), .wait_n(wait_n), .busreq_n(busreq_n),
     .nmi_n(nmi_n), .nvi_n(nvi_n), .vi_n(vi_n), .segt_n(segt_n),
     .abort_n(abort_n), .mi_n(mi_n),
     .ad_out(ad_out), .ad_drive(ad_drive), .bus_drive(bus_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
     .r_w(r_w), .b_w(b_w), .n_s(n_s), .st(st),
-    .busack_n(busack_n), .bus_lock(bus_lock), .mo_n(mo_n)
+    .busack_n(busack_n), .mo_n(mo_n)
   );
 
   logic mon_en = 1'b0;
@@ -81,18 +90,20 @@ module tb_cpu_timing
   logic [15:0] io_last_write, io_last_port;
   logic [15:0] wr_seen_addr, wr_seen_data;
 
-  // I/O slave: /WAIT Low for three clocks from the one after /AS (T2, TWA,
-  // first Tw). Fig 9-5: /DS falls at TWA regardless, /WAIT is sampled mid-TWA
-  // and each Tw, so the CPU adds two Tw: T1 T2 TWA TW TW T3, /DS Low from TWA
-  // through T3.
+  // I/O slave: /WAIT Low for six half clocks from the one after /AS (T2,
+  // TWA, first Tw). Fig 9-5: /DS falls on T2's fall regardless, /WAIT is
+  // sampled mid-TWA and each Tw, so the CPU adds two Tw: T1 T2 TWA TW TW T3,
+  // /DS Low from T2's fall through T3's.
   int io_wait_left;
   logic io_track = 1'b0;
   int   io_off, io_fall;
   int unsigned n_io_shape, n_io_shape_bad;
 
-  always @(posedge clk) begin
-    // The /DS-rise teardown goes first: a back-to-back /AS fall on the same
-    // edge must win.
+  // The slave is a board chip: it acts at the master clocks that see a CLK
+  // edge, the same ones the CPU acts at.
+  logic clk_seen = 1'b0;
+  always @(posedge mclk) clk_seen <= clk;
+  always @(posedge mclk) if (clk != clk_seen) begin
     if (!ds_q && ds_n) lat_valid <= 1'b0;
     // Address latch at the /AS fall (the external latch point is the /AS rise;
     // the address is stable for the whole of T1 either way).
@@ -103,7 +114,7 @@ module tb_cpu_timing
       lat_bw    <= b_w;
       lat_valid <= 1'b1;
       if (st == ST_IO || st == ST_SPECIAL_IO) begin
-        io_wait_left <= 3;
+        io_wait_left <= 6;
         io_track     <= 1'b1;
         io_off       <= 1;
         io_fall      <= -1;
@@ -140,7 +151,7 @@ module tb_cpu_timing
 
     if (io_wait_left > 0 && !wait_n) io_wait_left <= io_wait_left - 1;
 
-    // I/O /DS shape, in clocks from the /AS fall (T1 = 0).
+    // I/O /DS shape, in half clocks from the /AS fall (T1 = 0).
     if (io_track && !(as_q && !as_n)) io_off <= io_off + 1;
     if (io_track) begin
       if (ds_q && !ds_n) io_fall <= io_off;
@@ -148,9 +159,9 @@ module tb_cpu_timing
         // a back-to-back I/O /AS on this edge re-arms below
         io_track   <= as_q && !as_n && ad_drive && (st == ST_IO || st == ST_SPECIAL_IO);
         n_io_shape <= n_io_shape + 1;
-        if (io_fall != 2 || io_off != 6) begin
+        if (io_fall != 3 || io_off != 11) begin
           n_io_shape_bad <= n_io_shape_bad + 1;
-          $display("  I/O /DS fell at %0d, rose at %0d (want 2, 6)", io_fall, io_off);
+          $display("  I/O /DS fell at %0d, rose at %0d (want 3, 11)", io_fall, io_off);
         end
       end
     end
@@ -295,8 +306,8 @@ module tb_cpu_timing
     ck(n_io_wr > 0 && n_io_rd > 0, "standard I/O read and write performed",
        "Fig 13 input/output cycle (one automatic wait)",
        $sformatf("saw %0d I/O writes, %0d I/O reads", n_io_wr, n_io_rd));
-    ck(n_io_shape > 0 && n_io_shape_bad == 0, "I/O /DS Low from TWA through two Tw and T3",
-       "Tech Manual Fig 9-5: /DS falls opening TWA, /WAIT sampled mid-TWA, waits added between TWA and T3",
+    ck(n_io_shape > 0 && n_io_shape_bad == 0, "I/O /DS Low from T2's fall through two Tw and T3",
+       "Tech Manual Fig 9-5, AC #42: /DS falls on T2's fall, /WAIT sampled mid-TWA, waits added between TWA and T3",
        $sformatf("%0d of %0d I/O cycles off-shape", n_io_shape_bad, n_io_shape));
     ck(mem[DATA >> 1] == 16'h5A5A || n_mem_wr == 0, "word write landed at the addressed word",
        "Fig 12: the address latched at /AS is the destination of the data strobed at /DS",

@@ -18,9 +18,9 @@
 //   z8030_scc: int_vector int_pending int_latch shift_right ius_mask
 //   u_cha / u_chb: wr[16] tx_buf tx_buf_empty tx_all_sent rx_fifo_data[3]
 //     rx_fifo_err[3] rx_fifo_len rx_err_sticky rx_shift_err tx_underrun_eom
-//     baud_counter brg_tc rxd_q rx_state rx_shift rx_bit_count rx_sub_count
+//     baud_counter brg_tc brg_load rxd_q rx_state rx_shift rx_bit_count rx_sub_count
 //     rx_stop_bit rx_break txd_q tx_state tx_shift tx_bit_count tx_sub_count
-//     tx_stop_bit tx_ip rx_int_next_char rx_int_forced rx_lock ext_ip dcd_latch
+//     tx_stop_bit tx_break tx_ip rx_int_next_char rx_int_forced rx_lock ext_ip dcd_latch
 //     cts_latch dcd_sync1 cts_sync1 ext_latch_closed
 //     break_latch underrun_latch pending_wr0 pending_wr0_cmd prev_rtxc
 //     prev_trxc trxc_out_lvl rts_hold sd_tx_sr sd_tx_n sd_tx_kind sd_tx_ones
@@ -66,6 +66,7 @@ struct SccAccess {
         FIELD(P "TxUnderrunEOM",  r->H##tx_underrun_eom) \
         FIELD(P "BaudCounter",    r->H##baud_counter) \
         FIELD(P "BrgTC",          r->H##brg_tc) \
+        FIELD(P "BrgLoad",        r->H##brg_load) \
         FIELD(P "RxD",            r->H##rxd_q) \
         FIELD(P "RxState",        r->H##rx_state) \
         FIELD(P "RxShift",        r->H##rx_shift) \
@@ -79,6 +80,7 @@ struct SccAccess {
         FIELD(P "TxBitCount",     r->H##tx_bit_count) \
         FIELD(P "TxSubCount",     r->H##tx_sub_count) \
         FIELD(P "TxStopBit",      r->H##tx_stop_bit) \
+        FIELD(P "TxBreak",        r->H##tx_break) \
         FIELD(P "TxIP",           r->H##tx_ip) \
         FIELD(P "RxIntNextChar",  r->H##rx_int_next_char) \
         FIELD(P "RxIntForced",    r->H##rx_int_forced) \

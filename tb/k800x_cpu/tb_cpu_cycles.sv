@@ -29,6 +29,15 @@ module tb_cpu_cycles
 ;
   logic clk = 1'b0;
   always #5 clk = ~clk;
+  // Master clock: 5 per CLK, off CLK's edges.
+  logic mclk = 1'b0;
+  initial begin #0.5; forever #1 mclk = ~mclk; end
+  // The board's CLK edge pulses: High for the master clock in which CLK is
+  // first seen High, or Low.
+  logic clk_pq = 1'b0;
+  always @(posedge mclk) clk_pq <= clk;
+  wire  clk_rise = clk & ~clk_pq;
+  wire  clk_fall = ~clk & clk_pq;
 
   logic        reset_n;
   logic [15:0] ad_in;
@@ -47,17 +56,17 @@ module tb_cpu_cycles
   logic [6:0]  sn;
   logic        as_n, ds_n, mreq_n, r_w, b_w, n_s;
   logic [3:0]  st;
-  logic        busack_n, mo_n, bus_lock;
+  logic        busack_n, mo_n;
 
   z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
-    .clk(clk), .reset_n(reset_n),
+    .clk(mclk), .clk_rise(clk_rise), .clk_fall(clk_fall), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(stop_n), .wait_n(wait_n), .busreq_n(busreq_n),
     .nmi_n(nmi_n), .nvi_n(nvi_n), .vi_n(vi_n), .segt_n(segt_n),
     .abort_n(abort_n), .mi_n(mi_n),
     .ad_out(ad_out), .ad_drive(ad_drive), .bus_drive(bus_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
     .r_w(r_w), .b_w(b_w), .n_s(n_s), .st(st),
-    .busack_n(busack_n), .bus_lock(bus_lock), .mo_n(mo_n)
+    .busack_n(busack_n), .mo_n(mo_n)
   );
 
   // ---- flat RAM slave (the generator's system: one 64 KiB chip) -------------
@@ -69,9 +78,9 @@ module tb_cpu_cycles
   logic        lat_rw, lat_bw, lat_valid;
   logic        as_q, ds_q;
 
-  // The /DS-rise teardown goes first: a back-to-back /AS fall on the same
-  // edge must win.
-  always @(posedge clk) begin
+  // Sampled mid-clock (/AS is Low only in T1's first half), seeing the pins
+  // as the CLK rise left them.
+  always @(negedge clk) begin
     if (!ds_q && ds_n) lat_valid <= 1'b0;
     if (as_q && !as_n && ad_drive) begin
       lat_addr  <= ad_out;
@@ -102,7 +111,7 @@ module tb_cpu_cycles
   int unsigned clk_no;
   logic        if1_now = 1'b0;
   logic [15:0] if1_pc  = 16'h0000;
-  always @(posedge clk) begin
+  always @(negedge clk) begin
     clk_no <= clk_no + 1;
     if1_now <= 1'b0;
     if (as_q && !as_n && ad_drive && st == ST_INSTR_FETCH_FIRST) begin

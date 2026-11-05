@@ -19,6 +19,7 @@ module z8000_regfile_measure (
 
   z8000_regfile dut (
     .clk    (clk),
+    .clk_en (1'b1),
     .we     (in_q[81]),
     .rbyte_b(in_q[80]),
     .rsel_b (in_q[79:76]),

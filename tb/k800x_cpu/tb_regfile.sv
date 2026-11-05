@@ -18,7 +18,7 @@ module tb_regfile;
   logic [15:0] r_was [16];    // the registers a clock ago, which nz follows
   always @(posedge clk) r_was <= dut.r;
 
-  z8000_regfile dut (.clk(clk), .we(we), .wwidth(wwidth), .wsel(wsel), .wdata(wdata),
+  z8000_regfile dut (.clk(clk), .clk_en(1'b1), .we(we), .wwidth(wwidth), .wsel(wsel), .wdata(wdata),
                      .rwidth(rwidth), .rsel(rsel), .rdata(rdata),
                      .rbyte_b(rbyte_b), .rsel_b(rsel_b), .rdata_b(rdata_b), .nz(nz));
 

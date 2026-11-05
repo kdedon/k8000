@@ -21,7 +21,6 @@ module tb_cio_timing;
   logic clk = 1'b0;
   always #5 clk = ~clk;
 
-  logic       rst_n   = 1'b0;
   logic [7:0] ad_in   = 8'h00;
   logic       as_n    = 1'b1;
   logic       ds_n    = 1'b1;
@@ -30,7 +29,7 @@ module tb_cio_timing;
   logic       cs1     = 1'b0;
   logic       intack_n= 1'b1;
   logic       iei     = 1'b1;
-  logic       pclk    = 1'b0;
+  logic       pclk_fall = 1'b0;
   logic [7:0] pa_in   = 8'h00;
   logic [7:0] pb_in   = 8'h00;
   logic [3:0] pc_in   = 4'h0;
@@ -38,17 +37,16 @@ module tb_cio_timing;
   logic [7:0] ad_out;
   logic       ad_drive, int_n, ieo;
   logic [7:0] pa_out, pa_oe, pb_out, pb_oe;
-  logic       pa_req_n, pb_req_n;
   logic [3:0] pc_out, pc_oe;
 
   z8036_cio dut (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk),
     .ad_in(ad_in), .as_n(as_n), .ds_n(ds_n), .r_w(r_w),
-    .cs0_n(cs0_n), .cs1(cs1), .intack_n(intack_n), .iei(iei), .pclk(pclk),
+    .cs0_n(cs0_n), .cs1(cs1), .intack_n(intack_n), .iei(iei), .pclk_fall(pclk_fall),
     .pa_in(pa_in), .pb_in(pb_in), .pc_in(pc_in),
     .ad_out(ad_out), .ad_drive(ad_drive), .int_n(int_n), .ieo(ieo),
-    .pa_out(pa_out), .pa_oe(pa_oe), .pa_req_n(pa_req_n),
-    .pb_out(pb_out), .pb_oe(pb_oe), .pb_req_n(pb_req_n),
+    .pa_out(pa_out), .pa_oe(pa_oe),
+    .pb_out(pb_out), .pb_oe(pb_oe),
     .pc_out(pc_out), .pc_oe(pc_oe)
   );
 
@@ -125,9 +123,11 @@ module tb_cio_timing;
     $display("tb_cio_timing -- Z8036 Z-Bus timing conformance (PCLK held Low)");
     $display("");
 
-    // ---- fabric reset to the Go New() / hardware-reset state ---------------
+    // ---- hardware reset: /AS and /DS Low together (no reset pin) ----------
+    repeat (2) @(posedge clk);
+    as_n = 1'b0; ds_n = 1'b0;
     repeat (4) @(posedge clk);
-    rst_n = 1'b1;
+    as_n = 1'b1; ds_n = 1'b1;
     repeat (2) @(posedge clk);
 
     $display("[1] reset state and the reset-bit protocol");
@@ -263,8 +263,8 @@ module tb_cio_timing;
 
     pa_in = 8'h3C;
     repeat (8) begin                 // PCLK alone must clock nothing
-      pclk = 1'b1; @(posedge clk);
-      pclk = 1'b0; @(posedge clk);
+      pclk_fall = 1'b1; @(posedge clk);
+      pclk_fall = 1'b0; @(posedge clk);
     end
     pa_in = 8'h00;                   // the probe cycle must not create the match itself
     bus_read(REG_PA_CS, rd, drove);

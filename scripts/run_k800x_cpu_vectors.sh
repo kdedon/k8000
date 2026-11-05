@@ -5,9 +5,13 @@
 #   scripts/run_k800x_cpu_vectors.sh              full run + summary
 #   scripts/run_k800x_cpu_vectors.sh --ladder     shortest-first list with status (uses last results if fresh)
 #   scripts/run_k800x_cpu_vectors.sh --one NAME [--vcd] [--context N]   one vector, verbose
+#   scripts/run_k800x_cpu_vectors.sh --combined   full run, rise and fall in one master clock
+#                                                 (results/cpu_combined.txt)
 set -u
 cd "$(dirname "$0")/.."
 OBJ=obj_dir; RES=results; mkdir -p "$RES"
+OUT=cpu; MODE=()
+if [ "${1:-}" = "--combined" ]; then OUT=cpu_combined; MODE=(--combined --mclk 1); shift; fi
 
 variant_of() { sed -n '2s/^variant //p' "$1"; }
 ticks_of()   { grep -m1 '^F TICKS' "$1" | awk '{print $3}'; }
@@ -30,32 +34,32 @@ if [ "${1:-}" = "--one" ]; then
   exit $rc
 fi
 
-if [ "${1:-}" != "--ladder" ] || [ ! -s "$RES/cpu.txt" ]; then
-  : > "$RES/cpu.txt"
+if [ "${1:-}" != "--ladder" ] || [ ! -s "$RES/$OUT.txt" ]; then
+  : > "$RES/$OUT.txt"
   for f in vectors/k800x_cpu/cpu/*.vec; do
     v=$(variant_of "$f"); b=$(bin_for "$v")
-    if [ ! -x "$b" ]; then echo "RESULT NOBIN $f: $b missing" >> "$RES/cpu.txt"; continue; fi
-    "$b" "$f" --quiet | grep '^RESULT' >> "$RES/cpu.txt"
+    if [ ! -x "$b" ]; then echo "RESULT NOBIN $f: $b missing" >> "$RES/$OUT.txt"; continue; fi
+    "$b" "$f" --quiet "${MODE[@]}" | grep '^RESULT' >> "$RES/$OUT.txt"
   done
 fi
 
 # ladder: join status with tick counts, sort shortest first
-: > "$RES/cpu_ladder.txt"
+: > "$RES/${OUT}_ladder.txt"
 while read -r _ status file rest; do
   file=${file%:}
   t=$(ticks_of "$file")
-  printf '%8d %-6s %s %s\n' "${t:-0}" "$status" "$file" "$rest" >> "$RES/cpu_ladder.txt"
-done < "$RES/cpu.txt"
-sort -n -o "$RES/cpu_ladder.txt" "$RES/cpu_ladder.txt"
+  printf '%8d %-6s %s %s\n' "${t:-0}" "$status" "$file" "$rest" >> "$RES/${OUT}_ladder.txt"
+done < "$RES/$OUT.txt"
+sort -n -o "$RES/${OUT}_ladder.txt" "$RES/${OUT}_ladder.txt"
 
-pass=$(grep -c ' PASS ' "$RES/cpu_ladder.txt"); fail=$(grep -c ' FAIL ' "$RES/cpu_ladder.txt")
-skip=$(grep -c ' SKIP ' "$RES/cpu_ladder.txt"); other=$(grep -vc ' PASS \| FAIL \| SKIP ' "$RES/cpu_ladder.txt")
-echo "== cpu vectors: $pass pass, $fail fail, $skip skip (Go-snapshot-restore tests), $other other"
-echo "   full ladder: $RES/cpu_ladder.txt   raw: $RES/cpu.txt"
+pass=$(grep -c ' PASS ' "$RES/${OUT}_ladder.txt"); fail=$(grep -c ' FAIL ' "$RES/${OUT}_ladder.txt")
+skip=$(grep -c ' SKIP ' "$RES/${OUT}_ladder.txt"); other=$(grep -vc ' PASS \| FAIL \| SKIP ' "$RES/${OUT}_ladder.txt")
+echo "== $OUT vectors: $pass pass, $fail fail, $skip skip (Go-snapshot-restore tests), $other other"
+echo "   full ladder: $RES/${OUT}_ladder.txt   raw: $RES/$OUT.txt"
 if [ "${1:-}" = "--ladder" ]; then
-  cat "$RES/cpu_ladder.txt"
+  cat "$RES/${OUT}_ladder.txt"
 else
   echo "-- next rungs (shortest failing vectors first) --"
-  grep ' FAIL ' "$RES/cpu_ladder.txt" | head -15 | awk '{printf "  %6d ticks  %s  %s %s %s\n", $1, $3, $5, $6, $7}'
+  grep ' FAIL ' "$RES/${OUT}_ladder.txt" | head -15 | awk '{printf "  %6d ticks  %s  %s %s %s\n", $1, $3, $5, $6, $7}'
   echo "   (make cpu ONLY=<TestName> for the full divergence context)"
 fi

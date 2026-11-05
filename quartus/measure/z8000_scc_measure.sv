@@ -3,11 +3,11 @@
 
 module z8000_scc_measure (
   input  logic        clk,
-  input  logic [29:0] in_i,
+  input  logic [33:0] in_i,
   output logic [24:0] out_o
 );
 
-  logic [29:0] in_q;
+  logic [33:0] in_q;   // in_q[3:2] spare
   logic [24:0] res;
 
   always_ff @(posedge clk) begin
@@ -17,7 +17,6 @@ module z8000_scc_measure (
 
   z8030_scc dut (
     .clk        (clk),
-    .rst_n      (in_q[2]),
     .ad_in      (in_q[27:20]),
     .as_n       (in_q[19]),
     .ds_n       (in_q[18]),
@@ -26,12 +25,14 @@ module z8000_scc_measure (
     .cs1        (in_q[15]),
     .intack_n   (in_q[14]),
     .iei        (in_q[13]),
-    .pclk       (in_q[12]),
+    .pclk_rise  (in_q[12]),
     .rxd        (in_q[11:10]),
     .cts_n      (in_q[9:8]),
     .dcd_n      (in_q[7:6]),
-    .trxc_in    (in_q[5:4]),
-    .rxc_in     (in_q[1:0]),
+    .trxc_rise  (in_q[5:4]),
+    .trxc_fall  (in_q[33:32]),
+    .rxc_rise   (in_q[1:0]),
+    .rxc_fall   (in_q[31:30]),
     .sync_in    (in_q[29:28]),
     .ad_out     (res[22:15]),
     .ad_drive   (res[14]),

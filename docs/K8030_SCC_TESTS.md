@@ -69,17 +69,26 @@ The Go tests (`pclkStep`) call TickPins twice per PCLK, but nothing forces
 that ratio: `TestINTACKVectorFloatsAtDSRise` adds a call with PCLK unchanged
 to prove the /DS-rise float is combinational.
 
-Replay rule: **one `T` record == one posedge of the fabric clock `clk`;
-`pclk` is a recorded LEVEL.** The RTL derives `pclk_rise = pclk & ~pclk_q`
-(Go `pinPrevPCLK`) and strobe edges as `<x>_q & ~<x>_n` (registered
-previous level vs the CURRENT input), so a strobe transition in the same
-record as a PCLK rise is serviced in that record, async part first, as in
-Go. Transitions between PCLK rises wait in pending flags (Go
-`pinPending*`). On the FPGA the fabric clock is faster than PCLK, which
-only adds observation points.
+Replay rule: **one `T` record == one posedge of the fabric clock `clk`,
+then N-1 more master clocks with the inputs held** (N cycles through the
+comma list `--mclk P` / env `K8000_MCLK`, default `1,2,1,3`; `1` = 1:1).
+The clock pins are one-master-clock EDGE PULSES from the board divider:
+`pclk_rise`, `rxc_rise/rxc_fall`, `trxc_rise/trxc_fall` ([1:0] per channel).
+The tb fires a pulse on the first master clock after the record that
+changed the recorded level, for exactly one clock. Nothing assumes a gap
+between pulses. The RTL no longer derives `pclk_rise`; the port is it.
+/RTxC and /TRxC rebuild their level per channel (set by `_rise`, cleared by
+`_fall`, a pulse on the current clock counts at once) and sample it only at
+PCLK rises against the level at the previous PCLK rise, exactly the Go
+`prev*` model, so an edge between PCLK rises is seen as before. Strobe
+edges stay `<x>_q & ~<x>_n` (registered previous level vs the CURRENT
+input), so a strobe transition in the same record as a PCLK rise is
+serviced in that record, async part first, as in Go. Transitions between
+PCLK rises wait in pending flags (Go `pinPending*`).
 
-Per record the tb runs `clk=0; eval; drive inputs; clk=1; eval; compare`.
-Pokes (`P`) are applied between records and settled with an `eval()`.
+Per record the tb runs `clk=0; eval; drive inputs + pulses; clk=1; eval;
+clear pulses; eval; extra clocks; compare`. Pokes (`P`) are applied between
+records and settled with an `eval()`.
 
 ### 1.3 `P` pokes and `F` final state (register inventory)
 
@@ -118,10 +127,10 @@ every vector into a fresh Go `New(base)` (pokes via `Snapshot.SetVecField` +
 `LoadState`) and requires bit-exact outputs, AD included while floating, and
 the exact final inventory.
 
-The Z8030 has no reset pin (hardware reset = /AS+/DS Low). The RTL powers up
-in the Go `New()` state through `initial` blocks; the tb drives
-`defaultInputs()` and never resets. A `por_n` for the FPGA top belongs above
-the seam, not on this port list.
+The Z8030 has no reset pin (hardware reset = /AS+/DS Low) and the RTL has
+no reset port. tb_scc.cpp idles two PCLKs, holds /AS and /DS Low across three
+PCLK rises (the RTL needs two), then idles six PCLKs; that leaves the Go
+`New()` state. A board resets the chip the same way, through the pins.
 
 ## 3. Coverage: which Go tests became vectors
 

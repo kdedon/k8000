@@ -40,6 +40,8 @@
 //
 // Refresh goes in between whole machine cycles, after an IF1 (aborted
 // too), an internal operation or a block element, at most once per gap.
+// Refreshes skipped while the bus was granted or waited go after any
+// cycle, back to back.
 // STOP Low as an IF1, or an EPU instruction's second word, starts runs
 // refreshes after its T3 until STOP is High again. Instructions the execute unit does not run yet (and HALT in
 // normal mode) stop the sequencer after their IF1 machine cycle.
@@ -65,6 +67,7 @@ module z8000_sequencer
   parameter bit SEGMENTED = 1
 ) (
   input  logic        clk,
+  input  logic        clk_en,   // CLK rising edge seen this clock
   input  logic        reset_n,
 
   // architectural state
@@ -110,6 +113,7 @@ module z8000_sequencer
   input  logic        more,
   input  logic        unit_last,    // the serial unit's internal cycle in flight is its last
   input  logic        bus_iop,      // the bus is in an internal operation
+  input  logic        bus_away,     // the bus is granted, or given up as this clock ends
   output logic [5:0]  iter,         // repetitions started
 
   // execute unit
@@ -138,6 +142,7 @@ module z8000_sequencer
 
   // refresh
   input  logic        rf_pending,
+  input  logic        rf_now,      // ... one skipped: after any cycle, back to back
   input  logic [22:0] rf_addr,
   output logic        rf_take,     // a refresh starts on this edge
   output logic        rf_keep,     // ... a STOP refresh, leaving the prescaler's pending
@@ -325,7 +330,7 @@ module z8000_sequencer
     if (!reset_n) begin
       last_q  <= 1'b0;
       last2_q <= 1'b0;
-    end else begin
+    end else if (clk_en) begin
       last_q  <= last_d;
       last2_q <= last2_d;
     end
@@ -358,7 +363,8 @@ module z8000_sequencer
   // The bus unit reads the request's data only with req, so the data mux
   // stays off the decode path.
   next_e sel, next;
-  logic  exc_go;
+  logic  exc_go, rf_go;
+  assign rf_go   = (rf_ok_q || rf_now) && rf_pending;
   assign trap_go = trap_q || (!exc_q && dec_valid && dec_exec == CLS_SYS_CALL);
   assign exc_go  = trap_go || irq || eirq_q;
   always_comb begin
@@ -367,7 +373,7 @@ module z8000_sequencer
       SEQ_PSA_REQ: sel = NEXT_PSA;
       SEQ_FETCH:   sel = NEXT_IF1;
       SEQ_PROG: begin
-        if ((rf_ok_q && rf_pending) || stop_go_q) sel = NEXT_REFRESH;
+        if (rf_go || stop_go_q)     sel = NEXT_REFRESH;
         else if (at_last)           sel = exc_go ? NEXT_AF : NEXT_IF1;
         else if (nxt.kind == MC_FN || nxt.kind == MC_FA) sel = NEXT_FETCH;
         else if (nxt.kind == MC_I || nxt.kind == MC_IU) sel = NEXT_INTERNAL;
@@ -525,7 +531,7 @@ module z8000_sequencer
       word_q  <= PSA_FCW;
       wait_q  <= 1'b0;
       col_q   <= MC_COL_NS;
-    end else begin
+    end else if (clk_en) begin
       state_q <= state_d;
       word_q  <= word_d;
       wait_q  <= wait_d;
@@ -596,7 +602,7 @@ module z8000_sequencer
       i1_q    <= 1'b0;
       i2_q    <= 1'b0;
       u_ended_q <= 1'b0;
-    end else begin
+    end else if (clk_en) begin
       trap_q <= trap_d;
       exc_q  <= exc_d;
       ext_q  <= ext_d;
@@ -648,7 +654,7 @@ module z8000_sequencer
   logic first_q;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) first_q <= 1'b0;
-    else          first_q <= word_if1;
+    else if (clk_en)          first_q <= word_if1;
   end
   assign ex_first = first_q;
   assign ex_word  = word_if1;
@@ -666,7 +672,7 @@ module z8000_sequencer
       prog_q   <= MC_PROG_W'(0);
       cur_q    <= mc_cycle_t'(0);
       tail_q   <= 3'd0;
-    end else begin
+    end else if (clk_en) begin
       ir0_q    <= ir0_d;
       ir1_q    <= ir1_d;
       ir2_q    <= ir2_d;
@@ -692,7 +698,7 @@ module z8000_sequencer
       pos_q <= MC_POS_W'(0);
       rep_q <= MC_REPS_W'(0);
       iter_q <= 6'd0;
-    end else if (take_if1 || take_af) begin
+    end else if (clk_en) if (take_if1 || take_af) begin
       pos_q <= MC_POS_W'(0);
       rep_q <= MC_REPS_W'(0);
       iter_q <= 6'd0;
@@ -712,7 +718,7 @@ module z8000_sequencer
     if (!reset_n) begin
       in_rf_q <= 1'b0;
       rf_ok_q <= 1'b0;
-    end else if (take) begin
+    end else if (clk_en) if (take) begin
       in_rf_q <= take_rf;
       rf_ok_q <= take_if1 || take_af || (take_prog && next == NEXT_INTERNAL) ||
                  (take_rf && stop_go_q);
@@ -721,25 +727,32 @@ module z8000_sequencer
     end
   end
 
-  // STOP Low in the T1 clock of an IF1, or of an EPU instruction's second
-  // word, puts a stream of refreshes after its T3. STOP is sampled again in
-  // each T3 clock; once High, one more refresh runs, then the cycle's tail.
-  logic stp_take;
+  // STOP (sampled on each CLK fall, `stop_n`) Low before an IF1's T1, or
+  // before an EPU instruction's second word, puts a stream of refreshes
+  // after its T3. STOP is sampled again on each T3's fall; once High, one
+  // more refresh runs, then the cycle's tail. The T3-fall sample is taken
+  // on the edge ending T3 and kept while the bus is away.
+  logic stp_take, t3_q, stop_t3_q, stop_t3;
   assign stp_take = take_if1 || (take && next == NEXT_FETCH && nxt.kind == MC_FN &&
                                  nwords_q == 2'd1 && dec_exec == CLS_EPU);
+  assign stop_t3  = t3_q ? stop_n : stop_t3_q;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       stop_q    <= 1'b1;
       stp_t1_q  <= 1'b0;
       stop_go_q <= 1'b0;
       stop_rf_q <= 1'b0;
-    end else begin
-      stop_q   <= stop_n;
-      stp_t1_q <= stp_take;
+      t3_q      <= 1'b0;
+      stop_t3_q <= 1'b1;
+    end else if (clk_en) begin
+      if (!bus_away) stop_q <= stop_n;
+      t3_q      <= bus_done;
+      stop_t3_q <= stop_t3;
+      stp_t1_q  <= stp_take;
       if (stp_t1_q)
         stop_go_q <= !stop_q;
       else if (take)
-        stop_go_q <= take_rf && stop_go_q && !stop_q;
+        stop_go_q <= take_rf && stop_go_q && !stop_t3;
       if (take)
         stop_rf_q <= take_rf && stop_go_q;
     end
@@ -753,7 +766,7 @@ module z8000_sequencer
   assign ir_ea     = ea_q;
   assign iter      = iter_q;
   assign in_rf     = in_rf_q;
-  assign rf_due    = rf_ok_q && rf_pending;
+  assign rf_due    = rf_go;
   assign halted    = state_q == SEQ_PROG && run_ok && dec_exec == CLS_HALT;
 
   // synthesis translate_off
@@ -772,7 +785,7 @@ module z8000_sequencer
   z8000_mc_cycle_gen u_cur_o  (.prog(prog_o), .pos(pos_q), .cyc(cur_o));
   z8000_mc_link_gen  u_link_o (.prog(prog_o), .pos(pos_q), .link(link_o));
   z8000_mc_cycle_gen u_cur_h  (.prog(prog_q), .pos(pos_q), .cyc(cur_h));
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk) if (clk_en) begin
     if (!exc_q && !take_af && (prog_o != prog_d || link_o != link_d || cur_o != cur_d)) begin
       $display("%%Error: %m: split program lookup differs");
       check_q <= 1'b1;
@@ -794,7 +807,7 @@ module z8000_sequencer
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)
       unhandled_q <= 1'b0;
-    else if (state_q == SEQ_PROG && run_ok && next == NEXT_NONE && bus_cyc_end && !unhandled_q) begin
+    else if (clk_en) if (state_q == SEQ_PROG && run_ok && next == NEXT_NONE && bus_cyc_end && !unhandled_q) begin
       unhandled_q <= 1'b1;
       $display("%%Error: %m: machine cycle %s not run yet (position %0d)", nxt.kind.name(), npos);
     end

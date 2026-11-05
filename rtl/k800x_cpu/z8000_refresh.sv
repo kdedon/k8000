@@ -1,11 +1,16 @@
 // z8000_refresh -- DRAM refresh prescaler and row step.
 //
-// REFRESH register: bit 15 RE, bits 14:9 RATE (0 means 64), bits 8:0 ROW.
+// REFRESH register: bit 15 RE, bits 14:9 RATE (0 means 64), bits 8:1 ROW;
+// bit 0 is always 0.
 // While enabled the prescaler is clocked at CLK/4 whatever the bus is
 // doing; reaching zero reloads it from RATE and leaves a refresh pending.
-// Up to two are owed at once; one goes out per boundary.
-// Writing REFRESH with RE set also reloads it.
-// The sequencer issues the refresh cycle at its next allowed boundary.
+// Up to two are owed at once; a third is lost. Writing REFRESH with RE set
+// also reloads it.
+// The sequencer issues a refresh at its next allowed boundary, one per
+// boundary. One that comes due while the bus is granted or held by a wait
+// state is skipped: then the refreshes owed at that point go out back to
+// back from the first boundary after (`now`), whatever cycle it follows.
+// One coming due after them waits for an allowed boundary.
 // Each refresh cycle puts ROW on AD and steps it by two (bit 0 cleared).
 //
 // `pending` includes an underflow on this edge or the next: a refresh's T1
@@ -16,6 +21,7 @@
 
 module z8000_refresh (
   input  logic       clk,
+  input  logic       clk_en,   // CLK rising edge seen this clock
   input  logic       reset_n,
   input  logic       enable,      // RE
   input  logic [5:0] rate,
@@ -24,7 +30,9 @@ module z8000_refresh (
   input  logic [5:0] load_rate,
   input  logic       take,
   input  logic       keep,        // the refresh taken leaves the pending
+  input  logic       lost,        // the clock ending at this edge had no bus
   output logic       pending,
+  output logic       now,         // a skipped refresh is owed
   output logic [8:0] row_next,    // ROW after this refresh
   output logic [8:0] cyc_row
 );
@@ -34,6 +42,8 @@ module z8000_refresh (
   logic [1:0]  owed_q, owed_d;     // refreshes owed, 0 to 2
   logic [8:0]  row_q;
   logic        underflow, soon, skip_q;
+  logic [1:0]  now_q, now_set;     // owed refreshes to issue at once
+  logic        lost_q, mark;
 
   logic [15:0] count_dec, reload;
   logic [5:0]  rate_sel;
@@ -71,9 +81,15 @@ module z8000_refresh (
   assign owed_d    = (owed_in > 3'd2 ? 2'd2 : owed_in[1:0]) - {1'b0, used && owed_in != 3'd0};
   assign row_next  = (row + 9'd2) & 9'h1FE;
   assign cyc_row   = take ? row : row_q;
+  // An underflow here is due as of the previous edge, so the clock before
+  // that one decides whether it was skipped. It marks every refresh then
+  // owed, and counts from this edge.
+  assign mark      = underflow && !skip_q && lost_q;
+  assign now       = now_q != 2'd0 || mark;
+  assign now_set   = mark ? (owed_in > 3'd2 ? 2'd2 : owed_in[1:0]) : now_q;
 
   // /RESET leaves the prescaler alone; it powers up at zero.
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk) if (clk_en) begin
     div4_q  <= div4_d;
     count_q <= count_d;
   end
@@ -82,10 +98,14 @@ module z8000_refresh (
     if (!reset_n) begin
       owed_q    <= 2'd0;
       skip_q    <= 1'b0;
+      now_q     <= 2'd0;
+      lost_q    <= 1'b0;
       row_q     <= 9'd0;
-    end else begin
+    end else if (clk_en) begin
       owed_q    <= owed_d;
       skip_q    <= used && soon;
+      now_q     <= now_set - {1'b0, used && now_set != 2'd0};
+      lost_q    <= lost;
       row_q     <= cyc_row;
     end
   end

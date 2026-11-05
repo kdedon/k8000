@@ -10,9 +10,12 @@
 // The vector is a verbatim log of every TickPins(Inputs) Outputs call a
 // Go test made (see docs/K8030_SCC_TESTS.md). Replay is OPEN LOOP: the recorded
 // inputs are driven regardless of what the RTL does. One T record == one
-// posedge of the fabric clock `clk`; PCLK is a recorded LEVEL input and
-// the RTL derives its own pclk_rise enable, exactly like the Go model's
-// pinPrevPCLK. Every output pin is compared after every record.
+// posedge of the fabric clock `clk`, followed by N-1 more master clocks with
+// inputs held (N cycles through the comma list `--mclk P` / env K8000_MCLK,
+// default "1,2,1,3"). PCLK, /RTxC and /TRxC reach the RTL as one-master-clock
+// edge pulses (pclk_rise, rxc_rise/fall, trxc_rise/fall) on the first master
+// clock after the record that changed the level. Every output pin is compared
+// after every record's last master clock.
 //
 // Comparison rules (docs/K8030_SCC_TESTS.md "What is compared"):
 //   always:  ADDrive INT_n IEO TxD[A/B] RTS_n[A/B] DTR_n[A/B]
@@ -90,12 +93,30 @@ static Out readOut(Vz8030_scc* t) {
     return o;
 }
 static void driveIn(Vz8030_scc* t, const In& i) {
-    t->pclk = i.pclk; t->as_n = i.as_n; t->ds_n = i.ds_n; t->r_w = i.r_w; t->cs0_n = i.cs0_n; t->cs1 = i.cs1;
+    t->as_n = i.as_n; t->ds_n = i.ds_n; t->r_w = i.r_w; t->cs0_n = i.cs0_n; t->cs1 = i.cs1;
     t->intack_n = i.intack_n; t->iei = i.iei; t->ad_in = i.ad;
     t->rxd = (i.rxd[1] << 1) | i.rxd[0]; t->cts_n = (i.cts_n[1] << 1) | i.cts_n[0];
-    t->dcd_n = (i.dcd_n[1] << 1) | i.dcd_n[0]; t->trxc_in = (i.trxc[1] << 1) | i.trxc[0];
-    t->rxc_in = (i.rxc[1] << 1) | i.rxc[0];
+    t->dcd_n = (i.dcd_n[1] << 1) | i.dcd_n[0];
     t->sync_in = (i.sync[1] << 1) | i.sync[0];
+}
+
+// Clock-pin edge pulses: PCLK, /RTxC and /TRxC reach the chip as
+// one-master-clock pulses on the first master clock after the record that
+// changed the level. `lv` holds the last driven level of each pin.
+struct PinLv { bool pclk, rxc[2], trxc[2]; };
+static void setPulses(Vz8030_scc* t, PinLv& lv, const In& i) {
+    t->pclk_rise = i.pclk && !lv.pclk;
+    unsigned rr = 0, rf = 0, tr = 0, tf = 0;
+    for (int c = 0; c < 2; c++) {
+        rr |= (i.rxc[c] && !lv.rxc[c]) << c;   rf |= (!i.rxc[c] && lv.rxc[c]) << c;
+        tr |= (i.trxc[c] && !lv.trxc[c]) << c; tf |= (!i.trxc[c] && lv.trxc[c]) << c;
+        lv.rxc[c] = i.rxc[c]; lv.trxc[c] = i.trxc[c];
+    }
+    lv.pclk = i.pclk;
+    t->rxc_rise = rr; t->rxc_fall = rf; t->trxc_rise = tr; t->trxc_fall = tf;
+}
+static void clearPulses(Vz8030_scc* t) {
+    t->pclk_rise = 0; t->rxc_rise = 0; t->rxc_fall = 0; t->trxc_rise = 0; t->trxc_fall = 0;
 }
 
 // One line of the context table.
@@ -122,6 +143,7 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     std::string vecPath, vcdPath;
     int context = 12;
+    std::string mclkPat = getenv("K8000_MCLK") ? getenv("K8000_MCLK") : "1,2,1,3";
     bool quiet = false, stopFirst = false, checkFinal = true;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -130,10 +152,20 @@ int main(int argc, char** argv) {
         else if (a == "--quiet") quiet = true;
         else if (a == "--stop-first") stopFirst = true;
         else if (a == "--no-final") checkFinal = false;
+        else if (a == "--mclk" && i + 1 < argc) mclkPat = argv[++i];
         else if (a.size() > 1 && a[0] == '-' && a[1] == '-') { fprintf(stderr, "unknown option %s\n", a.c_str()); return 4; }
         else vecPath = a;
     }
-    if (vecPath.empty()) { fprintf(stderr, "usage: tb_scc <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final]\n"); return 4; }
+    if (vecPath.empty()) { fprintf(stderr, "usage: tb_scc <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final] [--mclk P]\n"); return 4; }
+
+    std::vector<int> mclkSeq;
+    for (size_t p0 = 0; p0 < mclkPat.size();) {
+        size_t p1 = mclkPat.find(',', p0); if (p1 == std::string::npos) p1 = mclkPat.size();
+        int n = atoi(mclkPat.substr(p0, p1 - p0).c_str());
+        if (n < 1) { fprintf(stderr, "--mclk: counts must be >= 1\n"); return 4; }
+        mclkSeq.push_back(n); p0 = p1 + 1;
+    }
+    if (mclkSeq.empty()) { fprintf(stderr, "--mclk: empty pattern\n"); return 4; }
 
     std::ifstream f(vecPath);
     if (!f) { printf("RESULT FAIL %s: cannot open\n", vecPath.c_str()); return 4; }
@@ -155,18 +187,29 @@ int main(int argc, char** argv) {
 #endif
 
     // Quiescent start == Go defaultInputs(): strobes negated, deselected,
-    // serial lines marking, PCLK low. One clock of rst_n Low leaves the
-    // Go New() state.
+    // serial lines marking, PCLK low. The chip has no reset pin: /AS and /DS
+    // Low together across PCLK rises (TwRES) reset it, then six idle PCLKs
+    // leave the Go New() state. Two fabric clocks per PCLK level.
     In idle{}; idle.pclk = false; idle.as_n = idle.ds_n = idle.cs0_n = idle.intack_n = idle.iei = true;
     idle.r_w = true; idle.cs1 = false; idle.ad = 0;
     for (int c = 0; c < 2; c++) { idle.rxd[c] = idle.cts_n[c] = idle.dcd_n[c] = true; }
-    driveIn(top, idle);
-    top->rst_n = 0;
-    top->clk = 0;
-    top->eval();
-    top->clk = 1;
-    top->eval();
-    top->rst_n = 1;
+    auto initStep = [&](const In& i, bool rise) {
+        top->clk = 0; top->eval(); dump();
+        driveIn(top, i);
+        top->pclk_rise = rise;
+        top->clk = 1; top->eval(); dump();
+        top->pclk_rise = 0;
+    };
+    auto initPclks = [&](In i, int n) {
+        for (int k = 0; k < n; k++) {
+            initStep(i, true); initStep(i, false);
+            initStep(i, false); initStep(i, false);
+        }
+    };
+    In hwres = idle; hwres.as_n = hwres.ds_n = false;
+    initPclks(idle, 2);
+    initPclks(hwres, 3);
+    initPclks(idle, 6);
     top->clk = 0;
     top->eval();
     dump();
@@ -174,6 +217,8 @@ int main(int argc, char** argv) {
     std::string line, testName;
     long tick = 0, pclks = 0;
     bool prevPclk = false;
+    PinLv lv{};
+    size_t mclkIdx = 0;
     long mismTicks = 0, firstTick = -1, firstPclk = -1;
     std::string firstPins;
     std::deque<std::string> ctx;
@@ -212,11 +257,18 @@ int main(int argc, char** argv) {
             tick++;
             if (in.pclk && !prevPclk) pclks++;
             prevPclk = in.pclk;
-            // One TickPins call == one fabric clock: drive the recorded
+            // One TickPins call == N master clocks: drive the recorded
             // inputs, take a posedge, settle, compare.
             top->clk = 0; top->eval(); dump();
             driveIn(top, in);
+            setPulses(top, lv, in);
             top->clk = 1; top->eval(); dump();
+            clearPulses(top); top->eval();
+            for (int k = mclkSeq[mclkIdx]; k > 1; k--) {
+                top->clk = 0; top->eval(); dump();
+                top->clk = 1; top->eval(); dump();
+            }
+            mclkIdx = (mclkIdx + 1) % mclkSeq.size();
             Out got = readOut(top);
             std::string marks;
             auto cmp = [&](bool ok, const char* pin) { if (!ok) { if (!marks.empty()) marks += ","; marks += pin; } };

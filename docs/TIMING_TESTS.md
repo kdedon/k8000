@@ -23,13 +23,14 @@ A failing check prints its spec citation (figure or AC row). Results:
 
 ## 1. `z8000_bus_monitor.sv` -- continuous Z-Bus protocol checker
 
-Watches the CPU's pins every clock and flags anything the Z8001/2 Product
-Spec (1988 Data Book pp.150-160) forbids, on the clock it first happens.
-Instantiate it next to the DUT in any bench.
+Watches the CPU's pins on both CLK edges and flags anything the Z8001/2
+Product Spec (1988 Data Book pp.150-160) forbids, on the half clock it first
+happens. Instantiate it next to the DUT in any bench.
 
-One posedge = one CPU clock; pin values are those after the edge (the Go
-model's per-Tick outputs). Offsets are clocks from the sample where `/AS`
-first went Low (T1 = 0).
+Each sample sees the pins as the previous CLK edge left them (the Go
+model's per-Tick outputs). Offsets are half clocks from the sample where
+`/AS` first went Low (T1's first half = 0); an odd offset is a clock's
+second half.
 
 Per-sample rules:
 
@@ -41,22 +42,27 @@ Per-sample rules:
 | `SN` reads zero when `SEGMENTED=0` | p.150: SN6-SN0 exist only on the Z8001/Z8003 |
 | every bus output is floated while `/BUSACK` is Low | Fig 15 |
 
-Per-transaction rules (offsets in clocks from the `/AS` fall, external `/WAIT`
-clocks discounted):
+Per-transaction rules (offsets in half clocks from the `/AS` fall, external
+`/WAIT` clocks discounted, two halves each; `/WAIT` counted where the CPU
+samples it, on T2's fall, TWA's for I/O, and each Tw's). `/AS` rises at 1
+in every class.
 
 | cycle class | `/MREQ` | `/DS` falls | `/DS` rises | other |
 |---|---|---|---|---|
-| memory read | 1 | 1 | 3 | AD released while `/DS` Low |
-| memory write | 1 | 2 | 3 | write data held for the whole `/DS` Low window; a BYTE write duplicates the byte on both halves of AD (Ref Manual 9.4.2 p.234, R-CPU-513) |
-| I/O (0010/0011) | never | 2 | 4 | one automatic wait, Fig 13 |
-| acknowledge (0100..0111) | never | 5 | 8 | five automatic waits, `/DS` falls at the fourth so the IEI/IEO chain settles, Fig 14 |
+| memory read | 1 | 2 | 5 | AD released while `/DS` Low |
+| memory write | 1 | 3 | 5 | write data held for the whole `/DS` Low window; a BYTE write duplicates the byte on both halves of AD (Ref Manual 9.4.2 p.234, R-CPU-513) |
+| I/O (0010/0011) | never | 3 | 7 | one automatic wait, Fig 13 |
+| acknowledge (0100..0111) | never | 10 | 15 | five automatic waits, `/DS` falls at the fourth so the IEI/IEO chain settles, Fig 14 |
 | refresh (0001) | 1 | never | -- | `R/W`, `B/W`, `N/S` unchanged from the preceding transaction (Fig 18 / Ref Manual 9.4.6) |
 | internal op (0000) | never | never | -- | `/AS` pulse only, Fig 17 |
 
-The offsets come from the AC table (p.159-160: `/MREQ` after the T1 falling
-edge, `/DS(read)` from the T2 clock, `/DS(write)` from the T2 FALLING edge,
-both strobes rising after the T3 falling edge), cross-checked against every
-recorded CPU vector.
+The offsets come from the AC table (1988 DB PDF p.47-48: `/AS` rise #26 and
+`/MREQ` fall #18 on T1's fall, `/DS(read)` #37 on T2's rise, `/DS(write)`
+#39 and `/DS(I/O)` #42 on T2's fall, `/DS(acknowledge)` #45 on a rise, both
+strobes rising on T3's fall #23, #34).
+These offsets hold for CLK rise and fall pulses in different master clocks,
+the only clocking `tb_cpu_timing` runs. With both in one master clock the
+fall's moves land on the rise and `/AS` is Low one master clock.
 
 ## 2. `tb_cpu_timing.sv`
 

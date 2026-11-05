@@ -17,14 +17,15 @@ make ladder-cio      # every vector, shortest first, with status
 ```
 
 RTL top `rtl/k8036_cio/z8036_cio.sv`: ports are `sim/cio/pins.go`
-one-for-one (`Inputs` -> `ad_in as_n ds_n r_w cs0_n cs1 intack_n iei pclk
-pa_in pb_in pc_in`; `Outputs` -> `ad_out ad_drive int_n ieo pa_out pa_oe
-pa_req_n pb_out pb_oe pb_req_n pc_out pc_oe`) plus `clk` (fabric clock) and
-`rst_n` (fabric reset; the silicon has none, see the reset note below).
+one-for-one (`Inputs` -> `ad_in as_n ds_n r_w cs0_n cs1 intack_n iei pclk_fall
+(PCLK as a falling-edge pulse) pa_in pb_in pc_in`; `Outputs` -> `ad_out ad_drive int_n ieo pa_out pa_oe
+pb_out pb_oe pc_out pc_oe`) plus `clk` (board master clock). There is no
+reset port (the silicon has no reset pin, see the reset note below).
 The Z8036 has no WAIT input: WAIT/REQUEST is an OUTPUT on PC1 (Port A) /
 PC3 (Port B), Table 1 p.678, and every handshake line is a Port C pin.
-`pa_req_n`/`pb_req_n` are active-low mirrors of that Port C level for the
-C900 signal register, not silicon pins.
+The Go seam's `PortAReq_n`/`PortBReq_n` are active-low mirrors of that Port C
+level, not silicon pins: the RTL has no such ports and tb_cio.cpp does not
+compare them (the Port C pins are compared).
 
 ## The file (`K8000VEC 1 cio`)
 
@@ -88,27 +89,32 @@ counting in the third: `TestASIsTheChipClock` and `cio/k8000_pins_test.go`.
 
 ## How the tb replays a record (per-Tick equality)
 
-The Go seam has no fabric clock; PCLK is a level input. The tb treats
-**one record == one fabric clock**: drive the recorded inputs, step `clk`
-for `--fclk` posedges (default 1), compare every output. The RTL gets what
-the model has: one chance per Tick to see a strobe edge (registered
-`as_q/ds_q` vs the live pin) and one to see the PCLK falling-edge enable
-(`!pclk & pclk_q`). Consequences:
+The Go seam has no fabric clock; the chip's `pclk_fall` port is the PCLK
+falling edge as a one-master-clock pulse from the board divider. The tb
+treats **one record == one fabric clock**: drive the recorded inputs, fire
+`pclk_fall` for exactly the first master clock after the record that took
+PCLK 1->0, then step N posedges in total (N cycles through the comma list
+`--mclk P` / env `K8000_MCLK`, default `1,2,1,3`; `--fclk` is an alias;
+`1` = a pulse on every master clock the vectors allow), compare every
+output. The RTL gets what the model has: one chance per Tick to see a
+strobe edge (registered `as_q/ds_q` vs the live pin) and the PCLK
+falling-edge pulse. Port-line counter inputs (PB/PC) stay level-sampled
+data. Consequences:
 
 - Register reads and the INTACK vector must be COMBINATIONAL from the live
   `ds_n` level plus AS-latched state, and `ad_drive` must drop in the record
   `ds_n` rises. Waiting for a PCLK enable diverges at every read.
-- A two-FF strobe synchroniser needs `--fclk 3`
-  (`K8000_TB_FLAGS="--fclk 3" make test-cio`); the default is 1 because the
-  C900 CPU and CIO share one fabric clock.
+- A two-FF strobe synchroniser needs 3 master clocks per record
+  (`K8000_MCLK=3 make test-cio`); no synchroniser is in the chip.
 - In Go the strobe service runs before the PCLK-domain advance, but no
   record has both a strobe edge and a PCLK fall (`F COINCIDENT 0`:
   `pclkStep` moves strobes on the PCLK-high half), so the vectors leave that
   ordering free. The datasheet leaves it undefined too (R-CIO-408: Current
   Count "is valid only if the counter is stopped"; RCC exists for that).
 - Reset: Go `New()` is in-reset (regs 0, MICR reads 1, no drives, strobe
-  trackers High, PCLK tracker Low, prescaler phase 0). The tb pulses `rst_n`
-  for one posedge before the first record with the bus idle
+  trackers High, PCLK tracker Low, prescaler phase 0). The tb resets the
+  chip through its pins before the first record: two idle clocks, /AS and
+  /DS Low for four, then four idle
   (`AS_n=DS_n=CS0_n=INTACK_n=1, CS1=0, IEI=1, PCLK=0`). The RTL reset state
   must equal `New()`, which is observably the AS+DS hardware-reset state
   (only `regs[MICR]` differs, and `readReg` masks it).

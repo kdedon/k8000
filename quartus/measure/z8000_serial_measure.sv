@@ -17,6 +17,7 @@ module z8000_serial_measure (
 
   z8000_serial dut (
     .clk         (clk),
+    .clk_en      (1'b1),
     .reset_n     (in_q[116]),
     .tick        (in_q[115]),
     .start       (in_q[114]),

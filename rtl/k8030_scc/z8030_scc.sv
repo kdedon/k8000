@@ -43,9 +43,16 @@
 //     teardown before the latch; the SCC answer is to qualify the strobe.
 //
 // Clocking decision (Bible 0.2.3 + 15.1, documented in docs/K8030_SCC_TESTS.md):
-//   * `clk` is the fabric clock: one posedge per Go TickPins call.
-//   * `pclk` is a LEVEL input. pclk_rise = pclk & ~pclk_q is a one-cycle
-//     enable (Go pinPrevPCLK / pclkRising) -- never a derived clock.
+//   * `clk` is the board master clock: one or more posedges per Go TickPins call.
+//   * `pclk_rise` is the PCLK rising edge as a one-master-clock pulse from
+//     the board divider (Go pclkRising) -- never a derived clock. Pulses may
+//     fire on consecutive master clocks.
+//   * /RTxC and /TRxC use both edges and the level: `rxc_rise/rxc_fall` and
+//     `trxc_rise/trxc_fall` ([1:0] per channel) are pulse pairs. Each channel
+//     rebuilds the pin level (set by _rise, cleared by _fall; a pulse on
+//     the current clock counts at once). The level is sampled only at PCLK
+//     rises and compared with the level at the previous PCLK rise, so an
+//     edge between PCLK rises is seen exactly as the level model saw it.
 //   * /AS //DS //INTACK are oversampled by `clk`: <x>_fall = <x>_q & ~<x>_n
 //     is combinational against the registered previous level, so a strobe
 //     transition seen in the SAME record as a PCLK rise is serviced in that
@@ -53,8 +60,8 @@
 //     same call). Pending flags carry transitions across records to the
 //     next PCLK rise, exactly the Go pinPending* flags.
 //   * Hardware reset = /AS and /DS both Low across two PCLK rises (no
-//     reset pin); see the width note above. rst_n only gives the fabric
-//     that same reset at power-up.
+//     reset pin); see the width note above. The board applies it at
+//     power-up through the same pins.
 //   * Asynchronous inputs are not synchronised here, so lockstep with the
 //     model holds: /DCD, /CTS and /SYNC take one PCLK sample, RxD is used
 //     as it stands at the PCLK rise, and /RTxC and /TRxC compare the last
@@ -79,8 +86,7 @@
 //   int_vector int_pending int_latch shift_right ius_mask  u_cha.* u_chb.*
 
 module z8030_scc (
-  input  logic        clk,          // fabric clock (one posedge per Go TickPins)
-  input  logic        rst_n,        // power-up: the hardware reset, no strobe edges
+  input  logic        clk,          // board master clock
 
   // Inputs (pins.go Inputs)
   input  logic [7:0]  ad_in,        // AD7:0 (the chip's only bus pins)
@@ -91,12 +97,14 @@ module z8030_scc (
   input  logic        cs1,          // ... AND CS1 (active High), sampled while /AS Low
   input  logic        intack_n,
   input  logic        iei,
-  input  logic        pclk,         // peripheral clock LEVEL (Bible 5.2: clock enable, not a clock)
+  input  logic        pclk_rise,    // PCLK rising edge: one-master-clock pulse
   input  logic [1:0]  rxd,          // [0]=A [1]=B, idle High
   input  logic [1:0]  cts_n,
   input  logic [1:0]  dcd_n,
-  input  logic [1:0]  trxc_in,      // external clocks (G-81.8: modeled in TickPins)
-  input  logic [1:0]  rxc_in,
+  input  logic [1:0]  trxc_rise,    // /TRxC rising edge pulse, [0]=A [1]=B
+  input  logic [1:0]  trxc_fall,    // /TRxC falling edge pulse
+  input  logic [1:0]  rxc_rise,     // /RTxC rising edge pulse
+  input  logic [1:0]  rxc_fall,     // /RTxC falling edge pulse
   input  logic [1:0]  sync_in,
 
   // Outputs (pins.go Outputs)
@@ -121,7 +129,7 @@ module z8030_scc (
   logic [7:0] ius_mask;             // one bit per 3-bit source code
 
   // ---- pin-side state (Go: asyncPrev*, pinPending*, pinAsLatched*, pinDsLatched*, pinBus*, pinOut)
-  logic       pclk_q, as_q, ds_q, intack_q;
+  logic       as_q, ds_q, intack_q;
   logic       pend_as_fall, pend_as_rise, pend_ds_fall, pend_ds_rise, pend_intack_rise;
   logic [7:0] as_ad;                // AD sampled while /AS Low, frozen at the rise (channel + register)
   logic       as_cs_n, as_intack_n;  // /CS0 and /INTACK at the /AS rise
@@ -133,20 +141,18 @@ module z8030_scc (
   logic       ad_drive_q;
 
   // ---- edge detects against the registered previous level (Bible 0.2.3)
-  logic pclk_rise, as_fall, as_rise, ds_fall, ds_rise, intack_rise, hw_reset;
-  assign pclk_rise   = pclk & ~pclk_q;
-  // rst_n Low is a hardware reset with no strobe edges.
-  assign as_fall     = rst_n & as_q & ~as_n;
-  assign as_rise     = rst_n & ~as_q & as_n;
-  assign ds_fall     = rst_n & ds_q & ~ds_n;
-  assign ds_rise     = rst_n & ~ds_q & ds_n;
-  assign intack_rise = rst_n & ~intack_q & intack_n;
+  logic as_fall, as_rise, ds_fall, ds_rise, intack_rise, hw_reset;
+  assign as_fall     = as_q & ~as_n;
+  assign as_rise     = ~as_q & as_n;
+  assign ds_fall     = ds_q & ~ds_n;
+  assign ds_rise     = ~ds_q & ds_n;
+  assign intack_rise = ~intack_q & intack_n;
   assign hw_reset    = ~as_n & ~ds_n;
 
   // /AS and /DS Low together resets the chip once held across two PCLK rises.
   logic [1:0] res_cnt;
   logic       pin_reset;
-  assign pin_reset = ~rst_n | (hw_reset & (res_cnt[1] | (res_cnt[0] & pclk_rise)));
+  assign pin_reset = hw_reset & (res_cnt[1] | (res_cnt[0] & pclk_rise));
 
   // The address latch is transparent while /AS is Low; the PCLK-side
   // service sees this record's value, as does IEO.
@@ -215,7 +221,6 @@ module z8030_scc (
                      pin_reset | wr9_hw | (bus_wr && bus_reg_n == 4'd9 && ad_wr[7:6] == 2'b10)};
 
   always_ff @(posedge clk) begin
-    pclk_q   <= pclk;
     as_q     <= as_n;
     ds_q     <= ds_n;
     intack_q <= intack_n;
@@ -275,10 +280,6 @@ module z8030_scc (
       shift_right <= 1'b0;
       int_latch   <= 1'b0;
     end
-    // Reset: the strobe latches start negated, as at idle pins.
-    if (!rst_n) begin
-      as_cs_n <= 1'b1; as_intack_n <= 1'b1; ds_rw <= 1'b1;
-    end
   end
 
   // ---- channels ------------------------------------------------------------
@@ -290,7 +291,7 @@ module z8030_scc (
   logic [3:0] ch_int_req [2];
   z8030_scc_channel u_cha (
     .clk(clk), .pclk_rise(pclk_rise),
-    .rxd(rxd[0]), .cts_n(cts_n[0]), .dcd_n(dcd_n[0]), .trxc_in(trxc_in[0]), .rxc_in(rxc_in[0]),
+    .rxd(rxd[0]), .cts_n(cts_n[0]), .dcd_n(dcd_n[0]), .trxc_rise(trxc_rise[0]), .trxc_fall(trxc_fall[0]), .rxc_rise(rxc_rise[0]), .rxc_fall(rxc_fall[0]),
     .txd(ch_txd[0]), .trxc_out_level(ch_trxc_lvl[0]), .wr9(wr9),
     .wr_en(ch_wr[0]), .rd_en(ch_rd[0]), .wr_reg(bus_reg_n), .rd_reg(bus_reg_n), .wr_data(ad_wr),
     .reset_ch(ch_reset[0]), .reset_hw(pin_reset | wr9_hw),
@@ -300,7 +301,7 @@ module z8030_scc (
   );
   z8030_scc_channel u_chb (
     .clk(clk), .pclk_rise(pclk_rise),
-    .rxd(rxd[1]), .cts_n(cts_n[1]), .dcd_n(dcd_n[1]), .trxc_in(trxc_in[1]), .rxc_in(rxc_in[1]),
+    .rxd(rxd[1]), .cts_n(cts_n[1]), .dcd_n(dcd_n[1]), .trxc_rise(trxc_rise[1]), .trxc_fall(trxc_fall[1]), .rxc_rise(rxc_rise[1]), .rxc_fall(rxc_fall[1]),
     .txd(ch_txd[1]), .trxc_out_level(ch_trxc_lvl[1]), .wr9(wr9_b),
     .wr_en(ch_wr[1]), .rd_en(ch_rd[1]), .wr_reg(bus_reg_n), .rd_reg(bus_reg_n), .wr_data(ad_wr),
     .reset_ch(ch_reset[1]), .reset_hw(pin_reset | wr9_hw),

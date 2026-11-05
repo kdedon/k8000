@@ -11,6 +11,7 @@
 //
 //   u_regfile.r[16]  fcw  pc  psap  refresh  nspoff  nspseg  refresh_en  halted
 //   u_sequencer.unhandled_q  u_execute.sp_we_q/sp_sel_q/sp_d_q
+//   u_execute.tset_rmw/wr_next_q  mem_take  bus_done   (TSET bus lock)
 
 #pragma once
 #include <cstdint>
@@ -56,6 +57,11 @@ struct DutAccess {
 
     // A program reached a machine-cycle kind the CPU does not run yet.
     bool     unhandled_cycle() const     { return top->rootp->z8000_cpu__DOT__u_sequencer__DOT__unhandled_q; }
+
+    // TSET's lock, from its read's word to its write's take (no pin carries it).
+    bool     rmw_lock() const            { auto* r = top->rootp; return r->z8000_cpu__DOT__u_execute__DOT__tset_rmw && r->z8000_cpu__DOT__u_execute__DOT__wr_next_q; }
+    bool     mem_take() const            { return top->rootp->z8000_cpu__DOT__mem_take; }
+    bool     bus_done() const            { return top->rootp->z8000_cpu__DOT__bus_done; }
 
     // A simulation-only execute check failed.
     bool     execute_check() const       { return top->rootp->z8000_cpu__DOT__u_execute__DOT__check_q || top->rootp->z8000_cpu__DOT__u_sequencer__DOT__check_q || top->rootp->z8000_cpu__DOT__check_q; }

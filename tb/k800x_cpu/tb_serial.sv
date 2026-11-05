@@ -39,7 +39,7 @@ module tb_serial
   logic [5:0]  s_count;
   logic [15:0] s_flags, s_mask;
   logic        x_end3, x_end2, x_last;   // CPU hookup only
-  z8000_serial u_serial (.clk(clk), .reset_n(reset_n), .tick(1'b1), .start(m_start || d_start || s_start),
+  z8000_serial u_serial (.clk(clk), .clk_en(1'b1), .reset_n(reset_n), .tick(1'b1), .start(m_start || d_start || s_start),
                          .mul(kind == 1), .div(kind == 2), .wide(kind == 1 ? m_width32 : d_n32),
                          .dst(kind == 1 ? {32'd0, m_dst} : kind == 2 ? d_dividend : {32'd0, s_val}),
                          .src_hi(x_hi), .src_valid(m_src_valid || d_src_valid),

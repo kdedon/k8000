@@ -10,7 +10,9 @@
 // names or update that one file in the same change.
 //
 // Clocking (FPGA_BIBLE 5.2 + 0.2.3): single fabric clock `clk`; `pclk_rise`
-// is a one-cycle ENABLE (Go: pclkRising) -- never a clock. Everything in
+// is a one-master-clock edge pulse from the board divider -- never a clock.
+// /RTxC and /TRxC arrive as rise/fall pulse pairs; the pin level is rebuilt
+// here and sampled at PCLK rises (prev_* update only under pclk_rise). Everything in
 // this module commits on posedge clk when pclk_rise is high, mirroring
 // the PCLK(rise) block of scc.go tickPins / advancePins.
 //
@@ -28,14 +30,16 @@
 
 module z8030_scc_channel (
   input  logic        clk,
-  input  logic        pclk_rise,     // enable: PCLK 0->1 seen this fabric cycle
+  input  logic        pclk_rise,     // PCLK rises on this master clock (one-clock pulse)
 
   // serial / modem pins (Go Inputs.RxD/CTS_n/DCD_n[i], TRxCIn/RxCIn[i])
   input  logic        rxd,
   input  logic        cts_n,
   input  logic        dcd_n,
-  input  logic        trxc_in,
-  input  logic        rxc_in,
+  input  logic        trxc_rise,     // /TRxC rises on this master clock (one-clock pulse)
+  input  logic        trxc_fall,     // /TRxC falls on this master clock (one-clock pulse)
+  input  logic        rxc_rise,      // /RTxC rises on this master clock (one-clock pulse)
+  input  logic        rxc_fall,      // /RTxC falls on this master clock (one-clock pulse)
   input  logic        sync_in,       // /SYNC pin level
   output logic        txd,           // Go Channel.TxD
   output logic        trxc_out_level, // Go Channel.trxcOutLevel
@@ -73,6 +77,7 @@ module z8030_scc_channel (
   logic        tx_underrun_eom;      // TxUnderrunEOM (RR0 D6)
   logic [17:0] baud_counter;         // BaudCounter (max 2*(65535+2))
   logic [15:0] brg_tc;               // BrgTC: time constant loaded into the counter
+  logic        brg_load;             // BrgLoad: the next BRG clock loads brg_tc (after a hardware reset)
   logic        rxd_q;                // RxD (pin sampled at PCLK rise)
   logic [2:0]  rx_state;             // RxState: 0 idle 1 start 2 data 3 parity 4 stop
   logic [7:0]  rx_shift;             // RxShift
@@ -81,6 +86,7 @@ module z8030_scc_channel (
   logic [1:0]  rx_stop_bit;          // RxStopBit
   logic        rx_break;             // RxBreak (RR0 D7 live)
   logic        txd_q;                // TxD
+  logic        tx_break;             // TxBreak: Send Break as taken at a bit cell
   logic [2:0]  tx_state;             // TxState: 0 idle 1 start 2 data 3 parity 4 stop 5 pending
   logic [7:0]  tx_shift;             // TxShift (TSR)
   logic [3:0]  tx_bit_count;         // TxBitCount
@@ -202,6 +208,7 @@ module z8030_scc_channel (
   logic [1:0]  n_tx_stop_bit;
   logic [17:0] n_baud_counter;
   logic [15:0] n_brg_tc;
+  logic        n_brg_load, n_tx_break;
   logic        n_ext_ip, n_ext_latch_closed;
   logic        n_dcd_latch, n_cts_latch, n_break_latch, n_underrun_latch;
   logic        n_dcd_sync, n_cts_sync, n_trxc_out_lvl, n_rts_hold;
@@ -215,16 +222,26 @@ module z8030_scc_channel (
   logic [1:0]  n_rx_stop_bit;
   logic        n_rx_break, n_rx_int_next_char, n_rx_int_forced, n_rx_lock, rx_pop;
 
-  logic        dcd_now, cts_now, rtxc_rise, trxc_rise, brk_now;
+  // /RTxC and /TRxC levels rebuilt from the edge pulses; the wire is the
+  // pin level on this master clock (a pulse on this clock already counts).
+  logic        rxc_lvl_q, trxc_lvl_q, rxc_in, trxc_in;
+  assign rxc_in  = rxc_rise  | (rxc_lvl_q  & ~rxc_fall);
+  assign trxc_in = trxc_rise | (trxc_lvl_q & ~trxc_fall);
+  always_ff @(posedge clk) begin
+    rxc_lvl_q  <= rxc_in;
+    trxc_lvl_q <= trxc_in;
+  end
+
+  logic        dcd_now, cts_now, rtxc_up, trxc_up, brk_now;
   assign dcd_now   = ~dcd_n;
   assign cts_now   = ~cts_n;
-  assign rtxc_rise = ~prev_rtxc & rxc_in;
-  assign trxc_rise = ~prev_trxc & trxc_in;
+  assign rtxc_up   = ~prev_rtxc & rxc_in;
+  assign trxc_up   = ~prev_trxc & trxc_in;
   assign brk_now   = reset_ch ? 1'b0 : rx_break;
 
   logic        brg_edge, brg_lvl, tx_edge, tx_en, tx_par, tx_two_stop, tx_half_stop;
   logic [17:0] b_inc, b_per;
-  logic        brg_start, b_wrap, b_half, b_inc_lt, b_cur_lt;
+  logic        b_wrap, b_half, b_inc_lt, b_cur_lt;
   logic [6:0]  cm;
   logic [3:0]  tx_bits;
   logic [7:0]  tx_mask;
@@ -328,6 +345,7 @@ module z8030_scc_channel (
     n_tx_state = tx_state; n_tx_bit_count = tx_bit_count;
     n_tx_sub_count = tx_sub_count; n_tx_stop_bit = tx_stop_bit;
     n_baud_counter = baud_counter; n_brg_tc = brg_tc;
+    n_brg_load = brg_load; n_tx_break = tx_break;
     n_ext_ip = ext_ip; n_ext_latch_closed = ext_latch_closed;
     n_dcd_latch = dcd_latch; n_cts_latch = cts_latch;
     n_break_latch = break_latch; n_underrun_latch = underrun_latch;
@@ -353,7 +371,7 @@ module z8030_scc_channel (
     rx_fill = 8'h00; rx_data = 8'h00; rx_push = 1'b0;
     tx_two_stop = 1'b0; tx_half_stop = 1'b0;
     brg_edge = 1'b0; brg_lvl = 1'b0; tx_edge = 1'b0; tx_en = 1'b0; tx_par = 1'b0;
-    brg_start = 1'b0; cm = 7'd1; tx_bits = 4'd8; tx_mask = 8'hFF; auto_en = 1'b0;
+    cm = 7'd1; tx_bits = 4'd8; tx_mask = 8'hFF; auto_en = 1'b0;
     cmd = wr_data[5:3];
 
     if (reset_ch) begin
@@ -376,7 +394,10 @@ module z8030_scc_channel (
       n_tx_buf = 8'h00; n_tx_buf_empty = 1'b1; n_tx_all_sent = 1'b1; n_tx_ip = 1'b0;
       n_tx_underrun_eom = 1'b1;
       n_ext_ip = 1'b0; n_ext_latch_closed = 1'b0;
-      n_baud_counter = '0; n_brg_tc = {wr[13], wr[12]}; n_trxc_out_lvl = 1'b0; brg_start = 1'b1;
+      // A channel reset leaves the BRG running; a hardware reset stops it
+      // and leaves the time constant to load on its first clock.
+      if (reset_hw) begin n_baud_counter = '0; n_brg_load = 1'b1; end
+      n_trxc_out_lvl = 1'b0; n_tx_break = 1'b0;
       n_txd = 1'b1; n_tx_state = 3'd0; n_tx_shift = 8'h00; n_tx_bit_count = 4'd0;
       n_tx_sub_count = 7'd0; n_tx_stop_bit = 2'd0;
       // The modem latches and synchronisers restart at the live pin level.
@@ -404,10 +425,6 @@ module z8030_scc_channel (
 
     if (wr_en) begin
       n_wr[wr_reg] = wr_reg == 4'd9 ? (wr_data & 8'h3F) : wr_data;
-      // BRG startup loads the time constant; the output starts High.
-      if (wr_reg == 4'd14 && !wr[14][0] && wr_data[0]) begin
-        n_baud_counter = '0; n_brg_tc = {wr[13], wr[12]}; brg_start = 1'b1;
-      end
       // DPLL commands. Reset Missing Clock disables it as Disable does.
       if (wr_reg == 4'd14) begin
         case (wr_data[7:5])
@@ -519,20 +536,20 @@ module z8030_scc_channel (
       ext_mid = n_ext_latch_closed; dcd_mid = n_dcd_latch; cts_mid = n_cts_latch;
 
       // BRG: 2 * (time constant + 2) source clocks per output edge. A new
-      // time constant waits for the next load of the counter.
-      // The compares come from the registered count; a restarted count
-      // is 0 or 1, never an edge and below half.
-      if (n_wr[14][0] && (n_wr[14][1] || rtxc_rise)) begin
-        if (brg_start) n_baud_counter = 18'd1;
-        else if (b_wrap) begin
+      // time constant waits for the next load of the counter; re-enabling
+      // resumes the held count. The compares come from the registered count.
+      if (n_wr[14][0] && (n_wr[14][1] || rtxc_up)) begin
+        if (brg_load) begin
+          n_brg_tc = {n_wr[13], n_wr[12]}; n_brg_load = 1'b0;
+        end else if (b_wrap) begin
           n_baud_counter = '0; n_brg_tc = {n_wr[13], n_wr[12]};
           brg_edge = 1'b1;
         end else begin
           n_baud_counter = b_inc; brg_fall = b_half;
         end
-        brg_lvl = brg_start || b_wrap || b_inc_lt;
+        brg_lvl = brg_load || b_wrap || b_inc_lt;
       end else begin
-        brg_lvl = brg_start || b_cur_lt;
+        brg_lvl = b_cur_lt;
       end
       if (!n_wr[14][0]) brg_lvl = n_trxc_out_lvl;
 
@@ -578,8 +595,8 @@ module z8030_scc_channel (
       // Transmit clock: a cell starts on tx_edge; tx_mid times the FM
       // centre. From the DPLL a cell starts at count 16 (and 0 in FM).
       case (n_wr[11][4:3])
-        2'd0:    begin tx_edge = rtxc_rise; tx_mid = prev_rtxc & ~rxc_in;  end
-        2'd1:    begin tx_edge = trxc_rise; tx_mid = prev_trxc & ~trxc_in; end
+        2'd0:    begin tx_edge = rtxc_up; tx_mid = prev_rtxc & ~rxc_in;  end
+        2'd1:    begin tx_edge = trxc_up; tx_mid = prev_trxc & ~trxc_in; end
         2'd2:    begin tx_edge = brg_edge;  tx_mid = brg_fall;             end
         default: begin tx_edge = n_dp_fm ? dtf : dtr; tx_mid = n_dp_fm ? dtr : dtf; end
       endcase
@@ -816,6 +833,12 @@ module z8030_scc_channel (
         endcase
       end
 
+      // Send Break starts and ends on the transmit clock edge that begins
+      // a bit cell; the transmitter shifts on beneath it.
+      if (tx_edge && (sd_mode || bs_mode || cm == 7'd1 || n_tx_state == 3'd0 ||
+                      n_tx_state == 3'd5 || n_tx_sub_count == 7'd0))
+        n_tx_break = n_wr[5][4];
+
       // The TBR moves to the TSR on PCLK, not on the transmit clock.
       if (!sd_mode && !bs_mode && n_tx_state == 3'd0 && !n_tx_buf_empty && tx_en) begin
         n_tx_shift = n_tx_buf; n_tx_buf_empty = 1'b1; n_tx_all_sent = 1'b0;
@@ -828,8 +851,8 @@ module z8030_scc_channel (
       // Receive clock: RTxC, TRxC, or the BRG.
       // From the DPLL the receiver samples on its output's fall.
       case (n_wr[11][6:5])
-        2'd0:    begin rx_edge = rtxc_rise; rx_half = prev_rtxc & ~rxc_in;  end
-        2'd1:    begin rx_edge = trxc_rise; rx_half = prev_trxc & ~trxc_in; end
+        2'd0:    begin rx_edge = rtxc_up; rx_half = prev_rtxc & ~rxc_in;  end
+        2'd1:    begin rx_edge = trxc_up; rx_half = prev_trxc & ~trxc_in; end
         2'd2:    begin rx_edge = brg_edge;  rx_half = brg_fall;             end
         default: begin rx_edge = drf;       rx_half = drr;                  end
       endcase
@@ -1165,7 +1188,8 @@ module z8030_scc_channel (
     tx_underrun_eom <= n_tx_underrun_eom; tx_ip <= n_tx_ip; txd_q <= n_txd;
     tx_state <= n_tx_state; tx_bit_count <= n_tx_bit_count;
     tx_sub_count <= n_tx_sub_count; tx_stop_bit <= n_tx_stop_bit;
-    baud_counter <= n_baud_counter; brg_tc <= n_brg_tc;
+    baud_counter <= n_baud_counter; brg_tc <= n_brg_tc; brg_load <= n_brg_load;
+    tx_break <= n_tx_break;
     ext_ip <= n_ext_ip; ext_latch_closed <= n_ext_latch_closed;
     dcd_latch <= n_dcd_latch; cts_latch <= n_cts_latch;
     break_latch <= n_break_latch; underrun_latch <= n_underrun_latch;
@@ -1219,7 +1243,7 @@ module z8030_scc_channel (
   // Loop Mode off loop passes RxD straight through.
   assign txd = ((sdlc && wr[10][1] && !lp_on) ? rxd :
                 (wr[10][6:5] != 2'd0 && (wr[4][3:2] == 2'b00 || wr[4][7:6] == 2'b00)) ? tx_line : txd_q)
-               & ~wr[5][4];
+               & ~tx_break;
   assign trxc_out_level = trxc_out_lvl;
   assign wr9            = wr[9];
   assign wr5            = wr[5];

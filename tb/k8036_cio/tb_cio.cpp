@@ -2,7 +2,7 @@
 // file against the Verilated z8036_cio (FPGA_BIBLE 0.3 tier 1, Ch.4.5).
 //
 //   tb_cio <file.vec> [--context N] [--vcd out.vcd] [--quiet] [--stop-first]
-//                     [--fclk N] [--strict-out]
+//                     [--mclk P] [--strict-out]
 //
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP (unsupported vector), 4 usage/parse
 // error.
@@ -11,11 +11,14 @@
 // test made -- verbatim for pin-driven tests, transliterated into Z-Bus
 // cycles for tests that used the sim's functional API (docs/K8036_CIO_TESTS.md).
 // Replay is OPEN LOOP: the recorded inputs are driven regardless of what
-// the RTL does, then the fabric clock is stepped `--fclk` posedges (default
-// 1) with the inputs held, and every output pin is compared. One Go
-// TickPins call == one record == one fabric clock: the Go model reacts to
+// the RTL does, then the fabric clock is stepped N posedges (N cycles through
+// the comma list `--mclk P` / env K8000_MCLK, default "1,2,1,3"; --fclk is
+// an alias) with the inputs held, and every output pin is compared. The PCLK
+// fall reaches the chip as a pulse on `pclk_fall`, high for exactly the first
+// master clock after the record that changed the level. One Go
+// TickPins call == one record == N master clocks: the Go model reacts to
 // a strobe edge and to a PCLK falling edge (the Z8036 PCLK-domain clock,
-// R-CIO-403) within the same call, so the RTL gets one posedge to do the
+// R-CIO-403) within the same call, so the RTL gets the record's first posedge to do the
 // same (a two-FF synchroniser on the strobes therefore needs --fclk 3 to
 // be fair; the vectors never place a strobe edge and a PCLK fall in the
 // same record -- F COINCIDENT is 0 -- so the intra-Tick ordering between
@@ -76,7 +79,7 @@ static Out decodeOut(unsigned bits, unsigned ad, unsigned pao, unsigned paoe, un
 static Out readOut(Vz8036_cio* t) {
     Out o;
     o.ad_drive = t->ad_drive; o.int_n = t->int_n; o.ieo = t->ieo;
-    o.pa_req_n = t->pa_req_n; o.pb_req_n = t->pb_req_n;
+    o.pa_req_n = o.pb_req_n = true;   // not chip pins: REQUEST/WAIT is on Port C
     o.ad = t->ad_out; o.pa_out = t->pa_out; o.pa_oe = t->pa_oe;
     o.pb_out = t->pb_out; o.pb_oe = t->pb_oe; o.pc_out = t->pc_out & 0xF; o.pc_oe = t->pc_oe & 0xF;
     return o;
@@ -108,21 +111,31 @@ static std::string fmtRow(long tick, long pclks, const In& in, const Out& e, con
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     std::string vecPath, vcdPath;
-    int context = 12, fclk = 1;
+    int context = 12;
+    std::string mclkPat = getenv("K8000_MCLK") ? getenv("K8000_MCLK") : "1,2,1,3";
     bool quiet = false, stopFirst = false, strictOut = false;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--context" && i + 1 < argc) context = atoi(argv[++i]);
         else if (a == "--vcd" && i + 1 < argc) vcdPath = argv[++i];
-        else if (a == "--fclk" && i + 1 < argc) fclk = atoi(argv[++i]);
+        else if ((a == "--mclk" || a == "--fclk") && i + 1 < argc) mclkPat = argv[++i];
         else if (a == "--quiet") quiet = true;
         else if (a == "--stop-first") stopFirst = true;
         else if (a == "--strict-out") strictOut = true;
         else if (a.size() > 1 && a[0] == '-' && a[1] == '-') { fprintf(stderr, "unknown option %s\n", a.c_str()); return 4; }
         else vecPath = a;
     }
-    if (vecPath.empty() || fclk < 1) {
-        fprintf(stderr, "usage: tb_cio <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--fclk N] [--strict-out]\n");
+    std::vector<int> mclkSeq;
+    for (size_t p0 = 0; p0 < mclkPat.size();) {
+        size_t p1 = mclkPat.find(',', p0); if (p1 == std::string::npos) p1 = mclkPat.size();
+        int n = atoi(mclkPat.substr(p0, p1 - p0).c_str());
+        if (n < 1) { fprintf(stderr, "--mclk: counts must be >= 1\n"); return 4; }
+        mclkSeq.push_back(n); p0 = p1 + 1;
+    }
+    if (mclkSeq.empty()) { fprintf(stderr, "--mclk: empty pattern\n"); return 4; }
+    size_t mclkIdx = 0;
+    if (vecPath.empty()) {
+        fprintf(stderr, "usage: tb_cio <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--mclk P] [--strict-out]\n");
         return 4;
     }
     std::ifstream f(vecPath);
@@ -147,14 +160,16 @@ int main(int argc, char** argv) {
         top->clk = 1; top->eval(); dump();
     };
 
-    // Go New(): idle bus (defaultInputs), PCLK Low, in reset. One fabric
-    // reset pulse puts the RTL in the same state.
-    top->rst_n = 0;
+    // Go New(): idle bus (defaultInputs), PCLK Low, in reset. The chip has
+    // no reset pin: /AS and /DS Low together reset it, then the bus idles.
     top->ad_in = 0; top->as_n = 1; top->ds_n = 1; top->r_w = 0; top->cs0_n = 1; top->cs1 = 0;
-    top->intack_n = 1; top->iei = 1; top->pclk = 0;
+    top->intack_n = 1; top->iei = 1; top->pclk_fall = 0;
     top->pa_in = 0; top->pb_in = 0; top->pc_in = 0;
-    posedge();
-    top->rst_n = 1;
+    posedge(); posedge();
+    top->as_n = 0; top->ds_n = 0;
+    for (int k = 0; k < 4; k++) posedge();
+    top->as_n = 1; top->ds_n = 1;
+    for (int k = 0; k < 4; k++) posedge();
     top->eval();
 
     std::string line, testName, partialWhy;
@@ -190,10 +205,14 @@ int main(int argc, char** argv) {
             In in = decodeIn(v[0], v[1], v[2], v[3], v[4]);
             Out exp = decodeOut(v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12]);
             tick++;
-            top->pclk = in.pclk; top->as_n = in.as_n; top->ds_n = in.ds_n; top->r_w = in.r_w;
+            top->as_n = in.as_n; top->ds_n = in.ds_n; top->r_w = in.r_w;
             top->cs0_n = in.cs0_n; top->cs1 = in.cs1; top->intack_n = in.intack_n; top->iei = in.iei;
             top->ad_in = in.ad; top->pa_in = in.pa; top->pb_in = in.pb; top->pc_in = in.pc;
-            for (int i = 0; i < fclk; i++) posedge();
+            // PCLK fall is a one-master-clock pulse on the first master clock
+            // after the record that changed the level.
+            top->pclk_fall = prevPclk && !in.pclk;
+            int nclk = mclkSeq[mclkIdx]; mclkIdx = (mclkIdx + 1) % mclkSeq.size();
+            for (int i = 0; i < nclk; i++) { posedge(); top->pclk_fall = 0; top->eval(); }
             if (in.pclk && !prevPclk) pclks++;
             prevPclk = in.pclk;
             Out got = readOut(top);
@@ -203,8 +222,8 @@ int main(int argc, char** argv) {
             if (exp.ad_drive && got.ad_drive) cmp(exp.ad == got.ad, "AD");
             cmp(exp.int_n == got.int_n, "INT_n");
             cmp(exp.ieo == got.ieo, "IEO");
-            cmp(exp.pa_req_n == got.pa_req_n, "PAReq_n");
-            cmp(exp.pb_req_n == got.pb_req_n, "PBReq_n");
+            // PAReq_n/PBReq_n are the Go model's mirrors of a Port C level:
+            // the Port C pins carry REQUEST/WAIT and are compared below.
             cmp(exp.pa_oe == got.pa_oe, "PAoe");
             cmp(exp.pb_oe == got.pb_oe, "PBoe");
             cmp(exp.pc_oe == got.pc_oe, "PCoe");

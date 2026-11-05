@@ -80,9 +80,21 @@ poked with); the harness reports SKIP.
 
 Every Tick call of the Go pin seam (`sim/cpu/pins.go`) is recorded
 verbatim. The Go harness calls Tick twice per clock (CLK=0 then CLK=1);
-state advances only on the 0->1 CLK transition. RESET_n low acts on every
-Tick regardless of CLK. Replay is open loop: drive the recorded inputs, one
-`eval()` per record (a posedge when CLK rises), compare all outputs.
+state advances on the 0->1 CLK transition. The 1->0 transition moves the
+strobes timed from the CLK fall (so a CLK=0 record's outputs can differ
+from the record before it) and samples WAIT_n and STOP_n. RESET_n low acts
+on every Tick regardless of CLK. Replay is open loop: drive the recorded
+inputs, run one or more board master clocks (`clk`), compare all outputs.
+The CLK pin is two pulses: `clk_rise` High for the first master clock of a
+record whose CLK level rose, `clk_fall` for one whose level fell, Low
+otherwise.
+`--mclk P` (or K8000_MCLK) sets the master clocks per record, cycled from
+the comma list P: "1" is master:CLK 2:1, "4" is 8:1, the default
+"1,2,1,3" is an uneven 3.5:1.
+`--combined` (or K8000_COMBINED=1) folds each CLK=0 record into the CLK=1
+record after it: one master clock with both pulses High, the CLK=1
+record's inputs driven, and only CLK=1 records compared (`make
+test-cpu-combined`, results in `results/cpu_combined.txt`).
 
 `AD` is compared only when the Go model drives it (ADDrive=1) and the
 Product Spec defines it: not during ST=0000 internal operations, only AD0-8

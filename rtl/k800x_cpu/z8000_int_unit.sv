@@ -19,6 +19,7 @@ module z8000_int_unit
   import z8000_zbus_pkg::*;
 (
   input  logic       clk,
+  input  logic       clk_en,   // CLK rising edge seen this clock
   input  logic       reset_n,
   input  logic       nmi_n,
   input  logic       nvi_n,
@@ -64,7 +65,7 @@ module z8000_int_unit
       nvi_req_q  <= 1'b0;
       smp_q      <= 1'b0;
       hcnt_q     <= 2'd0;
-    end else begin
+    end else if (clk_en) begin
       nmi_q <= nmi_n;
       if (smp) begin
         nmi_pend_q <= 1'b0;

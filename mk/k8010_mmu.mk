@@ -66,3 +66,21 @@ $(OBJ)/tb_mmu_timing/tb_mmu_timing: $(MMU_SRCS) tb/k8010_mmu/tb_mmu_timing.sv
 
 test-mmu-timing: $(OBJ)/tb_mmu_timing/tb_mmu_timing
 	@$(OBJ)/tb_mmu_timing/tb_mmu_timing | grep -v '\$$finish'
+
+# ---- CPU + MMU on one CLK net (SystemVerilog) -------------------------------
+# tb/k8010_mmu/tb_cpu_mmu_clk.sv: z8000_cpu and z8010_mmu share the CLK pulse;
+# the MMU's PA must be right at the CPU's next CLK rise at every ratio.
+# UNOPTFLAT: PA -> memory -> AD -> MMU is a loop only through the DMA
+# address mux, never active here. SYNCASYNCNET: the bench's own reset use.
+CHIP_BUILD += $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk
+CHIP_TEST  += test-cpu-mmu-clk
+CHIP_TIMING_TEST += test-cpu-mmu-clk
+.PHONY: test-cpu-mmu-clk
+
+$(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk: $(CPU_SRCS) $(MMU_SRCS) tb/k8010_mmu/tb_cpu_mmu_clk.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) -Wno-UNOPTFLAT -Wno-SYNCASYNCNET --Mdir $(dir $@) --top-module tb_cpu_mmu_clk \
+	  $(CPU_SRCS) $(MMU_SRCS) tb/k8010_mmu/tb_cpu_mmu_clk.sv -o tb_cpu_mmu_clk >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+test-cpu-mmu-clk: $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk
+	@$(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk | grep -v '\$$finish'

@@ -7,7 +7,8 @@
 // the Go golden model; this bench proves the strobe protocol -- when the
 // command is latched, when the command data is taken, when PA and the command
 // read data are driven and floated, and that a back-to-back CPU cycle's
-// address survives the previous cycle's /DS rise.
+// address survives the previous cycle's /DS rise, and that the offset is
+// latched at the /AS rise with PA following it before the next CLK rise.
 //
 // Clocking convention == the Go harness clkStep(): one bus phase is two
 // fabric samples (CLK Low then CLK High), so `phase()` is two posedges.
@@ -18,6 +19,14 @@ module tb_mmu_timing;
 
   logic clk = 1'b0;
   always #5 clk = ~clk;
+  // Master clock: 5 per CLK, off CLK's edges.
+  logic mclk = 1'b0;
+  initial begin #0.5; forever #1 mclk = ~mclk; end
+  // The board's CLK rising-edge pulse: High for the master clock in which
+  // CLK is first seen High.
+  logic clk_pq = 1'b0;
+  always @(posedge mclk) clk_pq <= clk;
+  wire  clk_rise = clk & ~clk_pq;
 
   logic        reset_n = 1'b0;
   logic [15:0] ad      = 16'h0000;
@@ -30,14 +39,14 @@ module tb_mmu_timing;
   logic        cs_n    = 1'b1;
   logic        dmasync = 1'b1;   // "must always be High during CPU cycles" (p.571)
 
-  logic [23:0] pa;
+  logic [15:0] pa;
   logic        pa_drive, segt_n, sup_n;
-  logic [15:0] data;
+  logic [7:0]  data;
   logic [7:0]  data_drive;
 
   z8010_mmu dut (
-    .clk(clk), .reset_n(reset_n),
-    .ad(ad), .sn(sn), .st(st), .as_n(as_n), .ds_n(ds_n),
+    .clk(mclk), .clk_in(clk_rise), .reset_n(reset_n),
+    .ad(ad[15:8]), .sn(sn), .st(st), .as_n(as_n), .ds_n(ds_n),
     .r_w(r_w), .n_s(n_s), .cs_n(cs_n), .dmasync(dmasync),
     .pa(pa), .pa_drive(pa_drive), .segt_n(segt_n), .sup_n(sup_n),
     .data(data), .data_drive(data_drive)
@@ -105,7 +114,7 @@ module tb_mmu_timing;
     as_n = 1'b1;                                                 phase();
     #1; early = |data_drive;
     ad = 16'h0000; ds_n = 1'b0; cs_n = 1'b1;                     phase();
-    #1; during = |data_drive; val = data[15:8];
+    #1; during = |data_drive; val = data;
     ds_n = 1'b1;                                                 phase();
     #1; late = |data_drive;
     idle_bus();
@@ -113,9 +122,9 @@ module tb_mmu_timing;
 
   logic [7:0] rd;
   logic       early, during, late;
-  logic [23:0] pa_seen;
+  logic [15:0] pa_seen;
   logic        pa_drv_live, pa_drv_after;
-  logic [15:0] data_low_seen;
+  logic [7:0]  data_low_seen;
 
   initial begin
     checks = 0; fails = 0;
@@ -152,9 +161,9 @@ module tb_mmu_timing;
 
     sio_read(CMD_MODE, rd, early, during, late);
     data_low_seen = data;
-    ck(data_low_seen[7:0] == 8'h00, "command read data rides AD15:8 only",
+    ck($bits(data) == 8 && $bits(ad) == 16, "command read data rides AD15:8 only",
        "p.571 Pin Description: the Z8010 has AD8-AD15 only -- there are no AD0-AD7 pins",
-       $sformatf("data=%04h, low byte must be 0", data_low_seen));
+       $sformatf("data port is %0d bits (data=%02h)", $bits(data), data_low_seen));
 
     // /CS is released before /DS falls in the middle of sio_read above; the
     // command still completed, which is the AC #34/#35 rule.
@@ -183,9 +192,9 @@ module tb_mmu_timing;
     ck(pa_drv_live, "PA is driven for a translated CPU cycle",
        "p.565: the MMU drives the 24-bit physical address after the segment number and offset are latched by /AS",
        $sformatf("pa_drive=%0b during the cycle", pa_drv_live));
-    ck(pa_seen == 24'h011234, "PA = (base << 8) + offset",
+    ck(pa_seen == 16'h0112, "PA = (base << 8) + offset",
        "p.564 Segmented Addressing: the 16-bit base is the upper 16 bits of the 24-bit physical address; the 16-bit offset is added",
-       $sformatf("pa=%06h, want 011234", pa_seen));
+       $sformatf("pa=%04h, want 0112 (A23..A8)", pa_seen));
     ck(segt_n && sup_n, "no violation for an in-bounds referenced read",
        "p.567 Violation Types: /SEGT and /SUP are asserted only on a violation",
        $sformatf("segt_n=%0b sup_n=%0b", segt_n, sup_n));
@@ -217,9 +226,79 @@ module tb_mmu_timing;
     #1; pa_seen = pa; pa_drv_live = pa_drive;
     ds_n = 1'b1;                                                             phase();
     idle_bus();
-    ck(pa_drv_live && pa_seen == 24'h020010, "the back-to-back cycle translates its OWN address",
+    ck(pa_drv_live && pa_seen == 16'h0200, "the back-to-back cycle translates its OWN address",
        "Fig 19 back-to-back Z-Bus cycles + AC #16 TdDS(AS): the /AS-fall latch must win over the coincident /DS-rise teardown",
-       $sformatf("pa=%06h (drive=%0b), want 020010", pa_seen, pa_drv_live));
+       $sformatf("pa=%04h (drive=%0b), want 0200 (A23..A8)", pa_seen, pa_drv_live));
+
+    // ---- the /AS rise latches the offset; PA follows it before any CLK rise --
+    $display("");
+    $display("[4] offset latched at the /AS rise, PA driven from it (AC #13/#14)");
+    idle_bus();
+    sn = 7'h05; ad = 16'h9900; st = ST_DATA_MEM; r_w = 1'b1; n_s = 1'b0;
+    as_n = 1'b0; ds_n = 1'b1; cs_n = 1'b1;                       phase();
+    // The offset becomes valid late in the /AS-Low window, between CLK edges.
+    ad = 16'h1234;
+    #2; as_n = 1'b1;
+    #2; pa_seen = pa; pa_drv_live = pa_drive;      // 2 ns later: no CLK edge since
+    ad = 16'hABCD;                                 // AD moves on after the hold time
+    @(posedge clk); #1;
+    ck(pa_drv_live && pa_seen == 16'h0112, "PA is driven from the /AS rise, before the next CLK rise",
+       "AC #13/#14: offset set up and held at the AS rise; p.571: the AS rise indicates AD0-AD15 valid",
+       $sformatf("pa=%04h drive=%0b 2 ns after the /AS rise, want 0112", pa_seen, pa_drv_live));
+    ck(pa_drive && pa == 16'h0112, "the offset is the value at the /AS rise, held after it",
+       "AC #13 TsOFF(AS) / #14 ThAS(OFFn): offset setup and hold around the AS rise",
+       $sformatf("pa=%04h drive=%0b after AD changed, want 0112", pa, pa_drive));
+    ds_n = 1'b0;                                                 phase();
+    ds_n = 1'b1;                                                 phase();
+    idle_bus();
+
+    // ---- a violation: /SEGT and /SUP from the /AS rise ------------------------
+    $display("");
+    $display("[5] /SEGT and /SUP asserted from the /AS rise (AC #30, #32)");
+    sio_write(CMD_SAR,   8'h07);
+    sio_write(CMD_LIMIT, 8'h00);          // pages above 00 are out of bounds
+    sio_write(CMD_ATTR,  8'h00);
+    idle_bus();
+    sn = 7'h07; ad = 16'h1234; st = ST_DATA_MEM; r_w = 1'b1; n_s = 1'b0;
+    as_n = 1'b0; ds_n = 1'b1; cs_n = 1'b1;                       phase();
+    #2; as_n = 1'b1;
+    #2; pa_drv_live = segt_n; pa_drv_after = sup_n;  // 2 ns later: no CLK edge since
+    ck(!pa_drv_live && !pa_drv_after, "a segment-length violation asserts /SEGT and /SUP before the next CLK rise",
+       "AC #30 TdAS(SEGT) / #32 TdAS(SUP): measured from the AS rise; p.568: asserted in T2",
+       $sformatf("segt_n=%0b sup_n=%0b 2 ns after the /AS rise", pa_drv_live, pa_drv_after));
+    ds_n = 1'b0;                                                 phase();
+    ds_n = 1'b1;                                                 phase();
+    #1;
+    ck(sup_n && !segt_n, "/SUP releases at the /DS rise, /SEGT stays until the acknowledge",
+       "AC #33 TdDS(SUP); p.565: SEGT is reset during the segment trap acknowledge cycle",
+       $sformatf("segt_n=%0b sup_n=%0b after the /DS rise", segt_n, sup_n));
+    idle_bus();
+
+    // ---- the acknowledge releases /SEGT at a CLK rise (INFERRED edge) --------
+    $display("");
+    $display("[6] /SEGT released at the third CLK rise from the acknowledge /AS rise (Fig.12, AC #31; INFERRED)");
+    st = 4'h4; r_w = 1'b1; as_n = 1'b0; ds_n = 1'b1;             @(posedge clk);
+    as_n = 1'b1;                                                 // T2: first CLK rise
+    #4;
+    ck(!segt_n, "/SEGT still Low after the first CLK rise (T2)",
+       "Fig.12 p.570 draws /SEGT High only from the CLK edge opening the second wait state",
+       $sformatf("segt_n=%0b", segt_n));
+    @(posedge clk); #4;                                          // TWA1: second
+    ck(!segt_n, "/SEGT still Low after the second CLK rise (first wait state)",
+       "Fig.12 p.570",
+       $sformatf("segt_n=%0b", segt_n));
+    @(posedge clk); #4;                                          // TWA2: third
+    ck(segt_n, "/SEGT released at the third CLK rise (second wait state)",
+       "Fig.12 p.570; AC #31 TdC(SEGT) is CLK-referenced; the edge is an inference, see docs/K8010_MMU_TESTS.md row 1",
+       $sformatf("segt_n=%0b", segt_n));
+    @(posedge clk);                                              // TWA3
+    @(posedge clk); ds_n = 1'b0;                                 // TWA4: /DS Low
+    @(posedge clk); #4;
+    ck(data_drive == (8'h01 << 0) && data[0] === 1'b1 && segt_n, "the identifier is driven with the trap reported while /DS is Low",
+       "p.565: an MMU that generated the trap outputs a 1 on AD line 8+ID (ID 0 here)",
+       $sformatf("data_drive=%02h data=%02h segt_n=%0b", data_drive, data, segt_n));
+    ds_n = 1'b1;                                                 phase();
+    idle_bus();
 
     $display("");
     if (fails == 0) $display("RESULT PASS  tb_mmu_timing  %0d checks", checks);

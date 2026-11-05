@@ -195,6 +195,8 @@ T 1AFF00 92 0FF00 00
 T 3AFF00 92 0FF00 00
 T 1AFF00 92 0FF00 00
 T 3AFF00 92 0FF00 00
+T 1AFF00 92 0FF00 00
+T 3AFF00 92 0FF00 00
 T 1ADF00 92 0DF00 00
 T 3ADF00 92 0DF00 00
 T 1ADF00 92 0DF00 00
@@ -4497,6 +4499,7 @@ F A_RxShiftErr 0
 F A_TxUnderrunEOM 1
 F A_BaudCounter D
 F A_BrgTC 6
+F A_BrgLoad 0
 F A_RxD 1
 F A_RxState 0
 F A_RxShift 0
@@ -4510,6 +4513,7 @@ F A_TxShift 0
 F A_TxBitCount 0
 F A_TxSubCount 0
 F A_TxStopBit 0
+F A_TxBreak 0
 F A_TxIP 1
 F A_RxIntNextChar 1
 F A_RxIntForced 0
@@ -4609,6 +4613,7 @@ F B_RxShiftErr 0
 F B_TxUnderrunEOM 1
 F B_BaudCounter 5
 F B_BrgTC 6
+F B_BrgLoad 0
 F B_RxD 1
 F B_RxState 0
 F B_RxShift 0
@@ -4622,6 +4627,7 @@ F B_TxShift 0
 F B_TxBitCount 0
 F B_TxSubCount 0
 F B_TxStopBit 0
+F B_TxBreak 0
 F B_TxIP 0
 F B_RxIntNextChar 1
 F B_RxIntForced 0
@@ -4690,6 +4696,6 @@ F B_DPLL_RxPrev 1
 F B_DPLL_RxBit 1
 F B_HuntLatch 1
 F B_SyncPin 0
-F TICKS 4460
+F TICKS 4462
 F POKES 0
 END

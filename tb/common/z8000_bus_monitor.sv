@@ -10,9 +10,11 @@
 // module proves "legal on the bus" -- it fires on the clock the RTL first
 // misbehaves, with the citation, whatever program is running.
 //
-// Sampling convention: one posedge = one CPU clock; pin values are those
-// after the edge (identical to the Go model's per-Tick outputs).  Offsets are
-// counted in clocks from the sample where /AS first went Low (T1 = 0).
+// Sampling convention: `clk` is the CPU's CLK; the monitor samples on both
+// of its edges, each sample seeing the pins as the previous edge left them
+// (identical to the Go model's per-Tick outputs).  Offsets are counted in
+// half clocks from the sample where /AS first went Low (T1's first half =
+// 0): an odd offset is the second half of a clock, after its fall.
 //
 // Instantiate alongside the DUT (tb_cpu_timing.sv) or `bind` it into any
 // bench.  errors != 0 fails the run; every violation prints once with the
@@ -42,32 +44,33 @@ module z8000_bus_monitor #(
 );
   import z8000_zbus_pkg::*;
 
-  // ---- expected strobe offsets, in clocks from the /AS fall (no wait states)
-  // Confirmed against the AC table (p.159-160) and Figs 12/13/14, and
-  // cross-checked against every recorded CPU vector in vectors/k800x_cpu/cpu.
+  // ---- expected strobe offsets, in half clocks from the /AS fall (no waits)
+  // From the AC table (1988 DB PDF p.47-48) and Figs 12/13/14.
   //
-  //   memory read : /MREQ + /DS(read) fall at T2 (offset 1); both rise at the
-  //                 edge after T3 (offset 3) -- "/DS and /MREQ rise after the
-  //                 T3 falling edge", so the release is visible one sample on.
-  //   memory write: /MREQ falls at T2 (1); /DS(write) falls after the T2
-  //                 FALLING edge -- one sample later (2) -- and rises with
-  //                 /MREQ at 3.
+  //   every cycle : /AS falls on T1's rise (#24) and rises on its fall (#26):
+  //                 Low for one half (1).
+  //   memory read : /MREQ falls on T1's fall (#18, offset 1); /DS(read) on
+  //                 T2's rise (#37, 2); both rise on T3's fall (#23, #34, 5).
+  //   memory write: /DS(write) falls on T2's fall (#39, 3), rises at 5.
   //   I/O         : /MREQ never asserts.  One automatic wait: T1, T2, TWA, T3.
-  //                 /DS falls at TWA (2) and rises at 4.
-  //   INTACK      : /MREQ never asserts.  Five automatic waits; /DS falls at
-  //                 the fourth (5) and rises at 8 (Fig 14; the long TAW string
-  //                 is what lets the IEI/IEO daisy chain settle).
+  //                 /DS falls on T2's fall (#42, 3) and rises on T3's (7).
+  //   INTACK      : /MREQ never asserts.  Five automatic waits; /DS falls on
+  //                 the rise opening the fourth (#45, 10) and rises on T3's
+  //                 fall (15).
   //   refresh     : /AS + /MREQ only, /DS NEVER falls (Fig 18; Tech Manual
   //                 9-4: refresh and internal-operation cycles never activate
   //                 /DS -- only /AS + /MREQ frame the row address).
   //   internal op : ST=0000, /AS pulse only, no /MREQ, no /DS (Fig 17).
-  localparam int OFF_MEM_RD_DS  = 1;
-  localparam int OFF_MEM_WR_DS  = 2;
-  localparam int OFF_MEM_DS_UP  = 3;
-  localparam int OFF_IO_DS      = 2;
-  localparam int OFF_IO_DS_UP   = 4;
-  localparam int OFF_IACK_DS    = 5;
-  localparam int OFF_IACK_DS_UP = 8;
+  // /WAIT is sampled on T2's fall (TWA's for I/O) and each Tw's (#62); a Tw
+  // adds two halves.
+  localparam int OFF_AS_UP      = 1;
+  localparam int OFF_MEM_RD_DS  = 2;
+  localparam int OFF_MEM_WR_DS  = 3;
+  localparam int OFF_MEM_DS_UP  = 5;
+  localparam int OFF_IO_DS      = 3;
+  localparam int OFF_IO_DS_UP   = 7;
+  localparam int OFF_IACK_DS    = 10;
+  localparam int OFF_IACK_DS_UP = 15;
   localparam int OFF_MREQ       = 1;
 
   int unsigned errors;
@@ -82,7 +85,7 @@ module z8000_bus_monitor #(
 
   // ---- in-flight transaction ------------------------------------------------
   logic        t_live;
-  int          t_off;        // clocks since the /AS fall sample
+  int          t_off;        // half clocks since the /AS fall sample
   int          t_tw;         // Tw clocks inserted (/WAIT Low at a sample point)
   int          t_tw_pre;     // of those, the ones before /DS fell
   logic [3:0]  t_st;
@@ -131,18 +134,18 @@ module z8000_bus_monitor #(
   // ---- checks ---------------------------------------------------------------
   task automatic check_end_of_cycle(input int ds_rise_at);
     int ds_f, ds_r;
-    ds_f = t_ds_fall  - t_tw_pre;  // discount externally-inserted TW clocks
-    ds_r = ds_rise_at - t_tw;
+    ds_f = t_ds_fall  - 2 * t_tw_pre;  // discount externally-inserted TW clocks
+    ds_r = ds_rise_at - 2 * t_tw;
 
     if (is_mem(t_st)) begin
       if (t_mreq_fall != OFF_MREQ)
         viol("MREQ position",
-             "Fig 12 / AC TdC(MR): /MREQ falls after the T1 falling edge, i.e. at T2",
+             "Fig 12 / AC #18 TdC(MR): /MREQ falls on T1's falling edge",
              $sformatf("%s: /MREQ fell at T1+%0d, want T1+%0d", cyc_name(), t_mreq_fall, OFF_MREQ));
       if (t_rw) begin
         if (ds_f != OFF_MEM_RD_DS)
           viol("DS(read) position",
-               "Fig 12 / AC TdC(DSR): /DS falls with the T2 clock on a read",
+               "Fig 12 / AC #37 TdC(DSR): /DS falls on T2's rising edge on a read",
                $sformatf("memory read: /DS fell at T1+%0d (waits removed), want T1+%0d", ds_f, OFF_MEM_RD_DS));
         if (!t_ad_drive_seen_low)
           viol("AD not released on a read",
@@ -151,7 +154,7 @@ module z8000_bus_monitor #(
       end else begin
         if (ds_f != OFF_MEM_WR_DS)
           viol("DS(write) position",
-               "Fig 12 / AC TdC(DSW): /DS(write) is referenced to the T2 FALLING edge -- one clock later than a read's",
+               "Fig 12 / AC #39 TdC(DSW): /DS(write) falls on T2's falling edge, half a clock after a read's",
                $sformatf("memory write: /DS fell at T1+%0d (waits removed), want T1+%0d", ds_f, OFF_MEM_WR_DS));
         if (!t_ad_drive_all_high)
           viol("write data not held",
@@ -160,7 +163,7 @@ module z8000_bus_monitor #(
       end
       if (ds_r != OFF_MEM_DS_UP)
         viol("DS release",
-             "Fig 12: /DS and /MREQ rise after the T3 falling edge (visible on the next sample)",
+             "Fig 12 / AC #23, #34: /DS and /MREQ rise on T3's falling edge",
              $sformatf("%s: /DS rose at T1+%0d (waits removed), want T1+%0d", cyc_name(), ds_r, OFF_MEM_DS_UP));
     end else if (is_io(t_st)) begin
       if (t_mreq_fall >= 0)
@@ -169,7 +172,7 @@ module z8000_bus_monitor #(
              $sformatf("I/O: /MREQ fell at T1+%0d", t_mreq_fall));
       if (ds_f != OFF_IO_DS)
         viol("DS(I/O) position",
-             "Fig 13: one automatic wait (TWA) is always inserted; /DS falls after the T2 falling edge",
+             "Fig 13 / AC #42 TdC(DSf): /DS(I/O) falls on T2's falling edge; one automatic wait (TWA) follows",
              $sformatf("I/O: /DS fell at T1+%0d (waits removed), want T1+%0d", ds_f, OFF_IO_DS));
       if (ds_r != OFF_IO_DS_UP)
         viol("I/O cycle length",
@@ -182,7 +185,7 @@ module z8000_bus_monitor #(
              $sformatf("acknowledge: /MREQ fell at T1+%0d", t_mreq_fall));
       if (ds_f != OFF_IACK_DS)
         viol("DS(acknowledge) position",
-             "Fig 14 / AC TdAS(DSA): five automatic waits; /DS falls at the fourth so the IEI/IEO chain has settled",
+             "Fig 14 / AC #45 TdC(DSA): five automatic waits; /DS falls on the rise opening the fourth so the IEI/IEO chain has settled",
              $sformatf("acknowledge: /DS fell at T1+%0d (waits removed), want T1+%0d", ds_f, OFF_IACK_DS));
       if (ds_r != OFF_IACK_DS_UP)
         viol("acknowledge cycle length",
@@ -225,7 +228,7 @@ module z8000_bus_monitor #(
 
   // Plain `always` (not always_ff): this is a checker, and the violation
   // counters are read back by the check tasks in the same evaluation.
-  always @(posedge clk) begin
+  always @(posedge clk or negedge clk) begin
     clk_no <= clk_no + 1;
 
     if (!enable) begin
@@ -246,7 +249,7 @@ module z8000_bus_monitor #(
       // address for the SECOND transaction.
       if (!as_n && !as_q && ad_drive && (ad_out != ad_q || st != st_q))
         viol("/AS held Low across an address/status change",
-             "Fig 12: the address and status are valid for the whole of T1 and /AS rises at T2; the rising edge is the external latch point",
+             "Fig 12: the address and status are valid while /AS is Low and /AS rises on T1's fall; the rising edge is the external latch point",
              $sformatf("AD %04h->%04h ST %0h->%0h with /AS still Low", ad_q, ad_out, st_q, st));
 
       // R3: while /AS is Low the CPU must be driving the address.
@@ -298,9 +301,14 @@ module z8000_bus_monitor #(
         t_ad_drive_all_high <= 1'b1;
       end else if (t_live) begin
         t_off <= t_off + 1;
-        // /WAIT is sampled from T2 on; for I/O only from TWA (Fig 9-5).
-        if (!wait_n && t_ds_rise < 0 && t_off + 1 >= (is_io(t_st) ? 2 : 1))
+        // /WAIT is sampled on T2's fall and each Tw's; for I/O from TWA's
+        // (Fig 9-5). The sample before that fall shows its level.
+        if (!wait_n && t_ds_rise < 0 && t_off + 1 == (is_io(t_st) ? 4 : 2) + 2 * t_tw)
           t_tw <= t_tw + 1;
+        if (!as_q && as_n && t_off + 1 != OFF_AS_UP)
+          viol("AS width",
+               "AC #24, #26, #29: /AS falls on T1's rise and rises on its fall",
+               $sformatf("%s: /AS rose at T1+%0d halves, want %0d", cyc_name(), t_off + 1, OFF_AS_UP));
         if (ds_q && !ds_n) begin
           t_ds_fall <= t_off + 1;
           t_tw_pre  <= t_tw;
@@ -319,7 +327,7 @@ module z8000_bus_monitor #(
         // A cycle with no data strobe at all (refresh / internal op) closes
         // three clocks after /AS falls -- long enough for its T3. An
         // acknowledge /DS can fall later, after waits.
-        else if (t_off + 1 >= 3 && t_ds_fall < 0 && t_ds_rise < 0 &&
+        else if (t_off + 1 >= 5 && t_ds_fall < 0 && t_ds_rise < 0 &&
                  !is_ack(t_st)) begin
           check_end_of_cycle(t_ds_rise);
           t_live <= 1'b0;

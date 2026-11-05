@@ -10,6 +10,15 @@
 module tb_seq_words;
   logic clk = 1'b0;
   always #5 clk = ~clk;
+  // Master clock: 5 per CLK, off CLK's edges.
+  logic mclk = 1'b0;
+  initial begin #0.5; forever #1 mclk = ~mclk; end
+  // The board's CLK edge pulses: High for the master clock in which CLK is
+  // first seen High, or Low.
+  logic clk_pq = 1'b0;
+  always @(posedge mclk) clk_pq <= clk;
+  wire  clk_rise = clk & ~clk_pq;
+  wire  clk_fall = ~clk & clk_pq;
 
   logic        reset_n;
   logic [15:0] ad_in;
@@ -18,17 +27,17 @@ module tb_seq_words;
   logic [6:0]  sn;
   logic        as_n, ds_n, mreq_n, r_w, b_w, n_s;
   logic [3:0]  st;
-  logic        busack_n, mo_n, bus_lock;
+  logic        busack_n, mo_n;
 
   z8000_cpu #(.SEGMENTED(1'b1), .VMPU(1'b0)) dut (
-    .clk(clk), .reset_n(reset_n),
+    .clk(mclk), .clk_rise(clk_rise), .clk_fall(clk_fall), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(1'b1), .wait_n(1'b1), .busreq_n(1'b1),
     .nmi_n(1'b1), .nvi_n(1'b1), .vi_n(1'b1), .segt_n(1'b1),
     .abort_n(1'b1), .mi_n(1'b1),
     .ad_out(ad_out), .ad_drive(ad_drive), .bus_drive(bus_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
     .r_w(r_w), .b_w(b_w), .n_s(n_s), .st(st),
-    .busack_n(busack_n), .bus_lock(bus_lock), .mo_n(mo_n)
+    .busack_n(busack_n), .mo_n(mo_n)
   );
 
   // Program memory in segment 0; the latched offset selects the word.
@@ -36,7 +45,8 @@ module tb_seq_words;
   logic [15:0] mem [0:255];
   logic [15:0] lat_addr;
   logic        as_q;
-  always @(posedge clk) begin
+  // Sampled mid-clock: /AS is Low only in T1's first half.
+  always @(negedge clk) begin
     if (as_q && !as_n && ad_drive) lat_addr <= ad_out;
     as_q <= as_n;
   end

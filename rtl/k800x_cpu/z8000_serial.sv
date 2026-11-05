@@ -84,6 +84,7 @@ module z8000_serial
   import z8000_ctrl_pkg::*;
 (
   input  logic               clk,
+  input  logic               clk_en,   // CLK rising edge seen this clock
   input  logic               reset_n,
   input  logic               tick,
   input  logic               start,
@@ -641,7 +642,7 @@ module z8000_serial
       q_q <= 1'b0; f_q <= 1'b0; sd_q <= 1'b0; o_q <= 1'b0; od_q <= 1'b0; w_q <= 1'b0; l_q <= 1'b0;
       qneg_q <= 1'b0; qzero_q <= 1'b0; zin_q <= 1'b0;
       width_q <= WIDTH_NONE; left_q <= 1'b0; arith_q <= 1'b0; zn_q <= 1'b0;
-    end else if (tick || start) begin
+    end else if (clk_en) if (tick || start) begin
       u_q <= u_d; tgt_q <= tgt_d; sub_q <= sub_d; cnt_q <= cnt_d; r_q <= r_d;
       b_q <= b_d; have_q <= have_d;
       x_q <= x_d; c_q <= c_d; v_q <= v_d; k_q <= k_d; z_q <= z_d; bz_q <= bz_d;
@@ -704,7 +705,7 @@ module z8000_serial
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)  more_q <= 1'b0;
-    else if (tick) more_q <= more_now;
+    else if (clk_en) if (tick) more_q <= more_now;
   end
 
   // ---- cycle ends ---------------------------------------------------------------

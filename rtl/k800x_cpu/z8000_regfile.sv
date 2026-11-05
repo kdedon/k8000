@@ -18,6 +18,7 @@
 
 module z8000_regfile (
   input  logic        clk,
+  input  logic        clk_en,   // CLK rising edge seen this clock
   input  logic        we,
   input  logic [1:0]  wwidth,   // 0=byte 1=word 2=long 3=quad
   input  logic [3:0]  wsel,
@@ -60,7 +61,7 @@ module z8000_regfile (
     endcase
   end
 
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk) if (clk_en) begin
     if (we) r <= r_d;
     for (int i = 0; i < 16; i++) nz[i] <= {r[i][15:8] != 8'h00, r[i][7:0] != 8'h00};
   end

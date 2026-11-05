@@ -2,7 +2,16 @@
 // file against the Verilated z8010_mmu (FPGA_BIBLE 0.3 tier 1, Ch.3.6).
 //
 //   tb_mmu <file.vec> [--context N] [--vcd out.vcd] [--quiet]
-//                     [--stop-first] [--no-final]
+//                     [--stop-first] [--no-final] [--mclk P]
+//
+// The MMU runs on the board master clock `clk`; the CLK pin `clk_in` is the
+// board's rising-edge pulse, High for the first master clock of a record
+// whose CLK level rose. Each record gets the next count of master clocks
+// from the pattern P (comma list, cycled; default K8000_MCLK or "1,2,1,3").
+//
+// The chip's pins are AD15..AD8 and A23..A8: the recorded 16-bit AD, 24-bit
+// PA and 16-bit Data are compared on those bits only, and so is the
+// violation offset (the chip keeps only its high byte).
 //
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP (unsupported vector), 4 usage/parse
 // error. (3 = wrong-variant is reserved for parity with tb_cpu; the MMU has
@@ -18,12 +27,12 @@
 // learn how bad it is.
 //
 // Comparison rules (why they are fair -- docs/K8010_MMU_TESTS.md "Comparison"):
-//   * The Go model advances state only on a CLK 0->1 transition (prevCLK &&
-//     CLK) and samples AS_n/DS_n/DMASYNC at that edge -- i.e. it already
-//     oversamples the async strobes with its clock, exactly what the RTL
-//     must do (Bible 0.2.3). So one record == one eval(), a posedge when
-//     CLK rises, and every output is comparable after every record.
-//   * RESET_n low acts on every Tick regardless of CLK (asynchronous).
+//   * One Go Tick == one sample of the pins == one record. Both models act
+//     on an /AS or /DS edge in the record that shows it and on CLK rises
+//     for SN, DMASYNC and the trap-acknowledge /SEGT release (p.570-573);
+//     the RTL sees the record's edges at its first master clock, so every
+//     output is comparable after every record, exactly.
+//   * /RESET is a level in both.
 //   * All Go outputs are registered (m.out persists between Ticks), so PA
 //     is compared only while PADrive=1 and Data only while DataDrive=1
 //     (DataMask always) --
@@ -77,7 +86,7 @@ static Out decodeOut(unsigned bits, unsigned pa, unsigned data, unsigned mask) {
 static Out readOut(Vz8010_mmu* t) {
     Out o;
     o.pa_drive = t->pa_drive; o.segt_n = t->segt_n; o.sup_n = t->sup_n; o.data_drive = t->data_drive != 0;
-    o.pa = t->pa; o.data = t->data; o.mask = t->data_drive;
+    o.pa = (uint32_t)t->pa << 8; o.data = (uint16_t)(t->data << 8); o.mask = t->data_drive;
     return o;
 }
 
@@ -107,6 +116,7 @@ int main(int argc, char** argv) {
     std::string vecPath, vcdPath;
     int context = 12;
     bool quiet = false, stopFirst = false, checkFinal = true;
+    std::string mclkPat = getenv("K8000_MCLK") ? getenv("K8000_MCLK") : "1,2,1,3";
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--context" && i + 1 < argc) context = atoi(argv[++i]);
@@ -114,6 +124,7 @@ int main(int argc, char** argv) {
         else if (a == "--quiet") quiet = true;
         else if (a == "--stop-first") stopFirst = true;
         else if (a == "--no-final") checkFinal = false;
+        else if (a == "--mclk" && i + 1 < argc) mclkPat = argv[++i];
         else if (a.size() > 1 && a[0] == '-' && a[1] == '-') { fprintf(stderr, "unknown option %s\n", a.c_str()); return 4; }
         else vecPath = a;
     }
@@ -138,12 +149,22 @@ int main(int argc, char** argv) {
     auto dump = [&]() {};
 #endif
 
+    std::vector<int> mclkSeq;
+    for (size_t p0 = 0; p0 < mclkPat.size();) {
+        size_t p1 = mclkPat.find(',', p0); if (p1 == std::string::npos) p1 = mclkPat.size();
+        int n = atoi(mclkPat.substr(p0, p1 - p0).c_str());
+        if (n < 1) { fprintf(stderr, "--mclk: counts must be >= 1\n"); return 4; }
+        mclkSeq.push_back(n); p0 = p1 + 1;
+    }
+    if (mclkSeq.empty()) { fprintf(stderr, "--mclk: empty pattern\n"); return 4; }
+    size_t mclkIdx = 0;
+    auto mtick = [&]() { top->clk = 0; top->eval(); dump(); top->clk = 1; top->eval(); dump(); };
+
     // Quiescent start == Go New(): no reset yet, strobes inactive, CLK low
     // (a fresh Z8010 has prevCLK=false, so the first CLK=1 Tick IS an edge).
-    top->clk = 0; top->reset_n = 1; top->ad = 0; top->sn = 0; top->st = 0;
+    top->clk = 0; top->clk_in = 0; top->reset_n = 1; top->ad = 0; top->sn = 0; top->st = 0;
     top->as_n = 1; top->ds_n = 1; top->r_w = 1; top->n_s = 0; top->cs_n = 1; top->dmasync = 0;
-    top->eval();
-    dump();
+    for (int k = 0; k < 2; k++) mtick();
 
     std::string line, testName;
     long tick = 0, clock = 0;
@@ -203,26 +224,29 @@ int main(int argc, char** argv) {
                                 strtoul(sData.c_str(), nullptr, 16), strtoul(sMask.c_str(), nullptr, 16));
             tick++;
             // drive inputs
-            top->reset_n = in.reset_n; top->ad = in.ad; top->sn = in.sn; top->st = in.st;
+            top->reset_n = in.reset_n; top->ad = in.ad >> 8; top->sn = in.sn; top->st = in.st;
             top->as_n = in.as_n; top->ds_n = in.ds_n; top->r_w = in.r_w; top->n_s = in.n_s;
             top->cs_n = in.cs_n; top->dmasync = in.dmasync;
             bool rising = in.clk && !prevClk;
             prevClk = in.clk;
-            top->clk = in.clk;
-            top->eval();          // one Tick == inputs applied, (maybe) one posedge, outputs settled
-            dump();
+            top->clk_in = rising;   // the edge pulse, first master clock of the record only
+            top->eval();          // the new inputs settle before the master clock samples them
+            for (int k = mclkSeq[mclkIdx]; k > 0; k--) { mtick(); top->clk_in = 0; }
+            mclkIdx = (mclkIdx + 1) % mclkSeq.size();
             if (rising) clock++;
             Out got = readOut(top);
-            // compare
+            bool ok[7];
+            ok[0] = exp.pa_drive == got.pa_drive;
+            ok[1] = exp.segt_n == got.segt_n;
+            ok[2] = exp.sup_n == got.sup_n;
+            ok[3] = exp.data_drive == got.data_drive;
+            ok[4] = exp.mask == got.mask;
+            ok[5] = !(exp.pa_drive && got.pa_drive) || (exp.pa & 0xFFFF00) == got.pa;
+            ok[6] = !(exp.data_drive && got.data_drive) || (exp.data & 0xFF00) == got.data;
             std::string marks;
-            auto cmp = [&](bool ok, const char* pin) { if (!ok) { if (!marks.empty()) marks += ","; marks += pin; } };
-            cmp(exp.pa_drive == got.pa_drive, "PADrive");
-            cmp(exp.segt_n == got.segt_n, "SEGT_n");
-            cmp(exp.sup_n == got.sup_n, "SUP_n");
-            cmp(exp.data_drive == got.data_drive, "DataDrive");
-            cmp(exp.mask == got.mask, "DataMask");
-            if (exp.pa_drive && got.pa_drive) cmp(exp.pa == got.pa, "PA");
-            if (exp.data_drive && got.data_drive) cmp(exp.data == got.data, "Data");
+            static const char* pinName[7] = {"PADrive", "SEGT_n", "SUP_n", "DataDrive", "DataMask", "PA", "Data"};
+            for (int k = 0; k < 7; k++)
+                if (!ok[k]) { if (!marks.empty()) marks += ","; marks += pinName[k]; }
             std::string row = fmtRow(tick, clock, in, exp, got, marks.empty() ? "" : "<-- " + marks);
             if (!marks.empty()) {
                 mismTicks++;
@@ -254,7 +278,7 @@ int main(int argc, char** argv) {
                 else if (what == "DSC") g = dut.dsc();
                 else if (what == "VTR") g = dut.viol_type();
                 else if (what == "VSN") g = dut.viol_sn();
-                else if (what == "VOFF") g = dut.viol_off();
+                else if (what == "VOFF") { e >>= 8; g = dut.viol_off(); }
                 else if (what == "VOVF") g = dut.viol_overflow();
                 else if (what == "ISN") g = dut.isn();
                 else if (what == "IOFF") g = dut.ioffset();

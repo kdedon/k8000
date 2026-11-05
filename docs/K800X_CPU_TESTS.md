@@ -47,29 +47,27 @@ Design Handbook" (1982).
 Go requirements R-CPU-500..530 and R-CPU-930..998 (AC table) cite most of
 these.
 
-## Reading the vectors: the rising-edge convention
+## Reading the vectors: CLK edges
 
-Model and RTL clock on the rising edge only. A `T` record's outputs are the
-pins just after that edge (the CLK=0 record repeats them). Silicon moves
-several strobes after the FALLING edge (AC table, all from clock fall:
-TdC(MR) MREQ fall, TdC(DSW) DS(write) fall, TdC(DSf) DS(I/O) fall,
-TdC(DSr)/TdC(MRr) DS/MREQ rise; setups to clock fall: TsW(C) WAIT, TsDR(C)
-read data, TsSTP(C) STOP); they show at the NEXT rising edge. Per clock
-(value just after the opening edge):
+State advances on the CLK rise. The strobes the AC table times from the
+CLK fall change on the CLK=0 record (1988 DB PDF p.47-48): /AS rise (#26),
+/MREQ fall and rise (#18, #23), DS(write) and DS(I/O) fall (#39, #42), /DS
+rise (#34). WAIT and STOP are sampled on the fall (#60, #62) and acted on
+at the next rise. Read data is taken at the T3 opening rise (item 24). Per
+half clock (value just after the edge):
 
-| clock | AS | MREQ (memory/refresh) | DS read | DS write | DS I/O | DS INTACK | AD |
-|-------|----|-----------------------|---------|----------|--------|-----------|----|
-| T1    | 0  | 1 | 1 | 1 | 1 | 1 | address (driven) |
-| T2    | 1  | 0 | 0 | 1 | 1 | 1 | read: released; write: data |
-| TWA   | 1  | - | - | - | 0 | 0 from the 4th TWA | I/O write: data |
-| TW    | 1  | 0 | 0 | 0 | 0 | 0 | as T2/TWA |
-| T3    | 1  | 0 | 0 | 0 | 0 | 0 | write: data still driven; read data captured at the opening edge |
-| next  | (T1 of the next cycle may start here) | 1 | 1 | 1 | 1 | 1 | released / next address |
+| edge | AS | MREQ (memory/refresh) | DS read | DS write | DS I/O | DS INTACK | AD |
+|------|----|-----------------------|---------|----------|--------|-----------|----|
+| T1 rise | 0 | 1 | 1 | 1 | 1 | 1 | address (driven) |
+| T1 fall | 1 | 0 | 1 | 1 | 1 | 1 | address |
+| T2 rise | 1 | 0 | 0 | 1 | 1 | 1 | read: released; write: data |
+| T2 fall | 1 | 0 | 0 | 0 | 0 | 1 | as T2 rise; WAIT sampled |
+| TWA / TW | 1 | 0 | 0 | 0 | 0 | 0 from the 4th TWA rise | as T2 |
+| T3 rise | 1 | 0 | 0 | 0 | 0 | 0 | read data captured |
+| T3 fall | 1 | 1 | 1 | 1 | 1 | 1 | write: data still driven |
+| next rise | (T1 of the next cycle may start here) | 1 | 1 | 1 | 1 | 1 | released / next address |
 
-Falling-edge samples move to the next rising edge: WAIT/ABORT at the edge
-that would open T3 or the next TW; identifier/read data at the T3 opening
-edge; STOP at the fetch launch edge and each refresh T3 opening edge.
-Sampling read data one edge later (closing T3) also passes: recorded memory
+Sampling read data at the T3 fall instead also passes: recorded memory
 responses hold while DS is low.
 
 ## Spec conformance ledger
@@ -83,12 +81,12 @@ follows one reading, only a real CPU can settle it. The last column names the Go
 |---|------|--------|---------|---------------|
 | 1 | Reset pin state: AD 3-stated; AS, DS, MREQ, ST0-3, BUSACK, MO high; SN low; R/W, B/W, N/S "not affected" | PS "Reset" p.156 + Fig 19 p.157; RM 7.4 p.220, 9.7 p.241 | CONFIRMED | `TestResetPinState`. During reset N/S low, R/W high, B/W low (undefined in silicon); RTL matches. |
 | 2 | Reset reads start on the 3rd rising edge after RESET rises; three (Z8001) / two (Z8002) back-to-back 3-clock reads at 0002/0004/0006 with ST=1100 ("IFn" in Fig 19), system mode | Fig 19; PS p.156 | CONFIRMED | `TestResetSequence*`, `TestResetReadStatusCodes` |
-| 3 | Memory read: DS low from the T2 edge THROUGH T3 (TwDSR = TcC+TwCh-80 ns), MREQ low through T3 (TwMRh = TcC-40 ns), both released at the edge after T3 | Fig 12 p.150; AC 19/34/38 p.159 | FIXED (was: DS/MREQ high at the T3 edge -- MREQ low 1 clock, high 2, the inverse of TwMRh) | `TestBusTimingMemoryRead`; every read vector |
-| 4 | Memory write: data driven from the T2 edge to the end of T3 (TdC(DW), TdDS(DW)); DS(write) low only for the T3 clock (falls TdC(DSW) after the T2 falling edge, TwDSW = TcC-65 ns) | Fig 12; AC 14/16/21/35/39/40 | FIXED (was: DS low during T2, data released at the T3 edge) | `TestBusSpec_MemoryWriteStrobes` |
+| 3 | Memory read: /AS Low from T1's rise to its fall; MREQ low from T1's fall, DS from T2's rise, both through T3 and released on T3's fall (TwDSR = TcC+TwCh-80 ns, TwMRh = TcC-40 ns) | Fig 12 p.150; AC 18/19/23/24/26/34/37/38 (1988 DB PDF p.47) | FIXED (was: DS/MREQ high at the T3 edge -- MREQ low 1 clock, high 2, the inverse of TwMRh) | `TestBusTimingMemoryRead`; every read vector |
+| 4 | Memory write: data driven from the T2 rise to the end of T3 (TdC(DW), TdDS(DW)); DS(write) low from T2's fall to T3's (TdC(DSW), TwDSW = TcC-65 ns) | Fig 12; AC 14/16/21/35/39/40 | FIXED (was: DS low during T2, data released at the T3 edge) | `TestBusSpec_MemoryWriteStrobes` |
 | 5 | Byte memory writes put the same byte on both halves of AD | RM 9.4.2 p.234; R-CPU-513 | FIXED (was: the other half zero) | `TestBusSpec_ByteWriteDuplicatesData`; `cpu_bytelane_test` unchanged (lane checks) |
-| 6 | Byte I/O lanes: standard I/O on AD0-7, special I/O on AD8-15; the other half not specified | RM 9.4.3 p.234; Z8010 spec (AD8-15 only) | CONFIRMED (lanes) / OPEN (other half: model leaves it zero, not duplicated) | `cpu_io_bytelane_test` |
-| 7 | I/O cycle: T1, T2, TWA, T3; DS falls after the T2 falling edge (low after the TWA and T3 edges, TwDS = 2TcC-90 ns); MREQ high; N/S low; port address at T1 | Fig 13 p.151; AC 42/43 | FIXED (was: DS low at T2 and TWA, high at T3) | `TestBusSpec_IOCycleDS`, `TestIOCycleAutoWait` |
-| 8 | WAIT sampled at the T2 falling edge (again mid-TW); one clock added per Low sample; no control output changes during TW | PS p.150; RM 9.4.1 p.232 | FIXED (was: sampled at the T2 rising edge -- a WAIT driven in response to DS falling was never honored) | `TestBusSpec_WaitSampledAtEndOfT2`; ABORT (Z8003/4) moves with it (`cpu_vmpu_test` unchanged) |
+| 6 | Byte I/O as byte memory: a write puts the byte on both halves of AD; a read takes AD15:8 for an even port, AD7:0 for an odd one, in both classes and the block forms | TM Jan83 9.4.3 p.9-6; Fawcett p.53, Fig 4.3; TM Mar81 9.4.3 p.9-6 (lanes by class on the ports it allows) | FIXED (was: the byte on its class's lane, the other half zero) | `cpu_io_bytelane_test`, `cpu_blockio_bytelane_test` (Z8002 and segmented Z8001) |
+| 7 | I/O cycle: T1, T2, TWA, T3; DS falls on T2's fall and rises on T3's (TwDS = 2TcC-90 ns); MREQ high; N/S low; port address at T1 | Fig 13 p.151; AC 42/43; TM Jan83 Fig 9-5 | FIXED (was: DS low at T2 and TWA, high at T3) | `TestBusSpec_IOCycleDS`, `TestIOCycleAutoWait` |
+| 8 | WAIT sampled on the T2 falling edge (again mid-TW), acted on at the next rise; one clock added per Low sample; no control output changes during TW | PS p.150; RM 9.4.1 p.232; AC 62/63 | FIXED (was: sampled at the T2 rising edge -- a WAIT driven in response to DS falling was never honored) | `TestBusSpec_WaitSampledAtEndOfT2`; ABORT (Z8003/4) moves with it (`cpu_vmpu_test` unchanged) |
 | 9 | INTACK: T1, T2, five automatic waits, T3; DS falls just after the edge opening the 4th automatic wait (TdAS(DSA) min = 4TcC+TwCl-40 ns after AS rise; TdC(DSA) from clock rise) and stays low through T3 (identifier sampled at the T3 falling edge, TdDSA(DR)) | Fig 14 p.152; AC 44/45/46 p.160; RM 9.4.5 p.236 | FIXED (was: DS low for one clock, the 5th automatic wait) | `TestINTACKDSLateFall`, system `TestCIOINTACKWithLateDSFall`/`TestSCCINTACKWithLateDSFall` |
 | 10 | INTACK WAIT sampled in two places: before the DS fall (delays it) and before the identifier read | RM 9.4.5 p.236 | FIXED (was: one place) | `TestBusSpec_INTACKWaitPlaces` |
 | 11 | INTACK length: 10 clocks, T4 and T5 after T3 inside the acknowledge cycle. Fawcett p.91: "T4 and T5 clock periods are appended to this transaction ... the interrupt acknowledge machine cycle is always at least 10 clock cycles long"; Table 6.3: "Interrupt acknowledge cycle 10"; TM Mar81 Fig 9-6 and 1988 DB Fig 14 label T3, T4, T5 inside the acknowledge cycle | Fawcett p.91, p.93 (PDF 102, 104); TM Mar81 9-8 Fig 9-6 (PDF 243); 1988 DB p.152 Fig 14 (PDF 159) | FIXED (was: 8) | `TestMachineCycleEntry`, `TestMachineCycleEntryZ8002`. Conflict: TM Mar81 9-8 and RM 9.4.5 p.236 text: "eight clock cycles long at a minimum". Model follows Fawcett and the figures. |
@@ -97,17 +95,17 @@ follows one reading, only a real CPU can settle it. The last column names the Go
 | 14 | Refresh: ST=0001, AS pulse, MREQ low T2-T3, DS never low, ROW on AD0-8 (AD0=0), AD9-15 undefined; R/W, B/W, N/S same as the previous transaction | Fig 18 p.156; RM 9.4.6 p.237 | FIXED (R/W,B/W,N/S were forced read/word/FCW mode); MREQ width via item 3 | `TestBusSpec_RefreshKeepsRWBWNS`; tb compares only AD[8:0] on refresh |
 | 15 | Internal operation: ST=0000, AS pulse opening each cycle, MREQ/DS high, AD undefined, B/W undefined, N/S same as previous; 3 to 8 clocks ("An internal operation can extend up to a maximum of eight clock periods", Fawcett p.66; "three to eight clock cycles long", 1988 DB p.155). Internal cycles appear only where an instruction's machine-cycle program names them | Fig 17 p.155; RM 9.4.6; Fawcett p.66 (PDF 77); 1988 DB p.155 (PDF 162) | FIXED (was: an internal cycle opened whenever 3 or more internal clocks remained) / tolerance | `TestMachineCyclePins`; tb does not compare AD or B/W while ST=0000 (model drives PC+2 / word as stand-ins) |
 | 16 | HALT: 5-clock IF1, then 3-clock internal operations interspersed with refresh; interrupts sampled at the beginning of every T3; after two consecutive active samples the 7-clock aborted IF1, then the 10-clock acknowledge | Fawcett p.96 (PDF 107): "a five-clock instruction fetch cycle, followed by successive three-clock-period internal cycles", Fig 6.13 p.95 (PDF 106); PS "HALT" p.155 ("If an input is found active during two consecutive samples, the subsequent IF1 cycle is exercised, but ignored, and the normal interrupt acknowledge cycle is started"); Fawcett p.93 Table 6.3 (PDF 104) | FIXED (was: idle pins, exit on any tick) | `TestBusSpec_HaltInternalOpsAndTwoSampleExit`, `TestMachineCycleHalt`, `TestG78_8_RefreshContinuesDuringHalt` |
-| 17 | STOP sampled on the falling edge before an IF1 / before an EPA second word; the fetch runs, then a refresh stream after its T3, STOP re-sampled at each refresh T3; when found High the next refresh completes and the CPU continues; ROW += 2 per cycle, prescaler bypassed | Fig 16 p.154 + text; RM 9.6.4 p.240-241; R-CPU-527..530 | FIXED (was: refresh stream BEFORE the fetch, no IF1 while STOP low) | `TestSTOPStallsAndResumes`, `TestSTOPStreamShape`, `TestSTOPBeforeEPAWord2`; system FPU tests (BSY) |
+| 17 | STOP sampled on the falling edge before an IF1 / before an EPA second word; the fetch runs, then a refresh stream after its T3, STOP re-sampled on each T3 fall (the IF1's, then each refresh's; `TestSTOPSampledOnT3Fall`); when found High the next refresh completes and the CPU continues; ROW += 2 per cycle, prescaler bypassed | Fig 16 p.154 + text; RM 9.6.4 p.240-241; R-CPU-527..530 | FIXED (was: refresh stream BEFORE the fetch, no IF1 while STOP low) | `TestSTOPStallsAndResumes`, `TestSTOPStreamShape`, `TestSTOPBeforeEPAWord2`; system FPU tests (BSY) |
 | 18 | STOP: the refresh stream goes in after the IF1's T3 and the IF1's remaining clocks follow the last stream refresh. TM 9.6.4: "a stream of memory refresh cycles is inserted after the third clock cycle in the instruction fetch"; Fig 9-10 shows the IF1's T4, T5 after the stream. The only refresh placed between T3 and a tail (item 35) | TM Mar81 9-12 Fig 9-10 (PDF 247); Fig 16 | FIXED (was: treated as the normal post-fetch clocks) | `TestMachineCycleRefresh`, `TestSTOPStreamShape` |
-| 19 | BUSREQ synchronized at the beginning of a machine cycle; BUSACK Low (all bus outputs floated) after that machine cycle completes, tail included: "the internal BUSREQ will cause the bus acknowledge line (BUSACK) to be asserted after the current machine cycle is completed". TSET does not grant between its read and its write on every variant: "BUSRQ is not honored in the time between loading the destination from memory and storing the destination to memory" | PS p.153 + Fig 15; RM 9.6.2; TM Mar81 9-11/9-12 (PDF 246-247), 6-163 (PDF 216); R-CPU-523 | FIXED (was: granted at any idle edge, and inside a tail) | `TestBusSpec_BusRequestTiming`, `TestBusRequestGrant`, `TestMachineCycleBusRequest`, `TestTSETBusReqNotGranted`. Conflict: Fawcett p.66: "serviced at the end of the current bus transaction". Model follows TM. |
+| 19 | BUSREQ sampled at the rising edge opening each machine cycle's T1; if Low, BUSACK Low (bus outputs floated) right after that cycle's T3: "the CPU will relinquish the bus at the end of the bus transaction in that cycle (in other words, immediately after T3)". The cycle's later clocks (tail, internal operation past its third clock, acknowledge T4/T5) run on during the grant; the next cycle waits for the bus. TSET does not grant between its read and its write on every variant: "BUSRQ is not honored in the time between loading the destination from memory and storing the destination to memory" | Fawcett PDF p.114 (printed 103); TM Jan83 p.262-263 Fig 9-9; DB 1988 p.41 Fig 15; TM Mar81 6-163 (PDF 216); R-CPU-523 | FIXED (was: sampled every edge, granted after the whole cycle including its tail) | `TestBusRequestTail`, `TestBusRequestInternal`, `TestBusRequestAcknowledge`, `TestBusRequestRefresh`, `TestBusRequestTSET`, `TestBusRequestSampledAtT1`, `TestMachineCycleBusRequest`, `TestBusSpec_BusRequestTiming`, `TestTSETBusReqNotGranted`. An internal operation's transaction taken as its first three clocks (TM Fig 9-7, Fawcett Fig 5.8): interpretation. Conflict: TM p.262 and DB p.41 text say BUSACK after the whole machine cycle; Fawcett's worked acknowledge (8 of 10 clocks) is followed. |
 | 20 | BUSREQ release: sampled High at edge P, BUSACK High at P+1, CPU regains the bus two clocks after BUSREQ rises (P+2) | PS p.153; RM 9.6.2 p.240; R-CPU-525 | FIXED (was: BUSACK High and resume at P) | `TestBusSpec_BusRequestTiming`. Fig 15's AD row hints at a T1 at P+3, its AS row shows none; the text's "two clock cycles" is encoded (OPEN by one clock). |
-| 21 | SN valid about one clock before the address (TdC(SNv) 130 ns after a clock rise), may change from TdC(SNn) after the T2 rise | PS p.150; AC 6/7; R-CPU-509 | OPEN: model drives SN with the address at T1 | tb compares SN only while AS is low, so driving SN a clock early passes |
+| 21 | SN valid about one clock before the address (TdC(SNv) 130 ns after a clock rise), may change from TdC(SNn) after the T2 rise | PS p.150; AC 6/7; R-CPU-509 | OPEN: the Go model drives SN with the address at T1, the RTL on the fall in the clock before T1 (in time for the Z8010's SN sample at the T1 rise, #18) | tb compares SN only while AS is low, so driving SN early passes |
 | 22 | Status/B/W/N/S valid early in T1 and stable through T3 (TdC(S), TdDS(S)); "same as previous cycle" between transactions and after a bus grant | Fig 12/15 | CONFIRMED | model holds the last values between transactions |
 | 23 | Interrupt request sampling while running: VI/NVI/SEGT levels and the NMI latch sampled at T3 of the last machine cycle of the instruction (the third clock of an internal cycle); the aborted IF1 starts after that whole cycle, tail included. Fawcett p.90: "sampled at the beginning of T3 of the last machine cycle"; 1988 DB p.152: "at the end of T2 in the last machine cycle", the same instant | Fawcett p.77, p.90 (PDF 88, 101); 1988 DB p.152 (PDF 159); TM Mar81 9-11 (PDF 246) | FIXED (was: the level latched at the dispatch edge, +-1 clock). Maintainer decision; default, unverified on silicon | `TestMachineCycleInterruptSample`. Conflict: TM Mar81 9.6.1: "At the beginning of the last clock cycle in the last machine cycle"; they differ only when that cycle has a tail. |
-| 24 | Data sample point: silicon T3 falling edge; model T3 rising (opening) edge; read data must be valid one clock after DS falls (silicon: TdDSR(DR) = TcC+TwCh-150 ns) | Fig 12; AC 12/33 | OPEN (quantization) | harness memories respond while DS is low, so either T3 edge matches |
+| 24 | Data sample point: silicon T3 falling edge; model T3 rising (opening) edge, half a clock early (the strobes are on their own edges); read data must be valid half a clock after the silicon's (TdDSR(DR) = TcC+TwCh-150 ns) | Fig 12; AC 12/33 | OPEN (the word is used at that edge; moving it is a separate change) | harness memories respond while DS is low, so either T3 edge matches |
 | 25 | Chained T3/T1: a transaction's T1 never shares a clock with the previous T3 (3-clock cycles back-to-back) | Fig 19; RM 9.4.2 | FIXED for two paths (STOP stream / VMPU abort re-fetch chained before) | all back-to-back vectors |
 | 26 | Z8003/4 ABORT sampled at T2 and each Tw with WAIT | 1985 DB p.448 Fig 7 | CONFIRMED (moved with item 8) | `TestAbort*` |
-| 27 | Refresh prescaler CLK/4, row +2, RE bit; refresh after the whole IF1 or internal machine cycle (tail included), and in HALT | PS Fig 4 p.133, p.149, p.155, p.156; Fawcett p.66 (PDF 77) | FIXED (was: refresh before the IF1, then on the clock after the IF1's T3); prescaler, row and RE confirmed | `TestRefresh*`, `TestMachineCycleRefresh`; items 35, 36, 43 |
+| 27 | Refresh prescaler CLK/4, row +2, RE bit; a write loads bits 15:1 (bit 0 stays 0, AD0 Low even on the first refresh after it); refresh after the whole IF1 or internal machine cycle (tail included), and in HALT | PS Fig 4 p.133, p.149, p.155, p.156; Fawcett p.66 (PDF 77); TM 6-74, 6-76 | FIXED (was: refresh before the IF1, then on the clock after the IF1's T3; a written bit 0 reached AD0 once); prescaler, row and RE confirmed | `TestRefresh*`, `TestMachineCycleRefresh`; items 35, 36, 43 |
 | 28 | INTACK/EPU-transfer cycles are addressless: AD undefined in T1 | Fig 14 (AD blob then float); RM 9.4.4/9.4.5 | tolerance | tb does not compare AD while AS is low on ST 0100-0111 and 1110 (model drives 0) |
 | 29 | Flags listed as Unaffected keep their value: word ADD/ADC/SUB/SBC/CP/CPL, CPB and INC/DEC leave D, H; word AND/OR/XOR/COM/TEST leave P/V | RM p.57, 58, 60, 67, 69, 87, 98, 146, 172, 190, 193, 211 | FIXED (was: every width wrote the byte form's flags) | `TestFlagsUnaffected` |
 | 30 | CPSI/CPSD and repeats compare dst - src; block compares leave D, H | RM p.72-83, example p.78 | FIXED (was: src - dst) | `TestCompareStringOperandOrder`. Conflict: Data Manual 1980 CPSD p.112, CPSDR p.114, CPSI p.116, CPSIR p.118 (PDF 116, 118, 120, 122) give "C: Undefined" and "S: Undefined"; RM CPSD p.78, CPSDR p.79 (PDF 87, 88) and TM Jan83 CPSDR 6-37, CPSI 6-39 (PDF 96, 98) define them: "C: Cleared if there is a carry from the most significant bit of the result of the comparison; set otherwise, indicating a \"borrow\"", "S: Set if the result of the comparison is negative; cleared otherwise". Model follows RM and TM. |
@@ -133,6 +131,8 @@ follows one reading, only a real CPU can settle it. The last column names the Go
 | 50 | Sequencer cadence: one step per internal cycle, the step's work on its last clock. MULT: setup 3, 16 steps of 4; MULTL: setup 4, 32 steps of 8, one 7-clock add per 1 bit (item 32), finish 19; DIV: setup 2, trial 6, 16 steps of 6; DIVL: setup 2, trial 67, 32 steps of 21; shifts by count: one 3-clock internal cycle per position, a count of 0 as 1 (TM 6-130). The totals (MULT 70, MULTL 282+7n, DIV 107, DIVL 744, shifts 13+3n / 15+3n) are cited; the step lengths are not | 1988 DB p.138 (PDF 145) | Default, unverified on silicon | `TestMachineCycleSequenced`, `TestSequencerStepsOnCycleBoundaries`; serial vectors (`make test-serial`) |
 | 51 | CALL @Rd segmented: 15. TM Mar81 6-18 prints one segmented figure, 15; Fawcett Table 8.9: IR "10 - 15"; 1988 DB p.139: 10 / 15 / 15. TM Mar81 C-1's 10 / 10 / 15 differs only in which column carries it | TM Mar81 6-18 (PDF 71), C-1 (PDF 276); Fawcett p.138 Table 8.9 (PDF 149); 1988 DB p.139 (PDF 146) | CONFIRMED (was: OPEN-hardware) | `TestCycleTotalsMatchModel` |
 | 52 | Extended-instruction templates: bit 3 of the first word's direction field (bits 3:2) selects a CPU write cycle in every template: memory 01 = EPU <- memory, 11 = memory <- EPU; registers 00 = CPU <- EPU, 10 = EPU <- CPU; flags 00 = FCW <- EPU, 10 = EPU <- FCW, 01 = internal | TM Mar81 6-167..6-170 (PDF 220-223) | CONFIRMED for the listed encodings. Memory 00/10 and flags 11 are unlisted: the model applies the same bit (flags 11 as internal), an interpretation (maintainer decision) | `TestEPADirections` |
+| 53 | Skipped refreshes: one coming due with the bus granted or in a wait state is skipped; the refreshes then owed (two at most) go out back to back from the first boundary after, the clock after /BUSACK rises or after the waited cycle (tail included), ahead of the next cycle even a data cycle of the same instruction. Jan83 TM 8.3: "When the CPU regains control of the bus, or when the WAIT line is deactivated, it immediately issues the skipped refresh cycles." | TM Jan83 8-1, 8-2 (PDF 246-247); TM Mar81 8-1 (PDF 232, WAIT sense misprinted); Fawcett p.48 (PDF 59) | FIXED (was: held to the next IF1 or internal cycle, one per boundary). Clock placement and back to back: interpretation A refresh or bus hold between a block, compare, translate or block I/O element's cycles leaves the element's pointer, count and compare steps where they were (FIXED: the RTL counted the element's clocks through it, and stepped Rd before the write) | `TestRefreshSkippedBusGrant`, `TestRefreshSkippedWait`, `TestRefreshSkippedAnyCycle`, `TestRefreshSkippedBlock`, `TestRefreshSkippedLDIR`, `TestRefreshTwoSkipped` |
+| 54 | Flag transfer lane: Load FCW from EPU takes FCW bits 7:2 from AD7:AD0 and ignores AD15:AD8; Load EPU from FCW drives them on AD7:AD0, B/W High. Register transfers are words | TM Jan83 9-8, 6-174 (PDF 255, 235) | CONFIRMED | `TestEPAFlagByteLane` (the EPU drives different bytes on the two halves) |
 
 ## Go model behaviour to mirror in RTL
 
@@ -145,8 +145,10 @@ follows one reading, only a real CPU can settle it. The last column names the Go
   by `cycle_program.go`, spec in the Go model's docs/MACHINE_CYCLES.md):
   one /AS per machine cycle, tails hold the bus outputs, internal cycles
   per item 15.
-- BUSREQ and refresh go in only between whole machine cycles
-  (`mcMidCycle` is true through a tail and through TSET's read-to-write).
+- BUSREQ is sampled at each T1 and the bus given up after that T3, the
+  tail running on (`busReqT1`, `busTxnEnd`, `grantClock`); no grant inside
+  TSET's read-to-write (`tsetLocked`). Refresh goes in only between whole
+  machine cycles.
 - STOP: `stopArmed` at the fetch launch; `stopStream` runs the refresh
   stream after the IF1's T3, and the IF1's tail follows it (item 18).
 - HALT: `F1+2`, then 3-clock internal cycles; interrupt T3 samples count
@@ -158,3 +160,6 @@ follows one reading, only a real CPU can settle it. The last column names the Go
 - Refresh insertion: a pending refresh opens on the clock after the
   current machine cycle ends, tail included, and takes three clocks; the
   instruction's next machine cycle follows it.
+- Skipped refreshes (`refreshNow`): an underflow on a granted or wait
+  clock marks the refreshes then owed; they follow any machine cycle,
+  back to back. A refresh's T3 leaves the read data (`busResult`) and its byte lane (`busOdd`) alone.

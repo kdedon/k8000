@@ -6,9 +6,9 @@
 // equality with the Go golden model, this bench proves the strobe protocol.
 //
 // Clocking convention == docs/K8030_SCC_TESTS.md sec 1.2: one posedge of `clk` is
-// one Go TickPins call, `pclk` is a recorded LEVEL, and the Go test harness
-// drives one bus phase as (pclk=0, pclk=1) -- so `phase()` below is two
-// posedges.  The Z8030's bus-cycle service runs on the PCLK rise (ledger
+// one Go TickPins call, the PCLK rise is a one-master-clock pulse on
+// `pclk_rise`, and one bus phase is (no pulse, pulse) -- so `phase()` below is
+// two posedges.  The Z8030's bus-cycle service runs on the PCLK rise (ledger
 // sec 1.2); the AD float at /DS rise is combinational and is checked with NO
 // PCLK edge, which is what p.648 row 23 TdDS(DRz) requires.
 //
@@ -17,7 +17,6 @@
 module tb_scc_timing;
 
   logic clk = 1'b0;
-  logic rst_n = 1'b0;
   always #5 clk = ~clk;
 
   logic [7:0] ad_in    = 8'h00;
@@ -28,12 +27,14 @@ module tb_scc_timing;
   logic       cs1      = 1'b0;
   logic       intack_n = 1'b1;
   logic       iei      = 1'b1;
-  logic       pclk     = 1'b0;
+  logic       pclk_rise = 1'b0;
   logic [1:0] rxd      = 2'b11;
   logic [1:0] cts_n    = 2'b11;
   logic [1:0] dcd_n    = 2'b11;
-  logic [1:0] trxc_in  = 2'b00;
-  logic [1:0] rxc_in   = 2'b00;
+  logic [1:0] trxc_rise = 2'b00;
+  logic [1:0] trxc_fall = 2'b00;
+  logic [1:0] rxc_rise  = 2'b00;
+  logic [1:0] rxc_fall  = 2'b00;
   logic [1:0] sync_in  = 2'b11;
 
   logic [7:0] ad_out;
@@ -41,11 +42,11 @@ module tb_scc_timing;
   logic [1:0] txd, rts_n, dtr_n, trxc_out, trxc_drive, sync_out, sync_drive;
 
   z8030_scc dut (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk),
     .ad_in(ad_in), .as_n(as_n), .ds_n(ds_n), .r_w(r_w),
-    .cs0_n(cs0_n), .cs1(cs1), .intack_n(intack_n), .iei(iei), .pclk(pclk),
+    .cs0_n(cs0_n), .cs1(cs1), .intack_n(intack_n), .iei(iei), .pclk_rise(pclk_rise),
     .rxd(rxd), .cts_n(cts_n), .dcd_n(dcd_n),
-    .trxc_in(trxc_in), .rxc_in(rxc_in), .sync_in(sync_in),
+    .trxc_rise(trxc_rise), .trxc_fall(trxc_fall), .rxc_rise(rxc_rise), .rxc_fall(rxc_fall), .sync_in(sync_in),
     .ad_out(ad_out), .ad_drive(ad_drive), .int_n(int_n), .ieo(ieo),
     .txd(txd), .rts_n(rts_n), .dtr_n(dtr_n),
     .trxc_out(trxc_out), .trxc_drive(trxc_drive),
@@ -77,10 +78,11 @@ module tb_scc_timing;
   // Inputs change 1 ns after the edge, so the chip samples them at the next
   // posedge whatever earlier #1 waits have done to the alignment.
   task automatic phase();
-    pclk = 1'b0; @(posedge clk); #1;
-    pclk = 1'b1; @(posedge clk); #1;
+    pclk_rise = 1'b0; @(posedge clk); #1;
+    pclk_rise = 1'b1; @(posedge clk); #1;
+    pclk_rise = 1'b0;
   endtask
-  // One extra sample with PCLK unchanged (no PCLK rise): used to prove that
+  // One extra sample with no PCLK rise pulse: used to prove that
   // a behaviour is combinational on the strobe, not clocked.
   task automatic hold();
     @(posedge clk); #1;
@@ -115,7 +117,6 @@ module tb_scc_timing;
     // The Z8030 has NO reset pin (p.633 pin list): the only reset is /AS and
     // /DS Low together.  Start from it so the bench begins in the datasheet's
     // reset state, then honour the internal 4-5 PCLK stretch (UM010903 p.26).
-    @(posedge clk); #1; rst_n = 1'b1;
     @(posedge clk);
     #1;
     as_n = 1'b0; ds_n = 1'b0;                                                 phase();

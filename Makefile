@@ -12,6 +12,7 @@
 #   make test-<x>   one bench: decode | decode-table | mc-table | alu | regfile | serial | refresh | cpu | seq-words | seq-paths | cond
 #   make test-timing        spec TIMING benches (CPU Z-Bus monitor + MMU/CIO/SCC strobes)
 #   make test-cpu-cycles    instruction CYCLE COUNTS vs Mar81 sec 6.7
+#   make test-cpu-combined  CPU vectors with CLK rise and fall in one master clock
 #   make cpu ONLY=TestNOP        replay one CPU vector with full divergence context
 #   make cpu ONLY=TestNOP VCD=1  ... and write obj_dir/TestNOP.000.vcd
 #   make ladder     list CPU vectors shortest-first with PASS/FAIL status
@@ -56,7 +57,7 @@ VFLAGS := --timescale 1ns/1ps -O2 --x-assign fast --x-initial fast
 
 .PHONY: all gen vectors refresh-rtl refresh-vectors require-z8000 \
         lint build test test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu \
-        test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond test-timing cpu ladder clean help
+        test-cpu-combined test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond test-timing cpu ladder clean help
 all: build
 
 # Per-device fragments (k8010_mmu / k8036_cio / k8030_scc ...) live in
@@ -207,7 +208,7 @@ $(eval $(call CPU_BUILD,z8003,1,1,Z8003))
 $(eval $(call CPU_BUILD,z8004,0,1,Z8004))
 
 # ---- run -------------------------------------------------------------------
-test: test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond $(CHIP_TEST)
+test: test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-combined test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond $(CHIP_TEST)
 
 # Spec-timing ladder: everything that checks the datasheet's timing rather than
 # equality with the Go model.
@@ -241,6 +242,9 @@ test-refresh: $(OBJ)/tb_refresh/tb_refresh
 
 test-cpu: $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004
 	@scripts/run_k800x_cpu_vectors.sh
+
+test-cpu-combined: $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004
+	@scripts/run_k800x_cpu_vectors.sh --combined
 
 test-cpu-timing: $(OBJ)/tb_cpu_timing/tb_cpu_timing
 	@$(OBJ)/tb_cpu_timing/tb_cpu_timing | grep -v '\$$finish'

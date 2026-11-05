@@ -1,12 +1,17 @@
 // z8036_cio -- Zilog Z8036 Z-CIO counter/timer and parallel I/O unit.
 //
-// The pins match the Go model's Inputs/Outputs one for one, plus `clk`
-// and `rst_n`. The chip has no reset pin: /AS and /DS Low together reset
-// it. `rst_n` only brings the fabric to that same state at power-up.
+// The pins match the Go model's Inputs/Outputs one for one, plus the
+// board master clock `clk`. The chip has no reset pin: /AS and /DS Low
+// together reset it; the board applies that at power-up.
 //
 // One `clk` edge is one pin sample. /AS latches AD, /CS0 and /INTACK
 // while Low; CS1 and R/W are the levels at the /DS fall, where the
 // register access happens with no PCLK term. AD floats at the /DS rise.
+//
+// PCLK is used only at its fall: the port `pclk_fall` is that edge as a
+// one-master-clock pulse from the board divider (pulses may fall on
+// consecutive master clocks). Counter/timer inputs on port lines are
+// ordinary level-sampled port data.
 //
 // Implemented so far: strobe capture, cycle ownership, the hardware
 // reset, the register file with its reset gating and command/status
@@ -19,7 +24,6 @@
 
 module z8036_cio (
   input  logic        clk,
-  input  logic        rst_n,
 
   input  logic [7:0]  ad_in,      // AD7:0, the chip's only bus pins
   input  logic        as_n,
@@ -29,7 +33,7 @@ module z8036_cio (
   input  logic        cs1,
   input  logic        intack_n,
   input  logic        iei,
-  input  logic        pclk,       // sampled as data; timers count on its falling edge
+  input  logic        pclk_fall,  // PCLK falling edge: one-master-clock pulse; timers count on it
   input  logic [7:0]  pa_in,
   input  logic [7:0]  pb_in,
   input  logic [3:0]  pc_in,
@@ -40,10 +44,8 @@ module z8036_cio (
   output logic        ieo,
   output logic [7:0]  pa_out,
   output logic [7:0]  pa_oe,      // per bit, 1 = driving
-  output logic        pa_req_n,
   output logic [7:0]  pb_out,
   output logic [7:0]  pb_oe,
-  output logic        pb_req_n,
   output logic [3:0]  pc_out,
   output logic [3:0]  pc_oe
 );
@@ -192,7 +194,6 @@ module z8036_cio (
   logic [2:0] ct_gate_q;        // gates at the last falling count input
   logic       ct_pre;           // PCLK/2
   logic       ct_out1_q;        // C/T 1 output at the last PCLK step
-  logic       pclk_q;
   logic [2:0] ct_cip;
   assign ct_cip = {ct[2].run, ct[1].run, ct[0].run};
 
@@ -540,7 +541,7 @@ module z8036_cio (
   logic       ds_q, as_q;
   logic [7:0] as_ad;          // address latched while /AS is Low
   logic       as_intack_n;
-  logic       owned;          // /CS0 Low at /AS; CS1 qualifies it at /DS
+  logic       owned;          // /CS0 Low at the last /AS; CS1 gates each /DS
   logic [7:0] ad_q;
   logic       ad_drive_q;
 
@@ -627,7 +628,6 @@ module z8036_cio (
   // polarity and the 1's catchers.
   logic [7:0] pb_live, pc_live;
   logic [2:0] ct_clk_in, ct_trig_in, ct_gate_in;
-  logic       pclk_fall;
   assign pb_live    = eff_in(pb_in, pbpol_p, pbsio_p, pbdir_p & {8{!hs_on[1]}}, catch_b_nx);
   assign pc_live    = eff_in({4'h0, pc_in}, {4'h0, pcpol_p[3:0]}, {4'h0, pcsio_p[3:0]},
                              {4'h0, pcdir_p[3:0]}, {4'h0, catch_c_nx});
@@ -645,7 +645,6 @@ module z8036_cio (
   end
   assign ct_trig_in = {ct3_link ? ct3_ltrig : pc_live[2], pb_live[2], pb_live[6]};
   assign ct_gate_in = {pc_live[3], pb_live[3], pb_live[7]};
-  assign pclk_fall  = pclk_q && !pclk;
 
   ct_t        ct_nx [0:2];
   logic [15:0] ct_latch_nx [0:2];
@@ -765,7 +764,7 @@ module z8036_cio (
     logic [7:0] md;
     hs_t        s;
     wait_nx = wait_stall;
-    if (ds_fall && as_intack_n) wait_nx = 1'b0;
+    if ((ds_fall && as_intack_n) || ds_rise) wait_nx = 1'b0;
     for (int p = 0; p < 2; p++) begin
       md = regs[REG_PAMOD + 6'(8*p)];
       s  = hs_as[p];
@@ -845,36 +844,11 @@ module z8036_cio (
   end
 
   always_ff @(posedge clk) begin
-    if (!rst_n) begin
-      ds_q        <= 1'b1;
-      as_q        <= 1'b1;
-      {smp_a, smp_b, smp_c}       <= '0;
-      {catch_a, catch_b, catch_c} <= '0;
-      as_ad       <= 8'h00;
-      as_intack_n <= 1'b1;
-      owned       <= 1'b0;
-      ad_q        <= 8'h00;
-      ad_drive_q  <= 1'b0;
-      out_a       <= 8'h00;
-      out_b       <= 8'h00;
-      out_c       <= 4'h0;
-      for (int i = 0; i < NREGS; i++) regs[i] <= 8'h00;
-      regs[REG_MICR][MICR_RST] <= 1'b1;
-      for (int i = 0; i < 3; i++) begin ct[i] <= '0; ct_latch[i] <= '0; end
-      {ct_perr, ct_clk_q, ct_trig_q, ct_gate_q} <= '0;
-      {ct_pre, ct_out1_q, pclk_q}    <= '0;
-      for (int p = 0; p < 2; p++) begin
-        pm_s1[p] <= '0; pm_s2[p] <= '0; pm_bits[p] <= '0; lpm_latch[p] <= '0; pm_frz[p] <= 1'b0;
-      end
-      {lpm_valid, pm_perr, int_latch} <= '0;
-      for (int p = 0; p < 2; p++) hs[p] <= HS_RST;
-      {hs_drive, hs_mask, wait_stall} <= '0;
-    end else begin
+    begin
       ds_q <= ds_n;
       as_q <= as_n;
 
       // The pin edge detectors run through reset.
-      pclk_q   <= pclk;
       ct_clk_q <= ct_clk_in;
       for (int i = 0; i < 3; i++)
         if (md_p[i][CTM_ECE] ? ct_clk_q[i] && !ct_clk_in[i] : pclk_fall)
@@ -911,12 +885,11 @@ module z8036_cio (
         if (!in_reset) int_latch <= mie && iei && |src_elig_as;  // Low IEI blocks the request
       end
 
-      // The /DS rise ends the old cycle before the /AS latch can start the
-      // next one: back to back they land in the same sample.
-      if (ds_rise) begin
-        ad_drive_q <= 1'b0;
-        owned      <= 1'b0;
-      end
+      // The /DS rise floats AD before the /AS latch starts the next cycle:
+      // back to back they land in the same sample. The /CS0 latch holds
+      // until the next /AS, so a /DS with no new /AS reaches the same
+      // register.
+      if (ds_rise) ad_drive_q <= 1'b0;
 
       if (!as_n) begin
         as_ad       <= ad_in;
@@ -953,15 +926,14 @@ module z8036_cio (
         end
       end
 
-      if (ds_fall && as_intack_n) begin
-        if (!cs1) begin
-          owned <= 1'b0;
-        end else if (owned && r_w) begin
+      // CS1 gates only this access.
+      if (ds_fall && as_intack_n && cs1 && owned) begin
+        if (r_w) begin
           ad_q       <= rd_data;
           ad_drive_q <= 1'b1;
           // Reading a current-count LSB clears that counter's RCC.
           if (!in_reset && cc_lsb) regs[REG_CT1CS + 6'(ct_idx)][CT_RCC] <= 1'b0;
-        end else if (owned) begin
+        end else begin
           if (in_reset) begin
             if (cyc_reg == REG_MICR) regs[REG_MICR] <= {7'b0, ad_in[MICR_RST]};
           end else if (cyc_reg == REG_MICR && ad_in[MICR_RST]) begin
@@ -1029,9 +1001,8 @@ module z8036_cio (
   assign ieo      = !regs[REG_MICR][6] && iei && !(|src_ius)
                     && !(!as_intack_n && !in_reset && mie && src_any);
 
-  // REQUEST follows the port's state. /WAIT asserts only while the CPU
-  // accesses the data register of a port that is not ready.
-  logic [1:0] req_v;
+  // /WAIT asserts only while the CPU accesses the data register of a port
+  // that is not ready; REQUEST is the registered hs_drive level.
   logic [3:0] hs_drv, hs_msk;
   always_comb begin
     logic [1:0] reqb;
@@ -1039,23 +1010,17 @@ module z8036_cio (
     w      = 1'b0;
     hs_drv = hs_drive;
     hs_msk = hs_mask;
-    req_v  = 2'b00;
     for (int p = 0; p < 2; p++) begin
       reqb = (p == 1 && !hs_tw[p]) ? 2'd3 : 2'd1;
       if (hs_on[p] && (hs_rws[p] == 3'd1 || hs_rws[p] == 3'd3)) begin
         w = wait_stall && owned && !ds_n && cyc_reg == REG_PAD + 6'(p) && !hs_wready[p];
         hs_msk[reqb] = 1'b1;
         hs_drv[reqb] = !w;
-        req_v[p]     = w;
-      end else if (hs_on[p]) begin
-        req_v[p] = hs_ready(hs[p], hs_rws[p], regs[REG_PAMOD + 6'(8*p)][5]);
       end
       // A pulsed output's DAV pin is the inverted C/T3 output.
       if (hs_on[p] && hs_pl[p] && !hs_isin[p]) hs_drv[p == 0 ? 3 : 1] = !ct[2].out;
     end
   end
-  assign pa_req_n = !req_v[0];
-  assign pb_req_n = !req_v[1];
 
   // A disabled port floats; an enabled one drives its output bits through
   // the polarity inverters. Special I/O makes an output bit open-drain: a

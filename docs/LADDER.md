@@ -261,8 +261,8 @@ which prove the 282+7n slope emerges, `div_r_r_by1` (107),
 
 **Implement.** `ClsBlockTransfer` / `Compare` / `String` / `IO`, and the
 I/O bus cycle: 4 clocks minimum, /MREQ never asserted, /DS Low from TWA
-through T3 (Fig 13). Special I/O (`ST=0011`) byte data rides AD15:8;
-standard I/O uses AD7:0.
+through T3 (Fig 13). A byte I/O write repeats the byte on both halves
+of AD; a byte read takes the half the port's A0 picks, as memory.
 
 **Acceptance.** The 41 tests in `cpu_block_test.go` (`TestLDIR*`,
 `TestCPIR*`, `TestCPSD*`, `TestINIR*`...), `cpu_io_bytelane_test`,

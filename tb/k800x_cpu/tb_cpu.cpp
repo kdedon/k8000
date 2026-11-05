@@ -2,7 +2,21 @@
 // against the Verilated z8000_cpu (FPGA_BIBLE 0.3 tier 1, lesson sv-46).
 //
 //   tb_cpu_<variant> <file.vec> [--context N] [--vcd out.vcd] [--quiet]
-//                               [--stop-first] [--no-final]
+//                               [--stop-first] [--no-final] [--mclk P]
+//                               [--combined]
+//
+// The CPU runs on the board master clock `clk`; the CLK pin is the board's
+// edge pulses `clk_rise` and `clk_fall`: High for the first master clock of
+// a record whose CLK level rose (fell), Low otherwise. Each record (one CLK
+// level) gets the next count from the master-clock pattern P (comma list,
+// cycled; default K8000_MCLK or "1,2,1,3"): "1" is master:CLK 2:1, "4" is
+// 8:1.
+//
+// --combined (or K8000_COMBINED=1): each CLK=0 record and the CLK=1 record
+// after it become one master clock with both pulses High, as on a board
+// that pulses CLK every master clock; the pattern P then counts per CLK
+// period. Only the CLK=1 records are compared: in this mode the CPU has no
+// separate fall.
 //
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP (unsupported vector), 3 wrong variant
 // binary, 4 usage/parse error.
@@ -77,7 +91,7 @@ static Out readOut(Vz8000_cpu* t) {
     Out o;
     o.ad_drive = t->ad_drive; o.as_n = t->as_n; o.ds_n = t->ds_n; o.mreq_n = t->mreq_n;
     o.r_w = t->r_w; o.b_w = t->b_w; o.n_s = t->n_s; o.busack_n = t->busack_n; o.mo_n = t->mo_n;
-    o.bus_drive = t->bus_drive; o.bus_lock = t->bus_lock;
+    o.bus_drive = t->bus_drive; o.bus_lock = false;
     o.ad = t->ad_out; o.sn = t->sn; o.st = t->st;
     return o;
 }
@@ -108,6 +122,8 @@ int main(int argc, char** argv) {
     std::string vecPath, vcdPath;
     int context = 12;
     bool quiet = false, stopFirst = false, checkFinal = true;
+    bool combined = getenv("K8000_COMBINED") && atoi(getenv("K8000_COMBINED")) != 0;
+    std::string mclkPat = getenv("K8000_MCLK") ? getenv("K8000_MCLK") : "1,2,1,3";
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--context" && i + 1 < argc) context = atoi(argv[++i]);
@@ -115,6 +131,8 @@ int main(int argc, char** argv) {
         else if (a == "--quiet") quiet = true;
         else if (a == "--stop-first") stopFirst = true;
         else if (a == "--no-final") checkFinal = false;
+        else if (a == "--mclk" && i + 1 < argc) mclkPat = argv[++i];
+        else if (a == "--combined") combined = true;
         else if (a[0] == '-' && a[1] == '-') { fprintf(stderr, "unknown option %s\n", a.c_str()); return 4; }
         else vecPath = a;
     }
@@ -139,15 +157,38 @@ int main(int argc, char** argv) {
     auto dump = [&]() {};
 #endif
 
+    std::vector<int> mclkSeq;
+    for (size_t p0 = 0; p0 < mclkPat.size();) {
+        size_t p1 = mclkPat.find(',', p0); if (p1 == std::string::npos) p1 = mclkPat.size();
+        int n = atoi(mclkPat.substr(p0, p1 - p0).c_str());
+        if (n < 1) { fprintf(stderr, "--mclk: counts must be >= 1\n"); return 4; }
+        mclkSeq.push_back(n); p0 = p1 + 1;
+    }
+    if (mclkSeq.empty()) { fprintf(stderr, "--mclk: empty pattern\n"); return 4; }
+    size_t mclkIdx = 0;
+    // One master clock: Low then High.
+    auto mtick = [&]() { top->clk = 0; top->eval(); dump(); top->clk = 1; top->eval(); dump(); };
+
     // Quiescent start: DefaultInputs (all active-low high, CLK high), no reset yet.
-    top->clk = 1; top->reset_n = 1; top->ad_in = 0; top->stop_n = 1; top->wait_n = 1; top->busreq_n = 1;
+    top->clk_rise = 1; top->clk_fall = 0; top->clk = 0; top->reset_n = 1; top->ad_in = 0; top->stop_n = 1; top->wait_n = 1; top->busreq_n = 1;
     top->nmi_n = 1; top->nvi_n = 1; top->vi_n = 1; top->segt_n = 1; top->abort_n = 1; top->mi_n = 1;
-    top->eval();
-    dump();
+    mtick();                              // one CLK edge before reset, as a first eval with CLK High
+    top->clk_rise = 0;
+    mtick();
 
     std::string line, variant, testName, hint;
     long tick = 0, clock = 0;
     bool prevClk = true;
+    bool wlock = false, wlock3 = false;   // TSET lock through the write's T3
+    bool fallDue = false;                 // combined: a CLK fall waits for the rise
+    // A fall with no rise after it (the last record) runs on its own.
+    auto flushFall = [&]() {
+        if (!fallDue) return;
+        fallDue = false;
+        top->clk_fall = 1; top->eval();
+        for (int k = mclkSeq[mclkIdx]; k > 0; k--) { mtick(); top->clk_fall = 0; }
+        mclkIdx = (mclkIdx + 1) % mclkSeq.size();
+    };
     long mismTicks = 0, firstTick = -1, firstClock = -1;
     std::string firstPins;
     std::deque<std::string> ctx;      // rows before the divergence
@@ -211,12 +252,24 @@ int main(int argc, char** argv) {
             top->busreq_n = in.busreq_n; top->nmi_n = in.nmi_n; top->nvi_n = in.nvi_n; top->vi_n = in.vi_n;
             top->segt_n = in.segt_n; top->abort_n = in.abort_n; top->mi_n = in.mi_n;
             bool rising = in.clk && !prevClk;
+            bool falling = !in.clk && prevClk;
             prevClk = in.clk;
-            top->clk = in.clk;
-            top->eval();          // one Tick == inputs applied, (maybe) one posedge, outputs settled
-            dump();
+            if (combined && falling) { fallDue = true; top->eval(); continue; }
+            if (combined && !rising) flushFall();
+            if (combined && rising) { falling = fallDue; fallDue = false; }
+            // TSET's lock holds from its read's word through its write's T3.
+            // Mirrored here from the internal nets as of the edge.
+            top->clk_rise = rising;   // the edge pulses, first master clock of the record only
+            top->clk_fall = falling;
+            top->eval();          // the new inputs settle before the master clock samples them
+            const bool lkTake = dut.rmw_lock() && dut.mem_take(), lkDone = dut.bus_done();
+            for (int k = mclkSeq[mclkIdx]; k > 0; k--) { mtick(); top->clk_rise = 0; top->clk_fall = 0; }
+            mclkIdx = (mclkIdx + 1) % mclkSeq.size();
+            if (!in.reset_n) { wlock = wlock3 = false; }
+            else if (rising) { wlock3 = wlock && lkDone; wlock = lkTake ? true : lkDone ? false : wlock; }
             if (rising) clock++;
             Out got = readOut(top);
+            got.bus_lock = dut.rmw_lock() || wlock || wlock3;
             // compare
             std::string marks;
             auto cmp = [&](bool ok, const char* pin) { if (!ok) { if (!marks.empty()) marks += ","; marks += pin; } };
@@ -268,6 +321,7 @@ int main(int argc, char** argv) {
             }
             if (stopFirst && firstTick >= 0) break;
         } else if (tag == "F") {
+            flushFall();
             if (!checkFinal) continue;
             std::string what; ss >> what;
             auto fail = [&](const std::string& m) { finalFails++; if (finalFails <= 20) finalMsg += "  final " + m + "\n"; };
@@ -291,6 +345,7 @@ int main(int argc, char** argv) {
                 if (known && e != g) { char b[96]; snprintf(b, sizeof b, "%s exp=%llX got=%llX", what.c_str(), (unsigned long long)e, (unsigned long long)g); fail(b); }
             }
         } else if (tag == "END") {
+            flushFall();
             sawEnd = true;
             break;
         }

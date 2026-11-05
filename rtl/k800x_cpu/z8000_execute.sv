@@ -48,9 +48,10 @@
 // A trap entry runs with no instruction decoded. In the aborted IF1's
 // first tail clock the FCW switches to system mode (segmented on a Z8001),
 // R15 swapping with the NSP offset from normal mode, and in the next R14
-// with the NSP segment. The pushes then run as CALL's, each at SP - 2:
-// the PC offset, the PC segment word (Z8001), the old FCW and the
-// identifier. The PSA entry's FCW and PC are read and load as IRET's do.
+// with the NSP segment unless already segmented system. The pushes then
+// run as CALL's, each at SP - 2: the PC offset, the PC segment word
+// (Z8001), the old FCW and the identifier. The PSA entry's FCW and PC are
+// read and load as IRET's do.
 //
 // MULT, MULTL, DIV and DIVL only have their memory operand read here (the
 // pointer or index from w0[7:4]); the CPU top runs the work.
@@ -62,6 +63,7 @@ module z8000_execute
   parameter bit VMPU = 0        // Z8003/Z8004
 ) (
   input  logic        clk,
+  input  logic        clk_en,   // CLK rising edge seen this clock
   input  logic        reset_n,
 
   // the running instruction
@@ -103,14 +105,14 @@ module z8000_execute
   input  logic        mem_take,     // the operand cycle is taken on this edge
   input  logic        int_take,     // an internal operation is taken on this edge
   input  logic        opnd_take,    // its read word is in on this edge
+  input  logic        ph_hold,      // this edge is in a refresh or bus hold between cycles
   input  logic        imm_in,       // an immediate word is in on this edge
   input  logic [15:0] rdata,
   output logic [22:0] mem_addr,
   output logic [3:0]  mem_st,
   output logic        mem_byte,
   output logic [15:0] mem_wdata,
-  output logic        bus_lock,     // TSET between its read and its write
-  output logic        bus_lock_nx,  // ... as of the next edge, for a boundary there
+  output logic        bus_lock_nx,  // TSET between its read and its write, as of the next edge
 
   // register file
   output logic [1:0]  rf_rwidth,
@@ -257,7 +259,7 @@ module z8000_execute
   assign k_d = cls_of(ctrl_nx, w0_nx);
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) k_q <= '0;
-    else          k_q <= k_d;
+    else if (clk_en)          k_q <= k_d;
   end
   logic [1:0] mcnt_q;   // memory cycles taken so far
 
@@ -394,7 +396,10 @@ module z8000_execute
   // tail clock, Rd in the third as it addresses the write, and in the
   // write's T1 the count decrements, V loads and the repeat is decided,
   // read by the sequencer in T3. An interrupt between elements would be
-  // taken there; it is not wired.
+  // taken there; it is not wired. A refresh or bus hold between an
+  // element's cycles stops the count: an edge ending a cycle with none of
+  // the element's taken, and the refresh's clocks. The steps below
+  // select port A on a held edge too; only their loads are held.
   //
   // Compare (CPI...) reads @Rs and compares R(w1[7:4]) with it in the
   // second tail clock; string compare (CPSI...) reads @Rs then @Rd and
@@ -444,16 +449,16 @@ module z8000_execute
       cmp_c_q   <= 1'b0;
       cmp_s_q   <= 1'b0;
       match_q   <= 1'b0;
-    end else begin
+    end else if (clk_en) begin
       if (first)                ec_q <= 2'd0;
       else if (tr && mem_take)  ec_q <= ec_q == (tr_test ? 2'd1 : 2'd2) ? 2'd0 : ec_q + 2'd1;
       else if (blk && mem_take) ec_q <= {1'b0, ec_q == 2'd0 && !bc};
       if (tab_take || blk_take) ph_q <= 3'd1;
-      else if (ph_q != 3'd0)    ph_q <= ph_q == 3'd6 ? 3'd0 : ph_q + 3'd1;
+      else if (ph_q != 3'd0 && !ph_hold) ph_q <= ph_q == 3'd6 ? 3'd0 : ph_q + 3'd1;
       if (tab_take)             tw_zero_q <= rdata == 16'h0000;
-      if (tr_b)                 blk_q <= !step_zero && (!tr_test || opnd_q[7:0] == 8'h00);
-      else if (bk_cnt)          blk_q <= !step_zero && !(cmp && match_q);
-      if (bk_cmp) begin
+      if (tr_b && !ph_hold)     blk_q <= !step_zero && (!tr_test || opnd_q[7:0] == 8'h00);
+      else if (bk_cnt && !ph_hold) blk_q <= !step_zero && !(cmp && match_q);
+      if (bk_cmp && !ph_hold) begin
         cmp_c_q <= alu_flags[7];
         cmp_s_q <= alu_flags[5];
         match_q <= bmatch;
@@ -464,9 +469,9 @@ module z8000_execute
   assign handles = k_q.handles;
 
   // IN/OUT: the port is word 1, or the register w0[7:4] (IR); the data
-  // register is w0[7:4], or w0[3:0] (IR). A byte rides AD7:0 for standard
-  // I/O and AD15:8 for special I/O. IN writes the register in the last
-  // clock, its I/O cycle's T3.
+  // register is w0[7:4], or w0[3:0] (IR). A byte goes out on both halves
+  // and comes in on the half the port's A0 picks, as for memory. IN writes
+  // the register in the last clock, its I/O cycle's T3.
   logic io, io_wr, io_spec, io_ir;
   logic [3:0] io_reg;
   assign io      = k_q.io;
@@ -505,7 +510,7 @@ module z8000_execute
   assign imm_pass = k_q.imm_ip && imm_in;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) pass_lo <= 1'b0;
-    else          pass_lo <= k_d.uni && !k_d.mem_write && !k_d.mem_rmw && !k_d.imm_ip &&
+    else if (clk_en)          pass_lo <= k_d.uni && !k_d.mem_write && !k_d.mem_rmw && !k_d.imm_ip &&
                              (k_d.hi_first ? last_nx : k_d.is_long ? last2_nx : last_nx);
   end
   assign pass    = pass_lo || high || rmw_pass || ld_hi_q;
@@ -516,7 +521,7 @@ module z8000_execute
       rmw_pass <= 1'b0;
       xm_pass  <= 1'b0;
       ld_hi_q  <= 1'b0;
-    end else begin
+    end else if (clk_en) begin
       rmw_pass <= uni && mem_rmw && opnd_take;
       xm_pass  <= xm && opnd_take;
       ld_hi_q  <= uni && hi_first && opnd_take && nxt2_q;
@@ -526,7 +531,7 @@ module z8000_execute
   // The high pass is the clock after the low pass.
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) high <= 1'b0;
-    else          high <= pass_lo && is_long && !hi_first;
+    else if (clk_en)          high <= pass_lo && is_long && !hi_first;
   end
 
   // ---- trap entry ---------------------------------------------------------------------
@@ -547,7 +552,7 @@ module z8000_execute
       xd1_q  <= 1'b0;
       xd2_q  <= 1'b0;
       ofcw_q <= 16'h0000;
-    end else begin
+    end else if (clk_en) begin
       if (!exc || af_done) xc_q <= 3'd0;  // a chained entry starts over
       else if (mem_take) xc_q <= xc_q + 3'd1;
       xd0_q <= af_done;
@@ -582,7 +587,7 @@ module z8000_execute
       mcnt_q  <= 2'd0;
       dj_pass <= 1'b0;
       pl_hi_q <= 1'b0;
-    end else begin
+    end else if (clk_en) begin
       if (first)         mcnt_q <= 2'd0;
       else if (mem_take) mcnt_q <= mcnt_q + 2'd1;
       dj_pass <= int_take && br_dj;
@@ -736,7 +741,7 @@ module z8000_execute
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)          bd_n_q <= 4'd0;
-    else if (bd && last2)  bd_n_q <= {rf_rdata_b[3] && !is_byte, rf_rdata_b[2:0]};
+    else if (clk_en) if (bd && last2)  bd_n_q <= {rf_rdata_b[3] && !is_byte, rf_rdata_b[2:0]};
   end
 
   z8000_alu u_alu (
@@ -754,7 +759,7 @@ module z8000_execute
     if (!reset_n) begin
       c_lo_q <= 1'b0;
       z_lo_q <= 1'b0;
-    end else if (pass_lo && is_long) begin
+    end else if (clk_en) if (pass_lo && is_long) begin
       c_lo_q <= alu_flags[7];
       z_lo_q <= alu_flags[6];
     end
@@ -772,7 +777,6 @@ module z8000_execute
   // The next-edge form may stay set one clock into the write, no boundary.
   logic tset_rmw;
   assign tset_rmw    = uni && mem_rmw && alu_op == OP_TSET;
-  assign bus_lock    = tset_rmw && wr_next_q;
   assign bus_lock_nx = tset_rmw && (wr_next_q || opnd_take);
   logic [15:0] idx_q, off_a, off_b, off_sum, sp_step, disp;
   logic [6:0]  sp_seg;
@@ -784,7 +788,7 @@ module z8000_execute
   assign tgt_off = tgt_sp ? sp0_q : rf_rdata[15:0];
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)                                   sp0_q <= 16'h0000;
-    else if (br_call && stk_first && mcnt_q == 2'd0) sp0_q <= rf_rdata[15:0];
+    else if (clk_en) if (br_call && stk_first && mcnt_q == 2'd0) sp0_q <= rf_rdata[15:0];
   end
 
   // Pushes step down, pops up; a long by 4. JR's displacement adds, CALR's
@@ -892,13 +896,11 @@ module z8000_execute
     end else if (br_call) mem_wdata = mcnt_q[0] ? {1'b1, pc_seg, 8'h00} : pc_off;
     else if (stk_opnd) mem_wdata = (stk_long && !nxt2_q) ? opnd_hi_q : opnd_q;
     else if (stk_imm) mem_wdata = w1;
-    else if (io)      mem_wdata = !is_byte ? rf_rdata_b : io_spec ? {rf_rdata_b[7:0], 8'h00}
-                                                                  : {8'h00, rf_rdata_b[7:0]};
+    else if (io)      mem_wdata = !is_byte ? rf_rdata_b : {rf_rdata_b[7:0], rf_rdata_b[7:0]};
     else if (stk)     mem_wdata = (stk_first && rf_rsel_b == sp_off) ? off_sum : rf_rdata_b;
     else if (xm)      mem_wdata = wdata_q;
     else if (ldm || ep_reg) mem_wdata = rf_rdata_b;
     else if (ep_fl)   mem_wdata = {8'h00, fcw_lo[7:2], 2'b00};
-    else if (bk_io_cyc && is_byte) mem_wdata = io_spec ? {opnd_q[7:0], 8'h00} : {8'h00, opnd_q[7:0]};
     else if (tr || (blk && is_byte)) mem_wdata = {opnd_q[7:0], opnd_q[7:0]};
     else if (blk)     mem_wdata = opnd_q;
     else if (mem_rmw) mem_wdata = (alu_op == OP_TSET) ? 16'hFFFF : wdata_q;
@@ -922,7 +924,7 @@ module z8000_execute
       ldm_k_q   <= 4'd0;
       ldm_we_q  <= 1'b0;
       ep_fl_we_q <= 1'b0;
-    end else begin
+    end else if (clk_en) begin
       if (first)                 ldm_k_q <= 4'd0;
       else if ((ldm || ep_reg) && mem_take) ldm_k_q <= ldm_k_q + 4'd1;
       ldm_we_q <= ((ldm && !ldm_st && !epm) || ep_reg) && opnd_take;
@@ -940,7 +942,7 @@ module z8000_execute
       if (opnd_take && nxt2_q) opnd_hi_q <= rdata;
       else if (blk_take && bs) opnd_hi_q <= opnd_q;
       if (mem_take) begin
-        ea0_q  <= (io || bk_io_cyc) ? !io_spec : mem_addr[0];
+        ea0_q  <= mem_addr[0];
         addr_q <= mem_addr;
       end
       if (mem_take)                             wr_next_q <= 1'b0;
@@ -956,18 +958,23 @@ module z8000_execute
 
   // LDCTL FCW,Rs loads the FCW in the second last clock, so the next
   // fetch has the new N/S. A change of S/N swaps R15 with the NSP offset
-  // there, and in the last clock R14 with the NSP segment (Z8001).
+  // there. The system R14 is used only in segmented system mode, so
+  // entering or leaving that mode swaps R14 with the NSP segment in the
+  // last clock (Z8001).
   // LDPS and IRET do the same from the read FCW word as the next edge
   // opens the last clock.
-  logic        sw15, sw14, sw14_q, ctl_rf_we;
+  logic        sw15, sw14, sw14_q, ss_old, ctl_rf_we;
   logic [15:0] nfcw;
   // LDCTL FCW loads bits 15:11 and 7:2; the rest are reserved.
   assign nfcw = ctl_fcw ? {rf_rdata_b[15:11], fcw_lo[10:8], rf_rdata_b[7:2], fcw_lo[1:0]} : nfcw_q;
-  assign sw15 = (chg_fcw && sw_clk && (nfcw[14] ^ fcw_sn)) || (xd1_q && !fcw_sn);
-  assign sw14 = sw14_q && (last || exc);
+  assign sw15   = (chg_fcw && sw_clk && (nfcw[14] ^ fcw_sn)) || (xd1_q && !fcw_sn);
+  assign ss_old = seg_mode && fcw_sn;
+  assign sw14   = sw14_q && (last || exc);
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) sw14_q <= 1'b0;
-    else          sw14_q <= SEGMENTED && sw15;
+    else if (clk_en)
+      sw14_q <= SEGMENTED && ((chg_fcw && sw_clk && ((nfcw[15] && nfcw[14]) ^ ss_old)) ||
+                              (xd1_q && !ss_old));
   end
   assign ctl_rf_we = sw15 || sw14 || (ldctl && !ctl_wr && last);
   assign ctl_rsel  = sw15 ? 3'd7 : sw14 ? 3'd6 : w0[2:0];
@@ -985,7 +992,7 @@ module z8000_execute
   // verilator lint_off UNUSEDSIGNAL
   logic check_q = 1'b0;
   // verilator lint_on UNUSEDSIGNAL
-  always_ff @(posedge clk) begin
+  always_ff @(posedge clk) if (clk_en) begin
     if (rmw_pass && mem_take && alu_op != OP_TSET) begin
       $display("%%Error: %m: read-modify-write read has no tail");
       check_q <= 1'b1;
@@ -1035,7 +1042,7 @@ module z8000_execute
       sp_we_q <= 1'b0;
       sp_d_q  <= 16'h0000;
       sp_sel_q <= 4'd0;
-    end else begin
+    end else if (clk_en) begin
       sp_we_q <= mem_take && stk_first;
       if (mem_take && stk_first) begin
         sp_d_q   <= off_sum;
@@ -1076,12 +1083,12 @@ module z8000_execute
       rf_wwidth = is_byte ? RF_BYTE : RF_WORD;
       rf_wsel   = w0[3:0];
       rf_wdata  = opnd_q;
-    end else if (bk_s || bk_d || bk_cnt) begin
+    end else if ((bk_s || bk_d || bk_cnt) && !ph_hold) begin
       rf_we     = 1'b1;
       rf_wwidth = RF_WORD;
       rf_wsel   = bk_cnt ? w1[11:8] : seg_mode ? {bk_reg[3:1], 1'b1} : bk_reg;
       rf_wdata  = tr_val;
-    end else if (tr_a || tr_b || tr_h) begin
+    end else if ((tr_a || tr_b || tr_h) && !ph_hold) begin
       rf_we     = 1'b1;
       rf_wwidth = tr_h ? RF_BYTE : RF_WORD;
       rf_wsel   = tr_a ? tr_off : tr_b ? w1[11:8] : 4'd1;
@@ -1145,7 +1152,7 @@ module z8000_execute
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)     nz_q <= 1'b0;
-    else if (dj_pass) nz_q <= is_byte ? value[7:0] != 8'h00 : value != 16'h0000;
+    else if (clk_en) if (dj_pass) nz_q <= is_byte ? value[7:0] != 8'h00 : value != 16'h0000;
   end
 
   always_comb begin
@@ -1159,12 +1166,12 @@ module z8000_execute
       flags      = {9'h000, wdata_q[7:0] == 8'h00, 6'h00};
       flags_mask = 16'h0040;
     end
-    if (tr_b) begin
+    if (tr_b && !ph_hold) begin
       flags_we   = 1'b1;
       flags      = {9'h000, tr_test ? opnd_q[7:0] == 8'h00 : tw_zero_q, 1'b0, step_zero, 4'h0};
       flags_mask = (tr_test || !block_rept) ? 16'h0050 : 16'h0010;
     end
-    if (bk_cnt) begin
+    if (bk_cnt && !ph_hold) begin
       flags_we   = 1'b1;
       flags      = {8'h00, cmp_c_q, match_q, cmp_s_q, step_zero, 4'h0};
       flags_mask = cmp ? 16'h00F0 : 16'h0010;
