@@ -1,0 +1,211 @@
+# z8070_dp_ucode -- the Data Processor microprogram, one word per CLK.D clock.
+#
+# The source of the generated ROM ('make gen-fpu' writes it). Only
+# the add/subtract, multiply and divide totals are published (1985 Data
+# Book p.532); every split of a total into steps, every other length and
+# every short path is a guess, tagged on each routine.
+#
+# Records, whitespace separated, '#' starts a comment:
+#
+#   act     <NAME> <what the datapath does>
+#   routine <name> <published|guess> <note...>
+#   word    <label> <ACT> <seq> [<target>] [end]
+#             seq NEXT (next word), JMP (to target), JCOND (to target if
+#             the action's test holds: a special operand in a special
+#             clock, a zero sum in LZC, a zero remainder in CORR, more
+#             steps to go in a loop step, an integer result in NORM, a
+#             decimal store in IRND, anything else in QSEL; else next), RET (to the body of the latched
+#             operation); end: the operation's last clock
+#   entry   <kind hex> <entry label> <body label> <name>
+#
+# Words take addresses in file order. A kind with no entry runs the tail.
+
+# ---- datapath actions --------------------------------------------------
+act UNPA  operand bus to A, classify (exponent field, integer and quiet bits)
+act RENA  A: leading-zero count, left shift, exponent minus count; DE; zero significand to zero
+act UNPB  operand bus or a made zero to B, classify, sign flip for a subtract (FABS/FNEG/FCLR: the operand as it is)
+act RENB  B: as RENA
+act SPEC  add special operands (NaN, infinity, both zero) resolved into S with flags
+act EXPD  exponent adder: ea - eb
+act SWAP  larger exponent to A (a zero operand loses), exponent adder: -d if swapped; effective subtract
+act ALGN  shifter: B significand right by min(d, 67) into S, sticky collected
+act ADD   adder: A significand plus or minus S
+act NEG   adder: 0 - S and sign flip if the subtract went negative
+act CRY   shifter: S right one with sticky on a carry out; exponent adder: +1
+act LZC   leading-zero count of S; a zero sum becomes the signed zero of the rounding mode
+act NORM  shifter: S left by the count; exponent adder: minus the count; the denormalize amount (subnormal scale - exponent)
+act DNRM  tininess; shifter: denormalize a tiny result by the amount formed at NORM
+act RND   precision fold into guard and sticky, round decision, adder: increment at the precision LSB
+act RNG   zero, overflow (infinity or largest finite) and storage form; INX, UN, FOV
+act PACK  shifter: significand left for storage; result latch loaded
+act WB    result handed to the register file and the Interface Processor
+act SPCC  compare: NaN operand to unordered, signaling NaN to NAN
+act SIGC  adder: A significand - B significand; magnitude relation: exponent, else the borrow and zero
+act SREL  signed relation: zeros equal, signs, both negative reversed
+act CMAP  compare code (Table 1); unordered on an X compare: INV, reason 4
+act SOP   sign unit: B to S with the sign cleared (FABS) or flipped (FNEG), or Normal Zero (FCLR)
+act MSPC  multiply special operands (NaN, zero times infinity, infinity, zero) resolved into S with flags
+act MEXP  exponent adder: ea + eb; product sign; shifter: multiplicand left one into S (the accumulator offset)
+act M3    adder: 2M + M into X (3M, shifted left one); shifter: B right to its top n bits, the rest to sticky; exponent adder: minus the bias; S cleared; step count
+act MSTP  radix-4 step: S plus 0, M, 2M or 3M by B[1:0], shifted right two, the two low bits into B shifted right two
+act PRD   product into S: adder adds M for the double's integer bit; guard, round and sticky from B
+act DSPC  divide special operands (NaN, 0/0, inf/inf, infinity, zero divisor) resolved into S with flags
+act DEXP  exponent adder: ea - eb; quotient sign
+act DLD   exponent adder: plus the bias and the precision offset; shifter: dividend right two (double) or three into S; X, QM cleared; step count
+act DSTP  SRT step: digit from S[67:62] and D[62:60]; adder: 4w minus or plus D or 2D; X takes a positive digit, QM a negative one
+act QSEL  adder: quotient X - QM, less one on a negative remainder, into S; the remainder's sticky below it (BCD store: the fraction alone, IX on a quotient of one or more)
+act RENS  remainder: A renormalized into S; A kept as stored
+act RSPC  remainder special operands (NaN, infinite dividend or zero divisor, infinite divisor, zero dividend) with flags
+act RLEN  batch length: n - 1, n odd, complete, step count
+act RLD   exponent adder: e - (n - 1); shifter: dividend right two or three; D to A; X, QM cleared
+act CORR  remainder: zero ends with a signed zero; negative: adder w + D; remainder flags
+act SSPC  square root special operands (NaN, zero, negative, infinity) with flags
+act SEXP  exponent adder: (eb + bias + twice the precision offset) / 2, parity
+act SLD   shifter: radicand fraction into A; first root bit: root 1, remainder 0 or 1 + f1; step count
+act SSTP  root step: adder 4 rem + pair - (4 root + 1), or + (4 root + 3) after a negative remainder, root bit into B; shifter: radicand left two
+act SRES  root into S (shifter: B right one), the extended's leading bit, sticky from the remainder (a negative one exact at -(2 root + 1)) and the radicand left
+act FSPC  FINT special operands (NaN, infinity, zero) with flags; exponent adder: shift count bias + 63 - eb
+act IALN  shifter: B right to the integer point into S, sticky collected (none when already an integer: FINT keeps the scale, a conversion overflows)
+act IRND  round S at its LSB (the integer point): the round clock with the extended fold
+act ILD   operand bus integer through the adder: 0 - v when negative into S, the sign, exponent bias + 63
+act XSPC  conversion special operands: NaN (INV, reason 7), infinity (IX), zero; the indefinite integer or the zero container
+act IFIN  adder: 0 - S when negative; range by width; the indefinite on overflow; IX or INX
+act BSPC  BCD digit check (a non-decimal digit: QNaN, INV, reason 6); exponent bias + 63; the sign; digit count
+act BSTP  BCD digit: adder 8 acc + 2 acc + digit (low bits and carry-in) into S; shifter: the digits left four in B
+act BLD   shifter: integer right three into S (the dividend / 8); B the divisor 10^19; X, QM cleared; step count
+act BDIG  decimal digit: adder 8 g + 2 g, the integer part a digit; shifter: digits left four in B, the digit in
+act BOUT  digits (B) to S with the sign; IX or INX
+act NOJOB unused address: no work, the operation ends
+
+# ---- shared: unpack two operands ---------------------------------------
+routine unpack guess two operands in successive clocks over one bus, each classified then renormalized
+word UNP_A   UNPA NEXT
+word UNP_AR  RENA NEXT
+word UNP_B   UNPB NEXT
+word UNP_BR  RENB RET
+
+# ---- add, subtract, reverse subtract, load -----------------------------
+routine add published 18 clocks every precision (the total); the split is a guess; 7 on a special operand and 14 on an exact cancellation are guesses
+word ADD_SP  SPEC JCOND TAIL
+word ADD_ED  EXPD NEXT
+word ADD_SW  SWAP NEXT
+word ADD_AL  ALGN NEXT
+word ADD_AD  ADD  NEXT
+word ADD_NG  NEG  NEXT
+word ADD_CY  CRY  JMP ADD_LZ
+
+# ---- BCD load ----------------------------------------------------------
+routine bcdload guess 27 clocks (24 for a zero, 4 for a non-decimal digit): the container read, the digit check, one x10 shift-add per digit (19), the shared tail without DNRM
+word BCL_LD  UNPB NEXT
+word BCL_SP  BSPC JCOND TAIL
+word BCL_IT  BSTP JCOND BCL_IT
+
+# ---- normalize, round, range (add, multiply, divide, remainder, square root, conversions)
+routine round guess the add path's last five clocks; an integer result is never tiny and skips DNRM
+word ADD_LZ  LZC  JCOND TAIL
+word ADD_NM  NORM JCOND ADD_RD
+word ADD_DN  DNRM NEXT
+word ADD_RD  RND  NEXT
+word ADD_RG  RNG  JMP TAIL
+
+# ---- compare -----------------------------------------------------------
+routine compare guess 11 clocks: the unpack, a magnitude compare on the adders, the relation and code
+word CMP_SP  SPCC NEXT
+word CMP_ED  EXPD NEXT
+word CMP_SG  SIGC NEXT
+word CMP_SR  SREL NEXT
+word CMP_CM  CMAP JMP TAIL
+
+# ---- FABS, FNEG, FCLR --------------------------------------------------
+routine sign guess 4 clocks: quiet bit operations, the operand passes unchanged but for the sign
+word SGN_LD  UNPB  NEXT
+word SGN_OP  SOP   JMP TAIL
+
+# ---- FMUL, FPWR2 -------------------------------------------------------
+routine mul published 28/42/48 clocks (16 + floor(nS/2) radix-4 steps); the split is a guess; 7 on a special operand is a guess
+word MUL_SP  MSPC JCOND TAIL
+word MUL_EX  MEXP NEXT
+word MUL_3M  M3   NEXT
+word MUL_IT  MSTP JCOND MUL_IT
+word MUL_PR  PRD  JMP ADD_CY
+
+# ---- FDIV, FRDIV -------------------------------------------------------
+routine div published 29/43/49 clocks (17 + floor(nS/2), floor(nS/2) + 2 SRT digits); the split is a guess; 7 on a special operand is a guess
+word DIV_SP  DSPC JCOND TAIL
+word DIV_EX  DEXP NEXT
+word DIV_LD  DLD  NEXT
+word DIV_IT  DSTP JCOND DIV_IT
+word DIV_QS  QSEL JCOND ADD_LZ
+
+# ---- BCD store ---------------------------------------------------------
+routine bcdstore guess 63 clocks (5 on a special operand): the conversion front end (5), h / 10^19 on the divide's 34 SRT digits and QSEL, one x10 per digit (19), the digits out, the tail
+word BCS_DG  BDIG JCOND BCS_DG
+word BCS_OU  BOUT JMP TAIL
+
+# ---- FREM, FREMSTEP ----------------------------------------------------
+routine rem guess 17 + floor(n/2) clocks for n quotient bits (29/43/49 a full batch), 12 + floor(n/2) on a zero remainder, 7 on a special operand
+word REM_A   UNPA NEXT
+word REM_AR  RENS JMP UNP_B
+word REM_SP  RSPC JCOND TAIL
+word REM_ED  EXPD NEXT
+word REM_LN  RLEN NEXT
+word REM_LD  RLD  NEXT
+word REM_IT  DSTP JCOND REM_IT
+word REM_CR  CORR JCOND TAIL
+word REM_LZ  LZC  JMP ADD_NM
+
+# ---- FSQR --------------------------------------------------------------
+routine sqrt guess 13 + nS clocks (37/66/77), one root bit a clock; 5 on a special operand; the shared tail: LZC's count is fixed by the precision, DNRM shifts only a single or double root of a tiny extended operand
+word SQR_SP  SSPC JCOND TAIL
+word SQR_EX  SEXP NEXT
+word SQR_LD  SLD  NEXT
+word SQR_IT  SSTP JCOND SQR_IT
+word SQR_RS  SRES JMP ADD_LZ
+
+# ---- FINT --------------------------------------------------------------
+routine fint guess 11 clocks (8 for a zero integer, 5 on a special operand): the unpack's B half, special select, integer align and round, the shared tail without DNRM
+word FIN_SP  FSPC JCOND TAIL
+word FIN_AL  IALN NEXT
+word FIN_RD  IRND JMP ADD_LZ
+
+# ---- integer to float --------------------------------------------------
+routine itof guess 7 clocks (4 for a zero): one adder pass reads the integer, the shared tail without DNRM
+word I2F_LD  ILD  JMP ADD_LZ
+
+# ---- float to integer, BCD store front end -----------------------------
+routine ftoi guess 8 clocks (5 on a special operand): the unpack's B half, special select, integer align and round, negate and range
+word CVI_SP  XSPC JCOND TAIL
+word CVI_AL  IALN NEXT
+word CVI_RD  IRND JCOND BCS_LD
+word FIX_FN  IFIN JMP TAIL
+word BCS_LD  BLD  JMP DIV_IT
+
+# ---- shared tail -------------------------------------------------------
+routine tail guess result latch, then the hand-over
+word TAIL    PACK NEXT
+word TAIL_WB WB   NEXT end
+
+# ---- dispatch ----------------------------------------------------------
+entry 00 UNP_A  ADD_SP FADD
+entry 01 UNP_A  ADD_SP FSUB
+entry 02 UNP_A  ADD_SP FRVSUB
+entry 03 UNP_A  MUL_SP FMUL
+entry 04 UNP_A  DIV_SP FDIV
+entry 05 UNP_A  DIV_SP FRDIV
+entry 06 UNP_A  MUL_SP FPWR2
+entry 07 UNP_B  SQR_SP FSQR
+entry 08 UNP_A  ADD_SP FLD
+entry 09 SGN_LD SGN_LD FABS
+entry 0A SGN_LD SGN_LD FNEG
+entry 0B SGN_LD SGN_LD FCLR
+entry 0C UNP_B  FIN_SP FINT
+entry 0D UNP_A  CMP_SP FCP
+entry 0E UNP_A  CMP_SP FCPX
+entry 0F UNP_A  CMP_SP FCPZ
+entry 10 UNP_A  CMP_SP FCPZX
+entry 11 REM_A  REM_SP FREM
+entry 12 REM_A  REM_SP FREMSTEP
+entry 20 I2F_LD I2F_LD ITOF
+entry 21 UNP_B  CVI_SP FTOI
+entry 22 BCL_LD BCL_LD BCDLD
+entry 23 UNP_B  CVI_SP BCDST

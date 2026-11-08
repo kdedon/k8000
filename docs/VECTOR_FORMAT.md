@@ -15,9 +15,11 @@ by bench under `vectors/k800x_cpu/`:
 | `vectors/k8010_mmu/*.vec`         | `sim/mmu/vecdump_test.go`                                   | `tb/k8010_mmu/tb_mmu.cpp`   |
 | `vectors/k8030_scc/*.vec`         | `sim/scc/vecdump_test.go`                                   | `tb/k8030_scc/tb_scc.cpp`   |
 | `vectors/k8036_cio/*.vec`         | `sim/cio/vecdump_test.go`                                   | `tb/k8036_cio/tb_cio.cpp`   |
+| `vectors/k8070_fpu/fpu/*.vec`     | `sim/fpu/vecdump_test.go`                                   | `tb/k8070_fpu/tb_fpu.cpp`   |
+| `vectors/k8070_fpu/dp/*.vec`      | `sim/fpu/fpcore/vecdump_test.go`                            | the Data Processor bench (not built) |
 
 The `K8000VEC 1 <kind>` magic on line 1 uses the short kind name (`cpu`,
-`mmu`, `scc`, `cio`): it names the record schema, not the folder, and the
+`mmu`, `scc`, `cio`, `fpu`, `fpudp`): it names the record schema, not the folder, and the
 `*vecverify` self-checks match on it.
 
 The files are committed sources, not build products, so a clone without
@@ -163,3 +165,10 @@ asserts `<clocks>`.
 
 The header is `variant Z8002`: non-segmented, so plain `@Rn` addressing
 works. The CPU replay vectors cover segmented SN timing.
+
+## FPU vectors (`K8000VEC 1 fpu`, `K8000VEC 1 fpudp`)
+
+`fpu`: one `T` record per Z8070 `TickPins` call, `P` register pokes, `F`
+final registers. `fpudp`: one `D` record per Data Processor operation
+(operands, result, flags, CLK.D clocks). Records, bit orders and
+comparison rules: `docs/K8070_FPU_TESTS.md`.

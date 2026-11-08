@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Fit one unit on Cyclone V and summarize area and timing.
-#   quartus/build.sh <unit> [period_ns]     unit: regfile | alu | serial | execute | cpu | mmu | cio | scc
+#   quartus/build.sh <unit> [period_ns]     unit: regfile | alu | serial | execute | cpu | mmu | cio | scc | fpudp | fpu | fpu4
+# fpu4 is four FPUs (ID 0-3) sharing only the clock and /RESET.
 # Default period is 48 MHz, an exact multiple of every C900 clock.
 # SEED=<n> picks the fitter seed (default 1) and keeps its own work directory.
 # Uses quartus_sh on PATH, else the pinned Quartus Lite 17.0.2 image.
@@ -25,6 +26,9 @@ case "${unit}" in
   mmu)     srcs=(rtl/k8010_mmu/z8010_mmu.sv) ;;
   cio)     srcs=(rtl/k8036_cio/z8036_cio.sv) ;;
   scc)     srcs=(rtl/k8030_scc/z8030_scc_channel.sv rtl/k8030_scc/z8030_scc.sv) ;;
+  fpudp)   srcs=(rtl/k8070_fpu/gen/z8070_dp_rom_pkg.sv rtl/k8070_fpu/gen/z8070_dp_rom.sv rtl/k8070_fpu/z8070_dp.sv) ;;
+  fpu|fpu4) srcs=(rtl/k8070_fpu/gen/z8070_enc_pkg.sv rtl/k8070_fpu/gen/z8070_dp_rom_pkg.sv rtl/k8070_fpu/gen/z8070_dp_rom.sv
+                 rtl/k8070_fpu/z8070_{dec,ip,dp,fpu}.sv) ;;
   *) echo "unknown unit: ${unit}" >&2; exit 2 ;;
 esac
 top="z8000_${unit}_measure"

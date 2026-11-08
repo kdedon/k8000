@@ -1,0 +1,7 @@
+K8000VEC 1 fpu
+test TestSnapshotMidOperation 1
+P F0 4000C000000000000000
+P F1 3FFE8000000000000000
+P SC 00800000
+X unsupported poke of internal state
+END

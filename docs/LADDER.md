@@ -470,3 +470,96 @@ A device is finished when these are clean, in order:
 
 Then record what the build taught you in `docs/<DEVICE>_TESTS.md`, and
 update `docs/STATUS.md`.
+
+---
+
+# Part H -- Z8070 FPU, `rtl/k8070_fpu` (`make test-fpu`, `make test-fpu-timing`, `make test-fpu-dp`)
+
+The datasheet where it speaks; every other choice is in the "Assumed"
+section of `docs/K8070_FPU_TESTS.md`. Rungs follow the RTL headers.
+
+## F0. Go baseline
+`make vectors-fpu` records `vectors/k8070_fpu/fpu` and `dp`;
+`fpuvecverify` replays them into a fresh Go FPU. Pass: Go tests green,
+fpuvecverify 100% (one `X unsupported` snapshot vector).
+
+## F1. Reset and idle pins
+SC, USER, FFLAGS cleared but SC.ID from the ID pins; AD floated, /BSY and
+/INT High, IEO = IEI. Pass: `make fpu ONLY=TestResetLatchesID`; timing [1].
+
+## F2. Strobe capture, snoop, ID match, word 2, decode table
+Pass: `make test-fpu-enc` (RTL decode = Go decode, every input);
+`TestIDMatchTwoFPUs.000`, `TestInvalidOpcodeInterrupt`,
+`TestInvalidEPUIDInterrupt`; timing [2] (1101 capture at /DS, next
+non-refresh 1100, /BUSACK ignore); the F0-F7 file with pokes and checked
+finals.
+
+## F3. Transfers and IP-only ops
+Pass: `TestFLDCTLSystemModeWrite`, `TestFLDCTLPrivilegeViolation`,
+`TestFLDCTLUser`, `TestFLDCTLBGroups`, `TestListOps`; timing [3] (memory
+write AD from the /AS rise to the /DS rise, 1110 read AD while /DS is Low,
+the flag byte on AD7-0, no drive or count under /BUSACK, the /BSY store
+wait until the Data Processor's done). Every load, store
+and compare runs through the Data Processor (load rounding, store format,
+the compare itself), so those vectors pass at F7; at F3 their pins match
+up to where the Data Processor would finish.
+
+## F4. Data Processor: shared routines, add/sub, sign ops, compare
+The microprogram (`z8070_dp_ucode.txt`, generated ROM) over one 68-bit
+adder, one exponent adder, one shifter and one leading-zero counter: the
+shared unpack (classify, renormalize), special select, align, add,
+normalize, round (four modes, the operation's precision), range, pack and
+hand-over; FADD, FSUB, FRVSUB, FLD rounding, FCP/FCPX/FCPZ/FCPZX, FABS,
+FNEG, FCLR. `done` in the last clock's CLK.D master clock. Interface
+Processor: unused state codes return to idle, the lost-word count
+saturates. Pass: `make test-fpu-dp ONLY=add,load,cmp,sign` (results,
+flags, reason, R bit, compare code, clocks: 18, 7, 14; 11; 4); timing:
+state recovery and the saturated count.
+
+## F5. Data Processor: multiply, divide, remainder, sqrt
+Radix-4 multiply on the one adder (S accumulates, B takes the product's
+low word, a 3M register), radix-4 SRT divide on an exact remainder (a
+two-threshold digit table per divisor column, the quotient and the
+quotient less one ulp by on-the-fly conversion), the remainder on the
+same step (partial batches; FD, FZ, FS, FH), and a non-restoring square root,
+one root bit a clock; all finish through the shared normalize, round,
+range and pack.
+FMUL, FPWR2, FDIV, FRDIV, FREM, FREMSTEP, FSQR. Pass: `make test-fpu-dp
+ONLY=mul,div,rem,sqrt` (clocks: 28/42/48, 29/43/49, 17 + floor(n/2) for
+n quotient bits, 37/66/77; 7 and 5 on special operands).
+
+## F6. Data Processor: conversions, FINT, BCD
+FINT and float to integer shift to the integer point and round there;
+integer to float is one adder pass then the shared tail; BCD load is one
+x10 shift-add per digit on the adder; BCD store divides by 10^19 on the SRT
+step, then one x10 per digit. Pass: `make test-fpu-dp` all (clocks: 11,
+7, 8, 27, 63; 5 on special operands).
+
+## F7. The Data Processor behind the Interface Processor
+Pass: `TestInternalFADD`, `TestIDMatchTwoFPUs.001` (FADD on the matched
+FPU), `TestBUSACKForeignMasterInvisible` (the store's rounding), the loads
+and stores (`TestLoadSingleFromMemory`, `TestStoreSingleToMemory`,
+`TestCPUTransferExtended`, `TestStoreDriveWindow`, `TestLostStoreWord`,
+`TestBSYStoreWaitIntermediate`), `TestCompareFlagsToFCW`,
+`TestFCPZNFFromMemory`, `TestFOPReadback` and the pin-level arithmetic
+vectors (`TestPinInternalOps`, `TestPinLoadsStores`, `TestPinConversions`,
+`TestPinFlagForms`, `TestPinStoreFlags`: every operation from the pins, both CLK.D phases at
+word 2, subnormal and NaN formats, integers and BCD, FOP1/FOP2, traps,
+DE on a subnormal bus operand).
+
+## F8. /BSY, overlap queue, abort, flush
+Pass: `TestBSYDuringExecution`, `TestAbort*`, overlap vectors; timing [4]
+(/BSY valid at the STOP sample falls before IF1 and word 2).
+
+## F9. Interrupts and daisy chain
+Pass: interrupt vectors; timing [5] (IEO rule, vector drive window, NV
+float).
+
+## F10. CPU + FPU system bench
+`make test-cpu-fpu`: the Go system FPU tests with both RTL chips on one
+master clock. Pass: all, Z8001 first.
+
+## F11. Fit
+Quartus 18.1, 5CSEBA6U23I7, 48 MHz, plain logic + MLAB, zero lint
+suppressions. Pass: positive slack, at most 2,700 ALMs; a four-instance
+fit for the quad-CPU budget.

@@ -25,6 +25,11 @@
 | CIO timing | `make test-cio-timing` | 14 of 14 |
 | SCC vectors | `make test-scc` | 172 of 172 |
 | SCC timing | `make test-scc-timing` | 12 of 12 |
+| FPU vectors | `make test-fpu` | 51 pass, 1 skip (`X`), also at `--mclk 1`, `2`, `1,3`, `3,1,2` |
+| FPU timing | `make test-fpu-timing` | 62 of 62 (reset, snoop, drive windows, the store wait, /BSY at the STOP samples in both overlap modes, the acknowledge: IEO, vector window, SV, NV, DLC; Interface Processor state recovery and the lost-word count) |
+| FPU decode table | `make test-fpu-enc` | PASS, every IF1 word and every template x word 1 bits 7:4 x word 2 |
+| FPU Data Processor | `make test-fpu-dp` | add 61487 of 61487, load 11 of 11, sign 18 of 18, cmp 3087 of 3087, mul 24541 of 24541, div 32867 of 32867, sqrt 457 of 457, rem 345 of 345, fint 255 of 255, conv 77 of 77, bcd 64 of 64 (results, flags, reason, R bit, compare code, CLK.D count) |
+| CPU and FPU on one board | `make test-cpu-fpu` | Z8001 10 of 10, Z8002 10 of 10, also at `--mclk 1`, `2`, `3`, `4`, `1,3`, `3,1,2` (CPU pins, CPU inputs where sampled, FPU outputs, memory writes; final CPU, FPU and memory) |
 
 ## Fit
 
@@ -40,6 +45,9 @@
 | CIO (bus interface, register file, ports A/B/C, counter/timers, pattern match, interrupts, handshakes) | 1,611 | 55.6 MHz |
 | SCC (strobe capture, /INT latch, IEO, register core, acknowledge, WR0 commands, ext/status, BRG, clock mux, transmitter, async receiver, SDLC, SDLC Loop, monosync, bisync, external sync, DPLL, NRZI/FM) | 1,990 | 51.6 MHz (1.5 ns setup slack at 48 MHz; worst: /AS into the hunt latch) |
 | CPU, Z8001 (the program ROMs drive the bus; the serial unit included; the shift and multi-micro work sits in the CPU glue on ports A and B) | 4,735 | 50.5 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.03 ns; worst path: a sequencer flop through the register read select and the address adder into the register file) |
+| FPU Data Processor alone (`fpudp`: add, subtract, compare, sign operations, multiply, divide, remainder, square root, FINT, integer and BCD conversions, F0-F7 in an MLAB; 2026-11-07, Quartus 17.0.2) | 1,767 | 52.5 MHz (setup slack at 48 MHz: 1.78 ns; worst: the microprogram counter through the ROM into the working significand) |
+| FPU, whole chip (`fpu`: Interface Processor 724, Data Processor 1,837 with F0-F7, FOP1 and FOP2 in one 16 x 80 MLAB; seeds 1-3: 2,560-2,586; no M10K, no DSP; 2026-11-08, Quartus 17.0.2) | 2,561 | 51.8 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.12-1.89 ns, hold 0.14 ns; worst: the microprogram counter or the queued start into the working significand) |
+| four FPUs, ID 0-3, sharing only the clock and /RESET (`fpu4`; seeds 1-2; 2026-11-08, Quartus 17.0.2) | 10,558-10,654 (2,559-2,618 each) | 52.1-52.6 MHz (setup slack at 48 MHz: 1.64-1.82 ns, hold 0.15 ns) |
 
 ## Next
 
@@ -149,6 +157,49 @@
   their Port C lines with REQUEST and /WAIT; the pulsed handshake puts C/T 3
   in the ACKIN path of an input port and the DAV path of an output port.
 - SCC: strobe capture, /INT latch, IEO, address decode, register core, resets, the acknowledge (request condition, priority, IUS, vector, RR2 modification, Reset Highest IUS), the WR0 commands, DCD/CTS ext/status, BRG (a re-enable resumes the held count), WR11 clock mux, the async transmitter (Send Break on bit cell edges, 1.5 stop bits) and the async receiver (one stop bit checked, FIFO, parity bit and 1s above short characters, parity/framing/overrun, special receive, the FIFO lock on a special condition, Break with one null at its end) and SDLC at x1 (flag or mark idle, zero insertion and deletion, CRC-CCITT/CRC-16 with the WR10 preset, Tx Underrun/EOM with CRC or abort, Send Abort, hunt, abort detect, address search, residue codes, End of Frame with the CRC check) and monosync, bisync and external sync at x1 (6, 8 and 16-bit transmit sync idle, CRC on underrun, hunt on 6, 8, 12 and 16-bit syncs, Sync Character Load Inhibit, the receive CRC's 8-bit delay and per-character enable, /SYNC in and out, parity) and the DPLL (the WR14 commands, NRZI and FM windows with the count-5 correction, search, One/Two Clocks Missing, its clocks through WR11 and on /TRxC) with NRZ, NRZI, FM1 and FM0 coding in any x1 mode and Manchester decoding through the DPLL in FM in, SDLC Loop mode in NRZ and NRZI (Go Active On Poll, TxD through gates off loop and through the one-bit delay on loop, the EOP turned into a flag, On Loop and Loop Sending in RR10, leaving at an EOP) and a CRC cut short by Tx Enable (the flag or sync pattern fills its bit times) in SDLC and byte sync; every vector passes. There is no reset port: the hardware reset is /AS and /DS Low together, as on the chip. Asynchronous inputs are taken in-domain to keep lockstep (/DCD, /CTS and /SYNC with one PCLK sample, RxD at the PCLK rise, /RTxC and /TRxC against the last PCLK's level): a system top must pass RxD, /RTxC, /TRxC, /SYNC, /DCD, /CTS and the bus strobes through 2-flop synchronisers. SDLC Loop in FM, the sync-mode loop (WR10 D1 outside SDLC), /SYNC as an output in SDLC and its input in async, parity in SDLC, Zero Count, the DTR/REQ request and the /W//REQ pins are not built.
+- FPU: reset and idle pins. /RESET clears SC, USER, FFLAGS, PC1 and PC2 but
+  SC.ID, which takes the ID pins; AD floats, /BSY stays High, IEO follows
+  IEI. The Interface Processor and Data Processor are separate modules. The
+  bus snoop: IF1 (1101) taken at the CLK.I fall in /DS, ID match, PC1, the
+  next 1100 as word 2 decoded through the table generated from Go, /BUSACK Low
+  cycles ignored; Invalid opcode and Invalid EPU ID set SC.IR and SC.IP and
+  hold /INT Low under SC.MIE. The acknowledge of the SC.INTACK type with
+  IEI High drives the vector (SV shift, none under NV) on AD7-0 while /DS
+  is Low and sets IUS at the /DS rise; IEO is Low under IUS or DLC and,
+  from /AS rise to /DS rise of that acknowledge, while requesting. Transfers: a five-word buffer and word count
+  for 1010/1011 and 1110 in both directions, store words driven from the
+  /AS rise to the /DS rise, 1110 reads while /DS is Low, byte forms on
+  AD7-0; /BSY Low in No Overlap while the Data Processor runs, in
+  Intermediate while a queued instruction and its operand words are
+  complete, and in both modes from a store's word 2 until its word is
+  ready. FLDCTL (all selects, SC privileged by N/S),
+  FLDCTLB, the EPU<-FCW form and the flag, trap and mode lists run in the
+  Interface Processor, which returns to idle after each instruction.
+  F0-F7 are one 8 x 80 RAM (not cleared by /RESET), FOP1/FOP2 flops.
+  The Interface Processor returns to idle from an unused state code and its
+  lost-word count stops at 7. The Data Processor runs alone on its bench:
+  a microprogram from `z8070_dp_ucode.txt` over one 68-bit adder, one
+  exponent adder, one shifter and one leading-zero counter does add,
+  subtract, reverse subtract, load rounding, the four compares, FABS,
+  FNEG, FCLR, multiply and FPWR2 (radix 4 with a 3M register), divide and
+  FRDIV (radix-4 SRT on an exact remainder), both remainders and the
+  square root (one root bit a clock), FINT, the integer conversions and
+  BCD load and store with Go's results, flags and clock counts (18, 7 on
+  a special operand, 14 on an exact cancellation; compare 11; sign 4;
+  multiply 28/42/48; divide 29/43/49; remainder 17 + floor(n/2) for n
+  quotient bits; square root 37/66/77; FINT 11; integer to float 7; float
+  to integer 8; BCD load 27; BCD store 63). The Interface Processor
+  starts it at the /DS rise that completes the instruction, with no
+  added clock, and at its done writes F, folds the flags into FFLAGS,
+  loads FOP1/FOP2 (rows 8 and 9 of the F RAM), raises an enabled trap
+  and sources the result words (single and double as fields of the result
+  latch); every operation runs
+  from the pins. One instruction queues behind the executing one (word 2
+  and operand words taken while it runs, PC2) and starts in the clock the
+  executing one is done; an arithmetic trap flushes it; /ABORT drops both.
+  The acknowledge cycle drives the vector and sets IUS. With the RTL CPU
+  on one master clock (`make test-cpu-fpu`) it runs Go system programs
+  on the Z8001 and Z8002.
 
 ## Vector inventory
 
@@ -157,5 +208,6 @@
 | CPU | 2744 | 78 skipped (restore Go snapshots, or set a refresh pending directly) |
 | CPU cycle counts | 45 | 35 `exact`, 10 `approx` |
 | MMU | 77 | from 54 Go tests |
+| FPU | 52 pin + 20 Data Processor + 20 system + decode digests | 1 `X unsupported`; dp 15 MB |
 | CIO | 132 | 53 `X partial` |
 | SCC | 172 | 119 pure pin-seam (`F POKES 0`) |

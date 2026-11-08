@@ -293,3 +293,139 @@ Per-clock tables for the remaining tails (heads, single internal-cycle register 
 ## 8. Decisions
 
 - EPU internal: 15 clocks (Jan83, 11 + 4n at n = 1, 4-clock slot), replacing Mar81's 14. Adopted 2026-11-01: the program is `F1+4 Fn+1 I4`, the slot an internal cycle.
+
+## 9. Z8070 FPU
+
+The Z8070 was published only as a Preliminary Product Specification (no pinout, package or AC table) and a software emulation package. Where the spec is silent the readings below say so; nothing here is adopted yet.
+
+Sources: DB85 = Zilog 1985 Data Book, Z8070 FPU Preliminary Product Specification, April 1985, PDF p.540-567 (printed 531-558), and the Z8070 Floating-Point Emulation Package, PDF p.1012-1019 (printed 1003-1010); DB82 = Zilog 1982 Data Book, emulation product brief, PDF p.322-323 (printed 311-312); TM = Jan83 CPU Technical Manual; Fawcett PDF = printed + 11. The 1988 Data Book has no Z8070 pages; its EPA overview (PDF p.20) adds nothing. Period software, used only where the PDFs are silent: the CP/M-8000 Z8000 assembler's predefinition table (`asz8k.pd`), the CP/M-8000 floating-point emulator source (`FPE.Z8K`, change log 1980-1982) and the assembled CP/M-8000 `startup.o`. Tags: **explicit** (a PDF states it), **software** (period software shows it), **interpretation**, **guess**.
+
+### 9.1 Pins (Z8000 interface)
+
+| pin | dir | function | source |
+|---|---|---|---|
+| AD15-AD0 | bidir, 3-state | snooped; driven for EPU-to-memory and EPU-to-CPU words | DB85 PDF p.553 (printed 544) |
+| /AS, /DS, R/W, B/W, N/S | in | bus strobes and status; /AS rise marks status valid | PDF p.554 (545) |
+| ST3-ST0 | in | 0101/0110/0111 acknowledges, 1010/1011 EPU-memory, 1100 IF after first word, 1101 IF1, 1110 CPU-EPU | PDF p.554 |
+| SN6-SN0 | in | segment number (Z8001/Z8003) | PDF p.554 |
+| /BUSACK | in | Low: ignore the bus | PDF p.554; Fawcett PDF p.197 (186) |
+| /ABORT | in | aborts the current instruction (Z8001/Z8003) | PDF p.553 |
+| /BSY | out | wired to the CPU's STOP (Fig 14) and, assumed, its /WAIT (p.551 store wait) | PDF p.551 (542), p.555, Fig 14 PDF p.553 |
+| /INT | out, open drain | to /NMI, /NVI or /VI | PDF p.551, p.552 (543) |
+| IEI, IEO | in, out | daisy chain | PDF p.551 |
+| ID1-ID0 | in | EPU ID, latched at reset into SC | PDF p.551 |
+| OPT1-OPT0 | in | interface at reset; 11 = Z8000 | PDF p.551 |
+| /RESET | in | power-on state; USER, FFLAGS, SC cleared but SC.ID | PDF p.551 |
+| CLK.I | in | Interface Processor clock; for the Z8000 it is the CPU's clock (Fig 14: "from clock generator", to both) | PDF p.551, p.553; Z80,000 text PDF p.563 (554): synchronous with the CPU clock, minimal skew |
+| CLK.D | in | Data Processor clock; may be asynchronous | PDF p.551, p.563 |
+
+Fig 14 shows no /WAIT, /MREQ or /CS on the Z8070 in a Z8000 system. CE, RD, WR, A0, D31-D0, SIP and WAIT belong to the Universal interface only (PDF p.564).
+
+Clock pins in k8000 terms (interpretation): CLK.I is a rise and a fall pulse, like the CPU's CLK, because the spec has the EPU take memory data "before the falling edge of the clock in the middle of T3" (PDF p.555, printed 546); CLK.D is a rise pulse.
+
+### 9.2 Bus protocol
+
+- IF1 snoop: every EPU and the CPU latch the word fetched with ST 1101; first byte 0E, 0F, 4E, 4F, 8E or 8F is extended; bits 1:0 are the ID (PDF p.554, printed 545; TM PDF p.260, printed 9-13). Explicit.
+- Word 2: the next non-refresh transaction, ST 1100, captured by the EPU whose ID matches (PDF p.554; TM PDF p.260). Explicit.
+- Memory transfers (0F/4F): after any address-word fetches, the next 1 to 16 non-refresh transactions are 1010 (data) or 1011 (stack), word only; the CPU 3-states AD while /DS is Low (PDF p.555, Fig 16 PDF p.556; TM PDF p.260-261; Fawcett PDF p.196). For a write the Z8070 "places the data on the bus when AS rises" (PDF p.555): explicit, but it overlaps the CPU's address drive before /DS; Fig 16 draws "FPU DATA OUT" after the address. Interpretation: drive from the /DS fall, as the CPU's own write data.
+- CPU transfers (8F, 8E flag forms): 1 to 16 addressless 1110 transactions, I/O timing with TWA (Fig 17, PDF p.557, printed 548). Fawcett PDF p.197 (186) says "identical to a three-clock-cycle memory access"; the CPU side already follows the TWA reading (DECISIONS).
+- Flag transfers: one byte on AD7-AD0; the CPU's R0 is undefined after FCW <- EPU (TM PDF p.235, printed 6-174; Fawcett PDF p.197).
+- /BSY drives STOP, which the CPU samples on the fall before an IF1 and, with EPA set, on the fall before an extended instruction's word 2 (TM PDF p.262, printed 9-15). The spec is inconsistent on stores: PDF p.551 says /BSY "is used by the Z8070 as a Wait signal during stores" and PDF p.555 that the transfer "times can be extended by activating the CPU's WAIT line", but Fig 14 (PDF p.553) wires /BSY to STOP only. STOP alone cannot cover a store: the conversion needs word 2's operation and register, and the data cycles follow word 2 at once. Assumed: the system also wires /BSY to /WAIT, and /BSY is Low from a store's data cycle until its word is ready, in both overlap modes.
+- Overlap: Z8000 systems use No Overlap or Intermediate (PDF p.554). No Overlap stops the CPU whenever the FPU is processing; Intermediate lets the CPU run during an operation and stops it after a second FPU instruction is transferred (PDF p.544, printed 535). Exactly which STOP sample (IF1 or word 2) asserts in each mode: interpretation.
+- Interrupts: SC.INTACK selects the acknowledge type (0X NMI, 10 NVI, 11 VI); vector from SC bits 7:0, SV shifts it left, NV 3-states the lines, VIS adds status (format not given), DLC blocks lower devices (PDF p.543, printed 534). IEO: High only if IEI is High and the CPU is not servicing a Z8070 interrupt and none is requested, during INTACK (PDF p.551). Vector drive and IUS set: the Universal-interface text (PDF p.565, printed 556) describes it; the Z8000 timing is the standard Z-BUS acknowledge (interpretation).
+- Exception flush: any instruction transferred or being transferred is flushed (PDF p.567, printed 558).
+- Reset: registers 0 but SC.ID (PDF p.551).
+
+### 9.3 Registers and formats
+
+All explicit from DB85 PDF p.541-544 (printed 532-535) and Fig 11-13 (PDF p.546-547).
+
+- F0-F7: 80-bit extended (sign, 15-bit exponent bias 16383, explicit integer bit, 63-bit fraction).
+- PC1 (executing or control instruction's address), PC2 (queued instruction's), 32-bit, read only. The Z8070 must take them from the IF1 address (interpretation; Z8000 sends no PC).
+- FFLAGS: 7:0 sticky INV FOV UN DZ INX DE NAN IX; 15:8 previous-operation, same order; 17:16 zero; 23:18 FC FZ FS FV FD FH; 25:24 FOP2E; 27:26 FOP1E; 28 R (rounded up); 31:29 invalid-op code (8 reasons listed).
+- Compare results (Table 1): < sets FC FS FD; = sets FZ; > sets FD; unordered sets FV. FH is not in the table.
+- FC FZ FS FV FD FH correspond to the FCW's C Z S P/V D H (DB85 PDF p.1013, printed 1004), so FFLAGS 23:18 is FCW 7:2 bit for bit. The condition-code table (PDF p.1019, printed 1010) agrees: FLT = ULT (C), FLU = LT (S xor V), FGU = UGT, FUN = OV.
+- SC: 7:0 vector; 8 zero; 9 SV; 10 VIS; 11 NV; 12 DLC; 13 IUS; 14 IP; 15 MIE; 17:16 INTACK; 19:18 OVRLP (00 none, 01 reserved, 10 intermediate, 11 maximum, not for Z8000); 20 AC (synchronize when CLK.I and CLK.D differ); 21 F; 22 RPC; 23 U; 25:24 IR (00 arithmetic, 01 invalid opcode, 10 invalid EPU ID, 11 privilege); 27:26 ID (read only); 31:28 EPUIDS (an ID whose bit is 1 raises Invalid EPU ID). Privileged in systems with System/Normal.
+- USER: 1:0 RM (nearest, zero, +inf, -inf); 15:8 trap enables, sticky order; bit 6 printed "J", not described; 31:16 undefined.
+- FOP1 (input operand), FOP2 (default result), read only, 80-bit with the exponent's two MSBs in FFLAGS.
+- Formats: single, double, extended binary; 32- and 64-bit two's-complement integers; BCD integer, sign and up to 19 digits in 80 bits.
+
+### 9.4 Instruction set and encoding
+
+Mnemonics, operands and operations: DB85 PDF p.548-551 (printed 539-542); the emulation package repeats them with operand forms R, RR, RQ, IR, DA, X and multiple-register FF (PDF p.1016-1018). Neither PDF gives word-2 encodings. The emulation package names a "Z8070 APU Technical Manual" (03-8226-01, PDF p.1005, printed 996), not on disk.
+
+Template frame, explicit (TM PDF p.232-236, printed 6-171 to 6-175):
+
+| w0 | template | word 2 the CPU reads | CPU clocks |
+|---|---|---|---|
+| 0F/4F, bits 3:2 = 11 | memory <- EPU, IR/DA/X | 3:0 n-1 | 11 + 3n IR |
+| 0F/4F, bits 3:2 = 01 | EPU <- memory | 3:0 n-1 | 11 + 3n IR |
+| 8F, bit 7 = 0, bits 3:2 = 00 | CPU <- EPU | 11:8 Rd, 3:0 n-1 | 11 + 4n |
+| 8F, bit 7 = 0, bits 3:2 = 10 | EPU <- CPU | 11:8 Rs, 3:0 n-1 | 11 + 4n |
+| 8E, bits 3:2 = 00 | FCW <- EPU | 11:8 and 3:0 printed 0000 | 15 |
+| 8E, bits 3:2 = 10 | EPU <- FCW | 11:8 and 3:0 printed 0000 | 15 |
+| 8E, bits 3:2 = 01 | internal | 3:0 n-1 | 11 + 4n |
+
+0E and 4E have no template. TM PDF p.235 prints the segmented FCW <- EPU w0 as 10 001111, the nonsegmented as 10 001110: a misprint by the other six.
+
+Operation field, software (the assembler table and the emulator decoder agree; the assembled CP/M-8000 startup bytes `8F58 C000` = FLDCTL USER,R0, `8F48 C001` = FLDCTL FFLAGS,RR0, `8F08 8021` ... `8F78 8021` = FLDIL F0..F7,RR0 decode by it):
+
+- Operation code: 6 bits, {w2[15:14], w2[7:4]}.
+- w2[13:12]: rounding precision (the `rnd` suffix).
+- w2[3:0]: n-1, which also gives the source format: 1 single (or int32), 3 double (or int64), 4 extended (or BCD); 0 for internal ops.
+- F registers: internal forms, destination in w0[7:4], source in w2[11:8]; CPU forms, F in w0[6:4], CPU register in w2[11:8]; memory forms, F in w2[11:8].
+- Control register select for FLDCTL in w0[7:4]: SC 0, PC1 1, PC2 2, FFLAGS 4, USER 5, FOP1 6, FOP2 7.
+- "Transfer flags to CPU" is the FCW <- EPU template (8E00) on the plain operation: FCPF = FCP's code, FREMSTEP = FREMSNF's.
+- FSETFLG/FRESFLG/FSETTRAP/FRESTRAP: w2 bit 4 set or reset; w0 bit 5 selects the USER trap enables, w0 bit 4 the compare byte, neither the sticky flags. Where the 8-bit list sits is unclear: the emulator builds it from w2[15:8], whose top bits are the operation code.
+
+| code | op | code | op | code | op |
+|---|---|---|---|---|---|
+| 00 | FCLR | 18 | FADD | 28 | FABS |
+| 01 | FCPZ | 19 | FSUB | 29 | FNEG |
+| 02 | FCPZX | 1A | FDIV | 2B | FPWR2 |
+| 09 | FRVSUB | 1B | FMUL | 2C | FSQR |
+| 0A | FRDIV | 1C | FREMSNF / FREMSTEP | 2D | FINT |
+| 11 | FCP | 20 | FLD | 30 | FLDCTL |
+| 12 | FCPX | 21 | FLDBCD | 31 | FLDCTLB |
+| | | 22 | FLDIL / FLDIQ (by n) | 32 | FRESFLG / FRESTRAP |
+| | | 23 | FLDM / FLDNF | 33 | FSETFLG / FSETTRAP |
+| | | 24 | FLDTL / FLDTQ (by n) | 34 | FSETMODE |
+
+The emulator also decodes 3F (FSTP, no datasheet mnemonic). FCPZNF and FCPZXNF have no row; FLDNF shares FLDM's. Internal forms are assembled with w2[3:0] = 0, so the CPU's 11 + 4n is 15 for them, as the k8000 CPU runs (section 8).
+
+### 9.5 Timing
+
+- Published (DB85 PDF p.541, printed 532), "Number of Cycles" (the clock is not named; the Data Processor has its own, so CLK.D is the reading): add/subtract 18/18/18, multiply 28/42/48, divide 29/43/49 for single/double/extended; 1 cycle = 40 ns at 25 MHz. Speed grades 10-25 MHz (PDF p.540). Single multiply "under three microseconds" at 10 MHz.
+- Readings (interpretation): add constant across precisions implies single-pass alignment and normalization; multiply 16 + n/2 for n = 24, 52 (the hidden bit known), 64 is 2 bits per clock, matching the "multiplier array"; divide = multiply + 1 with the "quotient predictor" is radix-4 SRT on the same datapath.
+- No figure for square root, remainder, compare, conversions, BCD, control or the Interface Processor. The emulator: "most operations finish in under one millisecond on a 6 MHz CPU" (PDF p.1012).
+- No AC table. EPU bus timing follows the CPU's transactions (Fig 16, 17).
+
+### 9.6 Architecture
+
+Explicit (PDF p.541, printed 532): two processors with separate clocks. The Interface Processor fetches and aligns instructions and data, keeps the instruction queue, runs control and data-movement instructions without the Data Processor, watches status for templates. The Data Processor holds the eight data registers, multiplier array, ALU, accumulator, shifter, quotient predictor and temporaries. Internal format 80 bits. Datapath width and microcode are not stated.
+
+### 9.7 Open questions
+
+| question | gap |
+|---|---|
+| Word-2 operation field | No Zilog PDF; software only (9.4) |
+| Store data drive edge (/AS rise or /DS fall) | PDF p.555 text against Fig 16 and the CPU's write timing |
+| Which STOP sample /BSY asserts for, per overlap mode | PDF p.544 describes intent only |
+| Clocks for every op but add, multiply, divide; Interface Processor latency | none published |
+| VIS status format; USER bit 6 "J" | not described |
+| PC1/PC2 capture point (IF1 address, segment) | not described for the Z8000 interface |
+| Vector drive edge in a Z8000 acknowledge | only the Universal-interface timing is drawn |
+| FCPZNF/FCPZXNF and FLDNF encodings; code 3F; the flag-list field | no software row; the emulator's list decode overlaps the operation code |
+| Invalid EPU ID: raised only for another EPU's ID whose EPUIDS bit is set, not this EPU's own | PDF p.543 silent |
+
+### 9.8 Patent US 4,648,034 (EPU busy interface)
+
+Heninger (Zilog), filed 1984-08-27, granted 1987-03-03. PAT = its PDF page. It names the Z80,000 CPU and the Z8070 as the commercial embodiment and cites a September 1983 "Z8070 Z-APU" Preliminary Product Specification (PAT p.15, col 1-2). The CPU side is the Z80,000: 32-bit bus, opcode and PC in one transaction, an EPUO bit in its hardware interface control register. What carries over to the Z8000 bus is the EPU's queue and /BSY logic; the transactions do not.
+
+- Queue (explicit, FIG. 6 PAT p.9; col 14 PAT p.21): two queuing registers, each a 32-bit instruction, 80-bit data, 32-bit logical PC and a valid bit (V1, V2); "could be a different number". The Data Processor takes the oldest with its data, freeing that register; with the queue empty an instruction goes straight to the Data Processor. Interpretation: per-entry PCs are PC1/PC2; the Z8000 sends no PC, so the IF1-address capture stays an interpretation.
+- /BSY (explicit, FIG. 7 PAT p.9; col 14-15 PAT p.21-22): OR of three ANDs. OVRLP 00: DP busy. 10: V1 set ("one instruction and its data are stored in a first of the queuing registers"). 11: V2 set (queue full). A decoded EPU store forces the DP-busy term in every mode, so /BSY "is generated until that instruction has been executed, at which time the resulting data is available for storing". 01 is not decoded.
+- Store (explicit, FIG. 11 steps 444-449 PAT p.10-11; col 16-17 PAT p.22-23): valid bit set and /BSY asserted at once on receipt, held while the DP is busy, released, then the data is driven (467). The Z80,000 tests /BSY before each transfer path (451-457), not as a bus wait. Supports the store-wait extent (Low until the word is ready, both modes); the Z8000 /WAIT wiring remains the DB85 p.551/555 reading.
+- Modes (explicit, table col 18 PAT p.23): No Overlap 00 + EPUO 0; Simple 00 + EPUO 1; Intermediate 10 + EPUO 0, "executing an instruction and has another instruction in its queue, then the CPU waits"; Maximum 11 + EPUO 1. Interpretation: the Z8000 samples STOP at every IF1, i.e. EPUO 0, which is why DB85 allows only No Overlap and Intermediate. Supports a one-deep queue for Intermediate, with /BSY rising once the queued instruction and its data are in (steps 433, 444, 466), not at its IF1.
+- SC (explicit, FIG. 8 PAT p.9): every field and bit position as DB85 (9.3), OVRLP at 19:18.
+- Interface control 335: "preferably constructed of a programmable logic array" stepping the interface (col 14 PAT p.21). FIG. 9: word 1 bits 1:0 ID, word 2 bits 15:4 "EPU instruction", 3:0 data length; no operation field.
+- Timing (FIGS. 12-16 PAT p.12-14, Z80,000 bus): CPU-EPU transfers are one /AS with a /DS per word; not the Z8000's one 1110 cycle per word. FIG. 15 draws EPU store data from the clock fall in mid-T2, after a gap following the address, about a clock before /DS falls: neither the /AS rise nor the /DS fall (interpretation; Z80,000 only).

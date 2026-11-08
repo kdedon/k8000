@@ -10,7 +10,7 @@
 #   make build      build every testbench (decode, alu, regfile, serial, refresh, seq-words, cpu x4 variants)
 #   make test       run everything, print the pass/fail ladder
 #   make test-<x>   one bench: decode | decode-table | mc-table | alu | regfile | serial | refresh | cpu | seq-words | seq-paths | cond
-#   make test-timing        spec TIMING benches (CPU Z-Bus monitor + MMU/CIO/SCC strobes)
+#   make test-timing        spec TIMING benches (CPU Z-Bus monitor + MMU/CIO/SCC/FPU strobes)
 #   make test-cpu-cycles    instruction CYCLE COUNTS vs Mar81 sec 6.7
 #   make test-cpu-combined  CPU vectors with CLK rise and fall in one master clock
 #   make cpu ONLY=TestNOP        replay one CPU vector with full divergence context
@@ -22,7 +22,7 @@
 #   make refresh-vectors    re-record every vectors/<device>/ from the Go suite
 #
 # Layout is BY DEVICE: rtl/k800x_cpu (the CPU, with its generated gen/ inside),
-# rtl/k8010_mmu, rtl/k8030_scc, rtl/k8036_cio; tb/, vectors/ and mk/ mirror
+# rtl/k8010_mmu, rtl/k8030_scc, rtl/k8036_cio, rtl/k8070_fpu; tb/, vectors/ and mk/ mirror
 # those names and tb/common holds DUT-independent checkers. Target names stay
 # short (test-cio, cio ONLY=...).
 #
@@ -60,7 +60,7 @@ VFLAGS := --timescale 1ns/1ps -O2 --x-assign fast --x-initial fast
         test-cpu-combined test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond test-timing cpu ladder clean help
 all: build
 
-# Per-device fragments (k8010_mmu / k8036_cio / k8030_scc ...) live in
+# Per-device fragments (k8010_mmu / k8036_cio / k8030_scc / k8070_fpu) live in
 # mk/<device>.mk and hook the
 # gen/vectors/lint/build/test targets via the *_EXTRA variables and
 # double-colon-free convention: each fragment defines gen-<chip>,
