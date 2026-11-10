@@ -3,7 +3,7 @@
 ## Scope
 
 RTL `rtl/k8036_cio/z8036_cio.sv`; replay harness `tb/k8036_cio/tb_cio.cpp`;
-vectors `vectors/k8036_cio/*.vec` (134 files from 124 tests, 53 partial);
+vectors `vectors/k8036_cio/*.vec` (138 files from 126 tests, 53 partial);
 make fragment `mk/k8036_cio.mk`.
 
 Ports: `ad_in as_n ds_n r_w cs0_n cs1 intack_n iei pclk_fall pa_in pb_in
@@ -129,10 +129,10 @@ Port C pin.
 
 ## What is covered
 
-134 files from 124 tests, all PASS; 529,521 records, 524,309 of them in
-TestG80_14_TCZeroIs65536 (the TC = 0, 65536-count wrap). 20 files are pure
+138 files from 126 tests, all PASS; 529,777 records, 524,309 of them in
+TestG80_14_TCZeroIs65536 (the TC = 0, 65536-count wrap). 24 files are pure
 pin samples (the TestPins_* set), 31 mix pin samples with written bus
-cycles, 83 are written bus cycles only. 81 are complete; 53 are `X
+cycles, 83 are written bus cycles only. 85 are complete; 53 are `X
 partial`, nearly all because the test changed port inputs or registers
 with no /AS edge to clock the /AS domain (pattern match, Port C inputs,
 handshake state, the /INT latch). The pin-driven TestPins_* vectors cover
@@ -191,7 +191,9 @@ that domain at full length.
    TestG80_9_DoubleBuffering, TestG80_9_ITB, TestHandshakeInputIgnoresCatchers,
    TestPins_HandshakeLineOpenDrain, TestPins_InputWaitReleasesOnACKIN,
    TestPins_OutputWaitHoldsWrite, TestPins_Pulsed*, TestPins_Strobed*,
-   TestPins_ThreeWireDACFallsWithDAV.
+   TestPins_ThreeWireDACFallsWithDAV, TestPins_InputRequestRWS111 (input
+   REQUEST is 111), TestPins_UnlistedRWSIsDisabled (010 and 110 act as 000;
+   1988 Z8000 Family Data Book p.319).
 
 ### Spec conformance ledger
 

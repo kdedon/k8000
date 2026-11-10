@@ -359,7 +359,7 @@ module z8036_cio (
   // REQUEST: a byte to read or room to write; two with ITB.
   function automatic logic hs_ready(input hs_t s, input logic [2:0] rws, input logic itb);
     case (rws)
-      3'd6, 3'd3, 3'd4: return itb ? s.irf && s.bf : s.irf;
+      3'd7, 3'd3, 3'd4: return itb ? s.irf && s.bf : s.irf;
       3'd5, 3'd1:       return itb ? s.ore && !s.obf : s.ore;
       default:          return 1'b0;
     endcase
@@ -463,7 +463,7 @@ module z8036_cio (
           hs_drive_nx[0] = s.dac;
         end
         // /WAIT idles High; it is asserted per access at the pins.
-        if (sp[5:3] == 3'd4 || sp[5:3] == 3'd5 || sp[5:3] == 3'd6) begin
+        if (sp[5:3] == 3'd4 || sp[5:3] == 3'd5 || sp[5:3] == 3'd7) begin
           hs_mask_nx[reqb]  = 1'b1;
           hs_drive_nx[reqb] = hs_ready(s, sp[5:3], md[5]);
         end else if (sp[5:3] == 3'd1 || sp[5:3] == 3'd3) begin

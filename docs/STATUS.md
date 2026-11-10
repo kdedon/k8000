@@ -21,7 +21,7 @@
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
 | MMU timing | `make test-mmu-timing` | 22 of 22 |
 | CPU and MMU on one CLK | `make test-cpu-mmu-clk` | PASS at master:CLK 2:1, 3:1, 4:1, 5:1, 7:1 and 2,3,2,4 (49 PA checks each, plus PA checks in every /AS-Low master clock), and 1:1 with both CLK pulses every master clock (94) |
-| CIO vectors | `make test-cio` | 134 of 134 (53 partial) |
+| CIO vectors | `make test-cio` | 138 of 138 (53 partial) |
 | CIO timing | `make test-cio-timing` | 18 of 18 |
 | CIO daisy-chain acknowledge | `make test-cio-iack` | 10 of 10 |
 | SCC vectors | `make test-scc` | 177 of 177 |
@@ -109,5 +109,5 @@ fit predates the LDA and static-shift changes.
 | CPU cycle counts | 45 | 35 `exact`, 10 `approx` |
 | MMU | 77 | |
 | FPU | 52 pin + 20 Data Processor + 20 system + decode digests | 1 `X unsupported`; dp 15 MB |
-| CIO | 134 | 53 `X partial` |
+| CIO | 138 | 53 `X partial` |
 | SCC | 177 | 124 pure pin-seam (`F POKES 0`) |
