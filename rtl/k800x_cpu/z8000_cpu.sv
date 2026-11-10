@@ -854,11 +854,10 @@ module z8000_cpu
   // Inputs and registers that later control units will consume.
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
-  assign unused_ok = ^{mi_n,
-                       rf_rdata[63:32], fcw[13:8], fcw[3:0], psap, refresh[15], nspoff, nspseg,
+  assign unused_ok = ^{rf_rdata[63:32], fcw[13:8], fcw[3:0], psap, refresh[15], nspoff, nspseg,
                        halted, ir_w0[15:12], sh_cnt[14:6],
                        ctrl_q.priv, ctrl_q.fcw_op, ctrl_q.fcw_mask, ctrl_q.stk_mode,
-                       ctrl_q.br_mode, ctrl_q.io_spec, ctrl_q.mp_op};
+                       ctrl_q.br_mode, ctrl_q.io_spec};
   // verilator lint_on UNUSEDSIGNAL
 
   // synthesis translate_off

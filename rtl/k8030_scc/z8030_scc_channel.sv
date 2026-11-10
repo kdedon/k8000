@@ -1,8 +1,8 @@
 // z8030_scc_channel -- one Z8030 SCC serial channel (A or B).
 //
 // STATUS: register write/read, RR8 FIFO pop, resets, WR0 commands,
-// DCD/CTS ext/status, BRG, WR11 clock mux, the async transmitter and
-// the async receiver. tb/k8030_scc/scc_access.h pokes/peeks these by
+// DCD/CTS ext/status, BRG, WR11 clock mux, the async, byte sync and SDLC
+// transmitters and receivers, SDLC Loop, the DPLL and line coding. tb/k8030_scc/scc_access.h pokes/peeks these by
 // hierarchical name (z8030_scc.u_cha.<name> / u_chb.<name>); keep the
 // names or update that one file in the same change.
 //
@@ -14,10 +14,9 @@
 //
 // Blocks:
 //   1. WR write / RR read mux (via top)
-//   2. deferred WR0 command
+//   2. WR0 command
 //   3. DCD/CTS sync + ext/status latch
-//      sync0 and sync1 update on the same PCLK (sync1 = new sync0):
-//      effectively ONE stage of latency, as the vectors expect.
+//      one sync stage (dcd_sync1, cts_sync1) of latency.
 //   4. BRG counter (2*(TC+2)) + WR11 mux
 //   5. TX FSM (idle..pending)
 //   6. RX FSM + 3-deep FIFO + latches
@@ -94,8 +93,8 @@ module z8030_scc_channel (
   logic        ext_ip;
   logic        dcd_latch;
   logic        cts_latch;
-  logic        dcd_sync1;            // sync0 is the same sample
-  logic        cts_sync1;            // likewise
+  logic        dcd_sync1;            // DCD sync stage
+  logic        cts_sync1;            // CTS sync stage
   logic        ext_latch_closed;
   logic        break_latch;
   logic        underrun_latch;
@@ -529,7 +528,7 @@ module z8030_scc_channel (
       n_dcd_sync = dcd_now; n_cts_sync = cts_now;
       ext_mid = n_ext_latch_closed; dcd_mid = n_dcd_latch; cts_mid = n_cts_latch;
 
-      // BRG: 2 * (time constant + 2) source clocks per output edge. A new
+      // BRG: 2 * (time constant + 2) source clocks per output cycle. A new
       // time constant waits for the next load of the counter; re-enabling
       // resumes the held count. The compares come from the registered count.
       if (n_wr[14][0] && (n_wr[14][1] || rtxc_up)) begin

@@ -18,7 +18,8 @@
 // If SEGT_n is a separately registered output in your RTL rather than
 // derived from trap_pending, extend ack() to release it too: the vectors
 // assume SEGT_n == !trap_pending at all times
-// (SEGT is released at the AS-rise sample of the acknowledge cycle; the
+// (SEGT is released at the third CLK rise after the acknowledge's /AS rise,
+// or at an earlier /DS rise; the
 // identifier phase then uses ack_pending, which ack() also clears).
 
 #pragma once

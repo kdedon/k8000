@@ -53,7 +53,7 @@ utilization in those files, boundary flops included.
 | SCC (every mode built; worst: /AS into the hunt latch) | 2026-11-02 | 1,990 | 51.6 MHz (setup slack at 48 MHz: 1.46 ns) |
 | CPU, Z8001 (the program ROMs in logic, the serial unit included) | 2026-11-05 | 4,735 | 50.5 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.03 ns; worst: a sequencer flop through the register read select and the address adder into the register file) |
 | FPU Data Processor alone (`fpudp`; F0-F7 in an MLAB) | 2026-11-07 | 2,010 | 52.5 MHz (setup slack at 48 MHz: 1.78 ns; worst: the microprogram counter through the ROM into the working significand) |
-| FPU, whole chip (`fpu`: F0-F7, FOP1 and FOP2 in one 16 x 80 MLAB; seeds 1-3: 2,625-2,652; no M10K, no DSP) | 2026-11-08 | 2,625 | 51.8 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.12-1.89 ns, hold 0.14 ns; worst: the microprogram counter or the queued start into the working significand) |
+| FPU, whole chip (`fpu`: F0-F7, FOP1 and FOP2 in one 16 x 80 MLAB, row 10 also holding the running operation's bus operand while a queued instruction needs the buffer; seeds 1-3: 2,625-2,652; no M10K, no DSP) | 2026-11-08 | 2,625 | 51.8 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.12-1.89 ns, hold 0.14 ns; worst: the microprogram counter or the queued start into the working significand) |
 
 The SCC and CIO fits predate their 2026-11-09 acknowledge changes; the CPU
 fit predates the LDA and static-shift changes.
@@ -71,8 +71,8 @@ fit predates the LDA and static-shift changes.
   acknowledge (one AD line per MMU, for several MMUs on one bus), DMASYNC.
   A23:8 drive from the /AS fall (AC #28). A system top resolves several MMUs
   per AD bit with `data_drive[n]`.
-- CIO: bus interface (one access per /AS), ports A/B/C with every
-  handshake, Special I/O, polarity and 1's catchers, three counter/timers,
+- CIO: bus interface (one access per /AS), ports A/B/C with the input,
+  output and pulsed handshakes, Special I/O, polarity and 1's catchers, three counter/timers,
   pattern match, interrupts and the daisy chain. /AS and /DS Low together
   reset it.
 - SCC: async, SDLC, SDLC Loop (NRZ, NRZI), monosync, bisync, external sync,
@@ -96,7 +96,7 @@ fit predates the LDA and static-shift changes.
   parity in SDLC, Zero Count, the DTR/REQ request.
 - CPU cycle counts: 10 of 45 records are `approx` (a base plus per-step
   clocks).
-- CIO: 53 vectors are `X partial`.
+- CIO: 53 vectors are `X partial`; bidirectional port mode (11) is not built.
 - FPU: 1 vector skipped (`X unsupported`, a poke of internal state).
 - The FPU acknowledge sets IUS at the /DS rise; the CIO and SCC act at the
   /DS fall.

@@ -69,9 +69,10 @@ faithful.
 
 ### Two clock domains
 
-Only the timer-mode counters, the deskew timers and REQUEST/WAIT run on
-PCLK (p.695 Note 1). The port input register, 1's catchers, pattern match,
-handshakes and the /INT latch run on **/AS** ("The AS functions as the
+Only the timer-mode counters and the deskew timers run on PCLK (p.695
+Note 1); a PCLK fall also steps the handshakes while /WAIT stalls. The port
+input register, 1's catchers, pattern match, handshakes (REQUEST updates at
+the /AS rise) and the /INT latch run on **/AS** ("The AS functions as the
 clock to the 8036. If AS strobe stops, then data does not get clocked
 through the device", 1988 DB p.301 Note 7; AC rows 22-25 in /AS-cycle
 units):
@@ -82,10 +83,11 @@ units):
   its two-stage synchroniser, load the /INT latch from the priority
   encoder; `int_n` is that latch inverted;
 * on `pclk_fall`: the counter/timers (PCLK/2 prescaler), the deskew
-  counters, REQUEST/WAIT;
-* the counter-mode count input is asynchronous, and the C/T gate and
-  trigger are sampled by PCLK from the live pins (rows 11/14/16 are
-  pin-to-PCLK with no /AS term).
+  counters, and the handshake step while /WAIT stalls (/WAIT itself is
+  combinational);
+* the counter-mode count input is asynchronous; there the C/T gate and
+  trigger are sampled on its falling edge, in Timer mode by PCLK from the
+  live pins (rows 11/14/16 are pin-to-PCLK with no /AS term).
 
 With /AS stopped the chip does nothing in the second bullet and keeps
 counting in the third (TestASIsTheChipClock, TestPins_CountersRunWithASStopped).
@@ -97,8 +99,8 @@ first master clock after a record that took PCLK 1 to 0, step N posedges
 (N cycles through `--mclk P` / `K8000_MCLK`, default `1,2,1,3`; `--fclk` is
 an alias), compare every output. Consequences:
 
-* register reads and the acknowledge vector are combinational from the
-  live `ds_n` plus /AS-latched state, and `ad_drive` drops in the record
+* register reads and the acknowledge vector are registered at the `/DS`
+  fall (`ad_q`, `ad_drive_q`), and `ad_drive` drops in the record
   `ds_n` rises;
 * a two-flop strobe synchroniser needs three master clocks per record
   (`K8000_MCLK=3 make test-cio`); the chip has none;
@@ -214,14 +216,14 @@ driver from overlapping the strobes.
 | 5 | IEO and /INTACK | p.674 "INTACK is sampled while AS is Low"; row 32 TdAS(IEO), Note 5 | SPEC | IEO uses the /AS-sampled /INTACK. TestG80_13_IEOIntackAndDLC |
 | 6 | acknowledge takes only the /AS-latched request | rows 32-33: IEO in an acknowledge timed from the /AS rise and from IEI only; row 26 TdAS(INT); UM0109: "no additional interrupt requests during an Interrupt Acknowledge cycle" | SPEC | IEO in an acknowledge falls on the latched request, not a live IP; a source asking later reaches /INT at the next /AS. TestCTBeforeAckDSWaitsForAS, TestCTDuringAckDSKeepsIEO, `make test-cio-iack` |
 | 7 | strobe edge and PCLK edge together | p.683 Current Count "valid only if the counter is stopped"; no AC parameter relates /DS to PCLK | OPEN | no vector has both (`F COINCIDENT 0`) |
-| 8 | PCLK-domain edge | p.695 Counter/Timer Timing (PCLK/2 toggles after the PCLK fall); rows 11/14/16/18 p.695; p.696 rows 3/4 TdPC(REQ)/TdPC(WAIT); p.692 row 25 TdPC(INT): all "PCLK falling" | SPEC | counters, deskew and REQUEST/WAIT on the PCLK fall. TestPCLKDomainClocksOnFallingEdge. Trigger and gate act on the step they are seen; silicon samples them half a count cycle earlier (rows 11/14 Note 2) |
+| 8 | PCLK-domain edge | p.695 Counter/Timer Timing (PCLK/2 toggles after the PCLK fall); rows 11/14/16/18 p.695; p.696 rows 3/4 TdPC(REQ)/TdPC(WAIT); p.692 row 25 TdPC(INT): all "PCLK falling" | SPEC | counters and deskew on the PCLK fall; REQUEST updates at the handshake step (the /AS rise, or a PCLK fall only while /WAIT stalls) and /WAIT is combinational. TestPCLKDomainClocksOnFallingEdge. Trigger and gate act on the step they are seen; silicon samples them half a count cycle earlier (rows 11/14 Note 2) |
 | 9 | counter-mode count input | p.683 "decremented on the rising edge of the counter/timer's counter input"; row 19 TdCI(CO); p.695 Note 1 "PCLK ... can be held low" | SPEC | PB5/PB1/PC1 rising edges are seen on every record. TestCounterModeCountsWithPCLKHeldLow |
 | 10 | port sampling, pattern match, handshake, /INT clock | p.695 Note 1 (PCLK used only by timer-mode counters, deskew timers and REQUEST/WAIT); p.692 rows 22-25 in /AS-cycle units, Note 6; handshake rows 9/10/21/22 = one /AS cycle; 1988 DB p.301 Note 7 | SPEC | clocked by /AS (see Two clock domains). /INT asserts one /AS cycle after a terminal count (row 25) and releases one /AS cycle after the acknowledge sets IUS (row 23). A board idling the chip must supply /AS pulses, as a running CPU does. TestASIsTheChipClock, TestPins_* |
 | 11 | hardware reset = /AS+/DS Low | p.674 footnote, p.684, Reset Timing p.696 (TwRES 250/170 ns) | SPEC | any record with both Low resets, including /DS held Low while /AS pulses. TestHardwareResetASDSLow |
-| 12 | register state in reset | p.684: "all control bits are forced to 0 ... only ... read and write the Reset bit" | SPEC | registers 0, MICR reads 01, other writes ignored while in reset (including the other MICR bits of the exit-reset write). The state before the first reset is undefined; the RTL starts in reset |
+| 12 | register state in reset | p.684: "all control bits are forced to 0 ... only ... read and write the Reset bit" | SPEC | registers 0, MICR reads 01, other writes ignored while in reset (including the other MICR bits of the exit-reset write). The state before the first reset is undefined; the RTL has no initial reset: registers power up 0 and it is out of reset until /AS and /DS are Low together |
 | 13 | PCLK/2 prescaler phase after reset | datasheet silent | OPEN | restarts Low; an RTL free to differ diverges at the first count |
 | 14 | daisy chain, IUS/IE/IP | p.683-684 Interrupt Logic Operation; p.689 | SPEC | INT_n = priority level (IP & IE, own IUS clear, no higher IUS); IEI sampled and IUS latched at the acknowledge /DS fall; IEO = !DLC & IEI & !anyIUS & !(request during the /AS-sampled INTACK) |
-| 15 | counter-mode trigger and gate | rows 12/15/17 p.695: sampled by the counter input's falling edge | OPEN | sampled in the PCLK domain |
+| 15 | counter-mode trigger and gate | rows 12/15/17 p.695: sampled by the counter input's falling edge | SPEC | sampled on the count input's falling edge in Counter mode (DECISIONS) |
 | 16 | register datapath | rows 13/14/30 (from /DS, no PCLK); rows 16/17 float at the /DS rise | SPEC | see What is compared |
 | 17 | cycle teardown vs the next /AS fall | Product Spec Fig 19 (1988 DB p.157) back-to-back cycles: /DS rises after the T3 fall, the next /AS falls at the following T1, so both can land in one sample; p.674 the cycle latch is set by /AS | SPEC | end-of-cycle clears run before the /AS-fall latch, so a back-to-back access is kept. TestTickPinsBackToBackCycles |
 

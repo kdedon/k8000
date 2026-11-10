@@ -134,8 +134,8 @@ through WR12/WR13 and RR12/RR13, the A//B channel select on AD5 in Shift Left
 mode (p.641), the `/AS` address latch surviving AD changing to write data, the
 AD float referenced to the `/DS` rise with **no PCLK edge**, a deselected
 `/AS` pulse leaving the chip alone, and the `/AS`+`/DS` hardware reset with
-its reset table (WR5 -> 0x60 releasing RTS/DTR, RR15 -> 0xF8) plus the 4-5
-PCLK internal stretch from UM010903 p.26.
+its reset table (WR5 -> 0x60 releasing RTS/DTR, RR15 -> 0xF8); the bench
+idles through the reset recovery without checking its length (UM010902).
 
 `tb_mmu_timing.sv` (Z8010, z8010_mmu.pdf pp.559-575): the Special I/O command
 protocol of Fig 11 -- command latched at the `/AS` rise, executed at the `/DS`
@@ -152,7 +152,7 @@ translation. Runs master:CLK 2:1, 3:1, 4:1, 5:1, 7:1, 2,3,2,4 and 1:1.
 
 `tb_cio_iack.sv`, `tb_scc_iack.sv`: two chips on one daisy chain. A chip
 with IEI Low keeps /INT High, and a request arriving after an acknowledge's
-/AS does not take that acknowledge (UM0109 2.4.5.1).
+/AS does not take that acknowledge (UM010902 2.4.5.1).
 
 `tb_fpu_timing.sv` (Z8070, 1985 DB printed pp.531-558): reset and idle
 pins, the IF1 and word-2 snoop, transfer drive windows, the store wait,

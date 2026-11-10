@@ -43,8 +43,8 @@
 // Refreshes skipped while the bus was granted or waited go after any
 // cycle, back to back.
 // STOP Low as an IF1, or an EPU instruction's second word, starts runs
-// refreshes after its T3 until STOP is High again. Instructions the execute unit does not run yet (and HALT in
-// normal mode) stop the sequencer after their IF1 machine cycle.
+// refreshes after its T3 until STOP is High again. An undefined first word, and HALT in normal mode, stop the
+// sequencer after their IF1 machine cycle.
 //
 // The datapath picks a program's path and says whether its repeated part
 // runs again (`more`). The first word's condition (`cc_met`, for the word
@@ -174,7 +174,7 @@ module z8000_sequencer
     SEQ_FETCH,      // request the first IF1
     SEQ_IF1,        // IF1 in flight, its word not yet in
     SEQ_PROG,       // the instruction's program runs
-    SEQ_STOP        // an instruction not run yet
+    SEQ_STOP        // an undefined word, or HALT in normal mode
   } seq_state_e;
 
   typedef enum logic [1:0] {

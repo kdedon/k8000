@@ -73,7 +73,7 @@ Each record has two time bases:
   float on /DS High);
 * PCLK rise: bus-cycle service (read mux, write, acknowledge vector),
   sampling RxD/DCD/CTS/RTxC/TRxC/SYNC, and the BRG, transmitter, receiver,
-  deferred WR0 commands and ext/status.
+  WR0 commands and ext/status.
 
 Replay: **one `T` record = one posedge of the master clock `clk`, then
 N-1 more with the inputs held** (N cycles through `--mclk P` /
@@ -157,7 +157,7 @@ alone is 40, one per phase offset).
 2. **Power-up = hardware reset with idle pins** (WR4 = 04, WR11 = 08,
    WR14 = 20, WR15 = F8, ...; DCD/CTS deasserted), so the first PCLK is not
    a modem transition.
-3. **Deferred WR0 commands run on the PCLK rise that services the /DS-fall
+3. **WR0 commands run in the PCLK step that services the /DS-fall
    write** (row 4).
 4. **RR0 D7 Break/Abort follows the line** while the ext/status latch is
    open; with the reset WR15 = F8 the break transition itself closes the
@@ -177,7 +177,7 @@ source is silent; the reading taken is stated.
 | 1 | DCD/CTS synchroniser depth | z8030 p.633 pin descriptions (Schmitt, pulse detect); p.647 row 21 TwEXT 200 ns; 1988 DB p.280 row 10b TdEXT(INT) = 2..3 /AS units | OPEN | one PCLK from pin to detect |
 | 2 | Auto Enables with /CTS High | z8030 p.633 "a Low on the inputs enables the respective transmitters"; UM p.95/p.110 "/CTS High, the transmitter is disabled"; UM p.102, p.153 WR5 D3: a disabled transmitter completes the character in progress | SPEC | the TBR-to-TSR handoff and a character start wait for /CTS; TxD marks; a frame in progress completes; All Sent needs the TBR empty. TestPins_AutoEnablesCTS, TestPins_TxDisableCompletesCharacter |
 | 3 | DCD/CTS state after reset | UM p.26-27 reset table: RR0 D3/D5 = X | SPEC | latches and sync at the pin level |
-| 4 | deferred WR0 command timing | z8030 p.645 recovery time 6 TcPC + 200 ns; UM p.28 | SPEC | runs on the PCLK rise that services the write; no pin effect before the next access |
+| 4 | WR0 command timing | z8030 p.645 recovery time 6 TcPC + 200 ns; UM p.28 | SPEC | runs in the PCLK step that services the write; no pin effect before the next access |
 | 5 | /AS+/DS reset width | z8030 p.648 rows 37-39: no reset <= 30 ns, TwRES >= 250 ns; UM p.26: stretched 4-5 PCLK, accesses ignored | OPEN between 30 and 250 ns | TestPins_HardwareResetViaASDS holds the coincidence two PCLK and idles six before the next access; see row 17 |
 | 6 | external clock pins | z8030 p.633 RTxC/TRxC; WR11 p.644 | SPEC | TestG81_8_* drive /RTxC and /TRxC |
 | 7 | reset register values | UM p.26-27 reset table and bit text (WR15 p.173, WR14 D4 p.171, WR11 p.74/80, RR1 p.179) | SPEC | WR0 = 0, WR1 &= 24, WR3 &= FE, WR4 \|= 04, WR5 &= 61, WR10 (hardware 0 / channel &= 60), WR11 (hardware 08 / channel kept), WR14 (hardware 20 / channel D5 = 1, D4:2 = 0), WR15 = F8, WR9 D5:2 clear, D1:0 kept, WR2 kept, IUS clear, Shift Left; RR1 D3:1 = 011 in Async. WR14 D4: the table prints 1, the bit text says reset to 0; 0 is taken. TestPins_HardwareResetViaASDS, TestPins_WR9Resets |

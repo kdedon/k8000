@@ -20,7 +20,7 @@
 // Divide and remainder: radix-4 SRT on an exact remainder in S, the digit
 // from a small table; X and QM collect the positive and the negative
 // digits, and the adder takes their difference at the end.
-// Square root: one root bit a clock, restoring, root in B, radicand in A.
+// Square root: one root bit a clock, non-restoring, root in B, radicand in A.
 // FINT and the integer conversions: B right to the integer point, a round
 // there, then the shared tail or one negate and range pass. BCD load: one
 // 10 acc + digit adder pass a digit. BCD store: the divide's SRT steps

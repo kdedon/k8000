@@ -6,8 +6,8 @@
 // docs/K8030_SCC_TESTS.md for exactly what is compared when.
 //
 // STATUS: strobe capture, /INT latch, IEO, address decode, register read
-// and write, WR9 and /AS+/DS resets, interrupt priority and acknowledge.
-// No serial logic.
+// and write, WR9 and /AS+/DS resets, interrupt priority and acknowledge;
+// the channels hold the serial logic.
 //
 // Spec notes:
 //   * /INT is NOT int_pending: the Z8030 clocks its interrupt request
@@ -406,7 +406,7 @@ module z8030_scc (
   // ---- scaffold-only lint waivers: remove as each input gains a consumer ----
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
-  assign unused_ok = ^{ds_iei_now, as_ad_now[7:6], wr9_b, wr9[7:5],
+  assign unused_ok = ^{as_ad_now[7:6], wr9_b, wr9[7:5],
                        ch_wr5[0][6:2], ch_wr5[0][0], ch_wr5[1][6:2], ch_wr5[1][0],
                        ch_wr11[0][7:3], ch_wr11[0][1:0], ch_wr11[1][7:3], ch_wr11[1][1:0]};
   // verilator lint_on UNUSEDSIGNAL

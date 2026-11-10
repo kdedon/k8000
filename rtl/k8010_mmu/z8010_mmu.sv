@@ -147,6 +147,8 @@ module z8010_mmu (
   wire as_rise = as_low_q & as_n;
   wire ds_rise = ds_low_q & ds_n;
 
+  // These have no reset: each is loaded (while /AS is Low, on a CLK rise, or
+  // when an address is driven) before anything reads it.
   // ---- the /AS latch: follows the pins while /AS is Low, holds after its rise --
   logic [7:0]  latched_ad;
   logic [3:0]  latched_st;

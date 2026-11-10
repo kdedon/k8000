@@ -396,8 +396,8 @@ module z8000_execute
   // from its read word (ph_q 1 in the T3 clock): Rs steps in the second
   // tail clock, Rd in the third as it addresses the write, and in the
   // write's T1 the count decrements, V loads and the repeat is decided,
-  // read by the sequencer in T3. An interrupt between elements would be
-  // taken there; it is not wired. A refresh or bus hold between an
+  // read by the sequencer in T3. An interrupt between elements is
+  // sampled there by the sequencer, which ends the repeat. A refresh or bus hold between an
   // element's cycles stops the count: an edge ending a cycle with none of
   // the element's taken, and the refresh's clocks. The steps below
   // select port A on a held edge too; only their loads are held.

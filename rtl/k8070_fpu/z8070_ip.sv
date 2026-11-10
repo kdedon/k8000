@@ -65,7 +65,8 @@
 // (Normal mode) is dropped and raises Privilege violation (p.534).
 //
 // /BSY (p.535, p.542; patent US 4,648,034 FIG. 7): No Overlap, Low while
-// the Data Processor runs; Intermediate, Low while the queued instruction
+// the IP waits on the Data Processor (state DPWAIT, so after /ABORT a
+// running operation finishes with /BSY High); Intermediate, Low while the queued instruction
 // and its operand words are complete. In both modes a store holds it Low
 // from its word 2 until its word is ready, the store wait (assumed: the
 // board takes /BSY to /WAIT as well).
