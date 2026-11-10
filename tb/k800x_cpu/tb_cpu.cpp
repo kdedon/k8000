@@ -208,6 +208,7 @@ int main(int argc, char** argv) {
         else if (what == "NSPOFF") dut.set_nspoff((uint16_t)v);
         else if (what == "NSPSEG") dut.set_nspseg((uint16_t)v);
         else if (what == "REFRESH_EN") dut.set_refresh_en(v != 0);
+        else if (what == "RFSH_PEND") dut.set_rfsh_pend(v != 0);
         else return false;
         top->eval();
         return true;

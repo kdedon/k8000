@@ -14,17 +14,19 @@
 | Instruction word capture | `make test-seq-words` | PASS, 17 cases (address register and words 1, 2) |
 | Program paths and repeats | `make test-seq-paths` | PASS, 20 cases (JP/RET cc taken and not taken, shift counts, LDM counts and lengths) |
 | Condition codes | `make test-cond` | PASS, 256 checks (16 codes, every C Z S P/V) |
-| CPU vectors | `make test-cpu` | 2668 pass, 0 fail, 78 skip (Z8001 1130, Z8002 1516, Z8003 7, Z8004 15) |
-| CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 2668 pass, 0 fail, 78 skip |
+| CPU vectors | `make test-cpu` | 2750 pass, 0 fail, 0 skip (Z8001 1134, Z8002 1594, Z8003 7, Z8004 15) |
+| CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 2750 pass, 0 fail, 0 skip |
 | CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks (I/O with /WAIT included) |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, 45 of 45 |
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
-| MMU timing | `make test-mmu-timing` | 16 of 16 |
-| CPU and MMU on one CLK | `make test-cpu-mmu-clk` | PASS at master:CLK 2:1, 3:1, 4:1, 5:1, 7:1 and 2,3,2,4 (49 PA checks each), and 1:1 with both CLK pulses every master clock (94) |
-| CIO vectors | `make test-cio` | 132 of 132 (53 partial) |
-| CIO timing | `make test-cio-timing` | 14 of 14 |
-| SCC vectors | `make test-scc` | 172 of 172 |
-| SCC timing | `make test-scc-timing` | 12 of 12 |
+| MMU timing | `make test-mmu-timing` | 22 of 22 |
+| CPU and MMU on one CLK | `make test-cpu-mmu-clk` | PASS at master:CLK 2:1, 3:1, 4:1, 5:1, 7:1 and 2,3,2,4 (49 PA checks each, plus PA checks in every /AS-Low master clock), and 1:1 with both CLK pulses every master clock (94) |
+| CIO vectors | `make test-cio` | 134 of 134 (53 partial) |
+| CIO timing | `make test-cio-timing` | 18 of 18 |
+| CIO daisy-chain acknowledge | `make test-cio-iack` | 10 of 10 |
+| SCC vectors | `make test-scc` | 177 of 177 |
+| SCC timing | `make test-scc-timing` | 15 of 15 |
+| SCC daisy-chain acknowledge | `make test-scc-iack` | 11 of 11 |
 | FPU vectors | `make test-fpu` | 51 pass, 1 skip (`X`), also at `--mclk 1`, `2`, `1,3`, `3,1,2` |
 | FPU timing | `make test-fpu-timing` | 62 of 62 (reset, snoop, drive windows, the store wait, /BSY at the STOP samples in both overlap modes, the acknowledge: IEO, vector window, SV, NV, DLC; Interface Processor state recovery and the lost-word count) |
 | FPU decode table | `make test-fpu-enc` | PASS, every IF1 word and every template x word 1 bits 7:4 x word 2 |
@@ -41,7 +43,7 @@
 | register file (two read ports, byte nonzero bits) | 451 | 123 MHz |
 | ALU | 205 | 101 MHz |
 | serial unit (multiply, divide, shifts on one adder and rotate) | 658 | 72.4 MHz |
-| MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8, offset latched at the /AS rise) | 551 | 69.2 MHz |
+| MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8 driven from the /AS fall, offset latched at the /AS rise; 2026-11-07, slack 5.41 ns) | 551 | 64.8 MHz |
 | CIO (bus interface, register file, ports A/B/C, counter/timers, pattern match, interrupts, handshakes) | 1,611 | 55.6 MHz |
 | SCC (strobe capture, /INT latch, IEO, register core, acknowledge, WR0 commands, ext/status, BRG, clock mux, transmitter, async receiver, SDLC, SDLC Loop, monosync, bisync, external sync, DPLL, NRZI/FM) | 1,990 | 51.6 MHz (1.5 ns setup slack at 48 MHz; worst: /AS into the hunt latch) |
 | CPU, Z8001 (the program ROMs drive the bus; the serial unit included; the shift and multi-micro work sits in the CPU glue on ports A and B) | 4,735 | 50.5 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.03 ns; worst path: a sequencer flop through the register read select and the address adder into the register file) |
@@ -125,8 +127,9 @@
   per record; the TSET bus lock is internal and tb_cpu checks it from the hierarchy.
 - MMU: translates. Its pins are AD15:8 in, A23:8 out. Offset, status and /CS are
   latched while /AS is Low and held from its rise; A23:8 (base + offset[15:8], or
-  pass-through with TRNS clear) drive from the master clock that sees the /AS rise and
-  float at the /DS rise;
+  pass-through with TRNS clear) drive from the master clock that sees the /AS fall
+  (AC #28), follow the pins through the open latch while /AS is Low, hold from the
+  /AS rise and float at the /DS rise;
   REF and CHG set on a clean access. The command port takes its opcode at the /AS rise
   (/CS sampled there only), runs at the first /DS Low sample and drives read data on
   AD15:8 while /DS is Low; all 22 commands. Violations raise SEGT and SUP, capture
@@ -140,13 +143,12 @@
   samples. A cycle starting in the /DS-rise sample latches. A system top must use
   the per-line `data_drive[n]` as the output enable for AD line 8+n and resolve
   several MMUs per bit.
-  Open: the chip starts driving A23:8 at the /AS fall (AC #28), the RTL at the rise.
   The Go model acts on the same strobe edges (fixed 2026-11-02); tb_mmu compares
   every record exactly. The 64 descriptors are four MLAB RAMs (asynchronous
   read) plus 192 flops (written-since-reset, CPU-Inhibit, DMA-Inhibit).
 - CIO: /AS latches AD, /CS0 and /INTACK while Low and holds them until the next /AS;
-  CS1 and R/W are taken at each /DS fall, where registers are read and written, so a
-  /DS with no new /AS reaches the last addressed register; AD floats at the /DS rise,
+  CS1 and R/W are taken at the /DS fall, where registers are read and written; one
+  access per /AS (INFERRED), so a further /DS with no new /AS does nothing; AD floats at the /DS rise,
   before a new /AS in the same sample latches. /AS and /DS Low together reset
   the chip. RJA selects AD5:AD0 or AD6:AD1. Command/status registers take the
   IUS/IE/IP commands; port data registers drive the outputs, enabled per port by MCCR
@@ -205,9 +207,9 @@
 
 | device | files | notes |
 |---|---|---|
-| CPU | 2744 | 78 skipped (restore Go snapshots, or set a refresh pending directly) |
+| CPU | 2750 | none skipped: a snapshot restore replays the source CPU's records, a refresh pending is a bench poke |
 | CPU cycle counts | 45 | 35 `exact`, 10 `approx` |
 | MMU | 77 | from 54 Go tests |
 | FPU | 52 pin + 20 Data Processor + 20 system + decode digests | 1 `X unsupported`; dp 15 MB |
-| CIO | 132 | 53 `X partial` |
-| SCC | 172 | 119 pure pin-seam (`F POKES 0`) |
+| CIO | 134 | 53 `X partial` |
+| SCC | 176 | 123 pure pin-seam (`F POKES 0`) |

@@ -130,6 +130,7 @@ module z8000_sequencer
   output logic [15:0] ir_w1,
   output logic [15:0] ir_w2,
   output logic [22:0] ir_ea,        // the instruction's address: segment, offset
+  output logic        ir_ea_long,   // ... from a long address (segment word bit 15)
   input  logic [22:0] mem_addr,     // operand cycle address and status
   input  logic [3:0]  mem_st,
   output logic        mem_take,     // an operand cycle is taken on this edge
@@ -764,6 +765,7 @@ module z8000_sequencer
   assign ir_w1     = ir1_q;
   assign ir_w2     = ir2_q;
   assign ir_ea     = ea_q;
+  assign ir_ea_long = col_q == MC_COL_SL;
   assign iter      = iter_q;
   assign in_rf     = in_rf_q;
   assign rf_due    = rf_go;

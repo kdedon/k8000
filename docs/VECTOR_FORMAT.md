@@ -69,9 +69,10 @@ In `F REGS`, `----` marks a register the instruction leaves undefined
 since; it is not compared. The mark covers only `F REGS`, so a vector that
 stores or uses a case-3 destination would diverge.
 
-`X unsupported <reason>` means the test restored a Go snapshot or set a
-refresh pending directly (micro-architectural state the RTL cannot be
-poked with); the harness reports SKIP.
+A CPU restored from a Go snapshot of another CPU in the same test starts
+with that CPU's records up to the save, so the RTL reaches the state through
+its pins. `X unsupported snapshot-restore` means no single recorded tick
+matched; the harness reports SKIP.
 
 ### `T` record
 
@@ -110,8 +111,9 @@ conformance ledger".
 ### `P` record
 
 `P <what> <hex>` where `what` is `R0..R15 | FCW | PC | PSAP | REFRESH |
-NSPOFF | NSPSEG | REFRESH_EN`, applied through `tb/k800x_cpu/dut_access.h`
-before the next `T`. Pokes before the first `T` set the pre-reset state (a
+NSPOFF | NSPSEG | REFRESH_EN | RFSH_PEND`, applied through
+`tb/k800x_cpu/dut_access.h` before the next `T`. `RFSH_PEND 1` leaves one
+refresh owed, as a prescaler underflow does; `0` clears it. Pokes before the first `T` set the pre-reset state (a
 fresh Go CPU is all zeros).
 
 ## ALU vectors (`K8000VEC 1 alu`)

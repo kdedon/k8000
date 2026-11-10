@@ -10,6 +10,7 @@
 // change -- nothing else in the harness knows the hierarchy.
 //
 //   u_regfile.r[16]  fcw  pc  psap  refresh  nspoff  nspseg  refresh_en  halted
+//   u_refresh.owed_q
 //   u_sequencer.unhandled_q  u_execute.sp_we_q/sp_sel_q/sp_d_q
 //   u_execute.tset_rmw/wr_next_q  mem_take  bus_done   (TSET bus lock)
 
@@ -52,6 +53,9 @@ struct DutAccess {
 
     bool     refresh_en() const          { return top->rootp->z8000_cpu__DOT__refresh_en; }
     void     set_refresh_en(bool v)      { top->rootp->z8000_cpu__DOT__refresh_en = v; }
+
+    // A refresh owed, as the prescaler's underflow leaves one.
+    void     set_rfsh_pend(bool v)       { top->rootp->z8000_cpu__DOT__u_refresh__DOT__owed_q = v ? 1 : 0; }
 
     bool     halted() const              { return top->rootp->z8000_cpu__DOT__halted; }
 

@@ -122,6 +122,7 @@ module z8000_cpu
   logic [22:0] ex_pc_d;
   logic [15:0] ir_w0, ir_w1, ir_w2;
   logic [22:0] ir_ea;
+  logic        ir_ea_long;
   logic [15:0] ex_flags, ex_flags_mask;
   logic        rf_pending, rf_now, rf_take, rf_keep, bus_lost;
   logic [8:0]  rf_row_in, rf_row_next, rf_cyc_row;
@@ -365,7 +366,9 @@ module z8000_cpu
 
   logic [15:0] sh_cnt;
   logic [5:0]  sh_n;
-  assign sh_cnt = sh_reg ? rf_count : ir_w1;
+  // Static byte forms encode the count as 00|n8; only the low byte counts.
+  assign sh_cnt = sh_reg                     ? rf_count :
+                  ctrl_q.width == WIDTH_BYTE ? {{8{ir_w1[7]}}, ir_w1[7:0]} : ir_w1;
   // Legal counts are at most 32 (long), so six bits.
   assign sh_n   = sh_cnt[15] ? 6'd0 - sh_cnt[5:0] : sh_cnt[5:0];
 
@@ -535,6 +538,7 @@ module z8000_cpu
     .ir_w1        (ir_w1),
     .ir_w2        (ir_w2),
     .ir_ea        (ir_ea),
+    .ir_ea_long   (ir_ea_long),
     .mem_addr     (ex_mem_addr),
     .mem_st       (ex_mem_st),
     .mem_take     (mem_take),
@@ -647,6 +651,7 @@ module z8000_cpu
     .pc_off     (pc[15:0]),
     .cyc_end3   (bus_cyc_end3),
     .ea_word    (ir_ea),
+    .ea_long    (ir_ea_long),
     .mem_take   (mem_take),
     .int_take   (int_take),
     .opnd_take  (opnd_take),
