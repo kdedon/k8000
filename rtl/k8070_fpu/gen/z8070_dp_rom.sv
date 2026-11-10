@@ -1,7 +1,5 @@
-// DERIVED FILE, but a COMMITTED SOURCE of k8000: check it in, review its
-// diffs, and build from it. Emitted by cmd/fpuucode from
-// rtl/k8070_fpu/z8070_dp_ucode.txt; 'make gen-fpu' overwrites it. Do not
-// hand-edit.
+// Generated from rtl/k8070_fpu/z8070_dp_ucode.txt; do not hand-edit
+// (make gen-fpu).
 //
 // z8070_dp_rom -- the Data Processor microprogram ROM in logic: the word
 // at addr, the first word and entry address of the operation being

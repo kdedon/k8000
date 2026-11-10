@@ -1,6 +1,6 @@
-# mk/k8036_cio.mk -- Z8036 CIO: vectors, lint, build, test (FPGA_BIBLE Ch.4).
+# mk/k8036_cio.mk -- Z8036 CIO: vectors, lint, build, test.
 #
-#   make vectors-cio          [MAINTAINER, needs ~/git/z8000] record vectors/k8036_cio from the Go cio test suite (+ Go self-check)
+#   make vectors-cio          [MAINTAINER, needs $(Z8000)] record vectors/k8036_cio from the model's CIO tests (+ self-check)
 #   make lint-cio             verilator -Wall on rtl/k8036_cio/z8036_cio.sv
 #   make build-cio            build obj_dir/tb_cio/tb_cio
 #   make test-cio             replay every vectors/k8036_cio/*.vec, print the ladder

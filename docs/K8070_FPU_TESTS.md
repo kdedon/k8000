@@ -1,58 +1,62 @@
-# k8070_fpu (Z8070 FPU) -- vectors, comparison rules, ladder, assumed items
+# k8070_fpu (Z8070 FPU) -- tests
+
+## Scope
 
 The Z8070 exists only as a Preliminary Product Specification (1985 Data
 Book, printed pp.531-558). The RTL follows it where it speaks; where it is
-silent, the Go model's choice is taken and listed under "Assumed" below.
+silent, this implementation's choice is listed under "Assumed" below.
 
-Produced from Go `sim/fpu`, never hand-written:
+RTL: `rtl/k8070_fpu/z8070_fpu.sv` (top, real pins only), `z8070_ip.sv`
+(Interface Processor: snoop, transfers, SC/USER/FFLAGS/PC1/PC2, /BSY,
+interrupts), `z8070_dec.sv` (its decode: IF1 template and ID, word-2 plan
+through the table in `gen/z8070_enc_pkg.sv`), `z8070_dp.sv` (Data
+Processor: F0-F7, FOP1/FOP2, arithmetic on CLK.D: one microword per CLK.D
+rise from `gen/z8070_dp_rom.sv`, whose source is `z8070_dp_ucode.txt`,
+over one 68-bit significand adder, one 17-bit exponent adder, one 68-bit
+shifter and one leading-zero counter). Ports: `clk` (board master clock),
+`clki_rise`, `clki_fall`, `clkd_rise`, `reset_n`, `ad_in`, `ad_out`,
+`ad_drive`, `as_n`, `ds_n`, `r_w`, `b_w`, `n_s`, `st`, `sn`, `busack_n`,
+`abort_n`, `bsy_n`, `int_n`, `iei`, `ieo`, `id`, `opt`: the common signals
+(p.542) plus the Z8000 interface's (pp.544-545). OPT1-OPT0 are read by
+nothing yet: only the Z8000 interface (11) is built.
 
-| what | producer | consumer |
-|---|---|---|
-| `vectors/k8070_fpu/fpu/*.vec` (`K8000VEC 1 fpu`) | `sim/fpu/vecdump_test.go` (env `K8000_VEC_DIR`) | `tb/k8070_fpu/tb_fpu.cpp` |
-| `vectors/k8070_fpu/dp/*.vec` (`K8000VEC 1 fpudp`) | `sim/fpu/fpcore/vecdump_test.go` | `tb/k8070_fpu/tb_fpu_dp.cpp` |
-| `vectors/k8070_fpu/system/*.vec` (`K8000VEC 1 cpufpu`) | `sim/system/vecdump_test.go` (the `TestFPUSystem*` tests, Z8001 and Z8002) | `tb/k8070_fpu/tb_cpu_fpu.cpp` on the `tb_cpu_fpu.sv` board |
-| `rtl/k8070_fpu/gen/z8070_enc_pkg.sv` (the decode table) | `hdl/gen/cmd/fpuenc` from `sim/fpu/isa.go` | `z8070_dec` |
-| `vectors/k8070_fpu/enc/enc.vec` (`K8000VEC 1 fpuenc`) | `hdl/gen/cmd/fpuenc` | `tb/k8070_fpu/tb_fpu_enc.sv` |
-| `rtl/k8070_fpu/gen/z8070_dp_rom_pkg.sv`, `z8070_dp_rom.sv` (the Data Processor microprogram) | `hdl/gen/cmd/fpuucode` from `rtl/k8070_fpu/z8070_dp_ucode.txt` | `z8070_dp` |
-| Go self-check | `hdl/gen/cmd/fpuvecverify` (run by `make vectors-fpu`) | -- |
+| vectors | format | files | bench |
+|---|---|---|---|
+| `vectors/k8070_fpu/fpu/` | `K8000VEC 1 fpu` | 52 from 47 tests | `tb/k8070_fpu/tb_fpu.cpp` |
+| `vectors/k8070_fpu/dp/` | `K8000VEC 1 fpudp` | 20 (123,209 records, 15 MB) | `tb/k8070_fpu/tb_fpu_dp.cpp` |
+| `vectors/k8070_fpu/system/` | `K8000VEC 1 cpufpu` | 20 (10 tests, Z8001 and Z8002) | `tb/k8070_fpu/tb_cpu_fpu.cpp` on the `tb_cpu_fpu.sv` board |
+| `vectors/k8070_fpu/enc/enc.vec` | `K8000VEC 1 fpuenc` | 1 | `tb/k8070_fpu/tb_fpu_enc.sv` |
+
+`rtl/k8070_fpu/gen/z8070_enc_pkg.sv` (the decode table) and
+`vectors/k8070_fpu/enc/enc.vec` come from the vector generator;
+`gen/z8070_dp_rom_pkg.sv` and `gen/z8070_dp_rom.sv` are assembled from
+`z8070_dp_ucode.txt`.
+
+## How to run
 
 ```
-make gen-fpu          # the decode table package and its digests, the microprogram ROM
-make vectors-fpu      # record both kinds + the digests + Go replay self-check (41 fpu files, 20 dp files)
 make lint-fpu         # verilator -Wall on z8070_dec, z8070_ip, z8070_dp, z8070_fpu (zero suppressions)
-make test-fpu-enc     # the RTL decode against the Go digests
+make test-fpu-enc     # the RTL decode against the digests, every input
 make build-fpu        # obj_dir/tb_fpu/tb_fpu
-make test-fpu         # replay every fpu vector, print pass/fail + shortest failing
+make test-fpu         # replay every fpu vector, pass/fail + shortest failing
 make fpu ONLY=TestName [VCD=1] [CONTEXT=N] [MCLK=P]   # one vector, full context table
 make ladder-fpu       # every vector, shortest first, with status
-make test-fpu-timing  # the specification bench
+make test-fpu-timing  # the specification bench (62 checks; docs/TIMING_TESTS.md)
 make test-fpu-dp [ONLY=add,cmp,...] [MCLK=P]   # the Data Processor alone, every dp record
-make vectors-cpu-fpu  # record the system vectors (20 files)
 make test-cpu-fpu     # RTL CPU + FPU on one board, every system vector, Z8001 then Z8002
-make cpu-fpu ONLY=TestName[.Z8001.000] [VCD=1] [CONTEXT=N] [MCLK=P]   # one system vector, full context
+make cpu-fpu ONLY=TestName[.Z8001.000] [VCD=1] [CONTEXT=N] [MCLK=P]   # one system vector
+make gen-fpu          # maintainer only: the decode table, its digests, the microprogram ROM
+make vectors-fpu      # maintainer only: re-record fpu/ and dp/ with the vector generator
+make vectors-cpu-fpu  # maintainer only: re-record system/
 ```
 
-RTL: `rtl/k8070_fpu/z8070_fpu.sv` (top, real pins only),
-`z8070_ip.sv` (Interface Processor: snoop, transfers, SC/USER/FFLAGS/PC1/PC2,
-/BSY, interrupts), `z8070_dec.sv` (its decode: IF1 template and ID, word-2
-plan through the table in `gen/z8070_enc_pkg.sv`), `z8070_dp.sv` (Data
-Processor: F0-F7, FOP1/FOP2, arithmetic on CLK.D: one microword per CLK.D
-rise from `gen/z8070_dp_rom.sv`, whose source is `z8070_dp_ucode.txt`, over
-one 68-bit significand adder, one 17-bit exponent adder, one 68-bit
-shifter and one leading-zero counter). Ports: `clk` (board master clock), `clki_rise`,
-`clki_fall`, `clkd_rise`, `reset_n`, `ad_in`, `ad_out`, `ad_drive`, `as_n`,
-`ds_n`, `r_w`, `b_w`, `n_s`, `st`, `sn`, `busack_n`, `abort_n`, `bsy_n`,
-`int_n`, `iei`, `ieo`, `id`, `opt`: the common signals (printed p.542) plus
-the Z8000 interface's (pp.544-545). OPT1-OPT0 are read by nothing yet: only
-the Z8000 interface (11) is built.
-
-## The `fpu` file
+### The `fpu` file
 
 ```
 K8000VEC 1 fpu
-test TestResetLatchesID 0                 Go test, chip instance index
+test TestResetLatchesID 0                 test name, chip instance index
 T <in:4hex> <AD:4hex> <ST:1hex> <SN:2hex> <out:1hex> <outAD:4hex>
-P <reg> <hex>                              register the test wrote between ticks
+P <reg> <hex>                              register the test wrote between records
 X unsupported poke of internal state       a poke with no P form; records stop
 F F0..F7, FOP1, FOP2 <20hex>               final state (sign+exponent, significand)
 F FFLAGS, SC, USER, PC1, PC2 <8hex>
@@ -64,13 +68,11 @@ END
 `in` (bit 14 = MSB): `CLKI CLKD RESET_n AS_n DS_n R_W B_W N_S BUSACK_n ABORT_n IEI ID1 ID0 OPT1 OPT0`.
 `out` (bit 3 = MSB): `ADDrive BSY_n INT_n IEO`.
 
-## How the bench replays a record
-
-One record is one Go `TickPins` call. The bench drives its inputs, raises
-`clki_rise`, `clki_fall` or `clkd_rise` for the first master clock of a
-record whose CLK.I or CLK.D level changed that way, and runs N master
-clocks (N cycles through `--mclk P` / `K8000_MCLK`, default `1,2,1,3`). The
-start state is a fresh Go chip: no reset yet, both clock levels Low.
+The bench drives a record's inputs, raises `clki_rise`, `clki_fall` or
+`clkd_rise` for the first master clock of a record whose CLK.I or CLK.D
+changed that way, and runs N master clocks (N cycles through `--mclk P` /
+`K8000_MCLK`, default `1,2,1,3`). Start state: no reset yet, both clocks
+Low.
 
 | compared | rule |
 |---|---|
@@ -81,12 +83,7 @@ start state is a fresh Go chip: no reset yet, both clock levels Low.
 | settle | two idle master clocks before a `P` and before the `F` records: F[Fd] and FOP2 are written one and two master clocks after done (nothing at the pins moves) |
 | `X` | SKIP |
 
-## Ladder
-
-`make test-fpu` prints the next rungs; the rung list is `docs/LADDER.md`
-Part H; the counts are in `docs/STATUS.md`.
-
-## The `fpudp` file
+### The `fpudp` file
 
 ```
 K8000VEC 1 fpudp
@@ -97,14 +94,11 @@ END
 
 One `D` per Data Processor operation run to completion: `kind` the
 operation or conversion, `dst`/`src`/`res` 20-hex X80, `int`/`rint` 16 hex,
-`opts` bit 0 quad, bit 1 truncate, `cycles` CLK.D clocks, decimal.
-15 MB, 246k records, mostly the three precision oracles. The record order
-of `TestExtendedBigOracle` changes between recordings (the Go test ranges
-over a map); the record set does not.
+`opts` bit 0 quad, bit 1 truncate, `cycles` CLK.D clocks, decimal. The
+record order of TestExtendedBigOracle changes between recordings; the
+record set does not.
 
-## The Data Processor bench
-
-`tb_fpu_dp` drives `z8070_dp` alone: per D record, `op_kind`, `op_prec`,
+`tb_fpu_dp` drives `z8070_dp` alone: per record, `op_kind`, `op_prec`,
 `op_rm` on a `start` pulse, the destination or source operand on `opnd` as
 `opnd_src` names it, then CLK.D rises (`clkd_rise`, High and Low phases
 from `--mclk`, default `1,2,1,3` master clocks) until `done`. Every other
@@ -123,25 +117,18 @@ rem, conv, bcd. A kind with no routine runs the two-clock tail and fails.
 Integer to float: the integer on `opnd[63:0]` as the source. Float to
 integer: `op_prec` carries the width (opts bit 0: 1 = 64 bits), a truncate
 (opts bit 1) is driven as `op_rm` 01, and `res` is compared with
-`{0000, rint}`.
+`{0000, rint}`. A stress file from the vector generator replays with
+`obj_dir/tb_fpu_dp/tb_fpu_dp [--mclk 1] <file>.vec` once `make test-fpu-dp`
+has built the bench.
 
-Stress set (not kept): `go run ./cmd/fpustress -seed 1 -n 400000 > s1.vec`
-in `~/git/z8000/hdl/gen` writes random multiply, power of two, divide,
-square root and remainder records leaning on edge operands; replay with
-`obj_dir/tb_fpu_dp/tb_fpu_dp [--mclk 1] s1.vec` after `make test-fpu-dp`
-has built the bench. The same seed gives the same file. `-conv` writes
-FINT, integer and BCD conversion records instead (integer limits, halves,
-powers of two and ten, 10^19 and 2^64, non-decimal digits).
+Contract the Interface Processor uses: `start` latches the operation; a
+CLK.D rise in the same master clock is its first clock. `done` is High in
+the master clock of the last clock's CLK.D rise, from registered state,
+with the result latch already loaded, so /BSY and the first result word
+can move in that master clock. `start` in the same master clock as `done`
+is not allowed (a queued operation starts the master clock after `done`).
 
-Contract the Interface Processor uses: `start` latches the operation;
-a CLK.D rise in the same master clock is its first clock (Go starts and
-ticks in one TickPins). `done` is High in the master clock of the last
-clock's CLK.D rise, from registered state, with the result latch already
-loaded, so /BSY and the first result word can move in that master clock. `start` in the
-same master clock as `done` is not allowed (a queued operation starts
-the master clock after `done`).
-
-## The `cpufpu` file and the system bench
+### The `cpufpu` file and the system bench
 
 ```
 K8000VEC 1 cpufpu
@@ -150,17 +137,16 @@ test TestFPUSystemFADD 0
 board bsywait 1 fpuid 0             /BSY to /WAIT as well as STOP; the ID pins
 mem 000000 10000                    mapped memory: base, size
 M <addr> <word>                     memory the test wrote
-P C <reg> <hex> / P E <reg> <hex>   CPU / FPU register the test wrote (cpu, fpu names)
-C <cpu T record fields>             one CPU Tick
-E <fpu T record fields>             one FPU TickPins
-W <addr> <word>                     a word a bus write changed in that system Tick
+P C <reg> <hex> / P E <reg> <hex>   CPU / FPU register the test wrote
+C <cpu T record fields>             one CPU record
+E <fpu T record fields>             one FPU record
+W <addr> <word>                     a word a bus write changed in that step
 F C ..., F E ..., F M <addr> <word> final CPU, FPU, nonzero memory
 END
 ```
 
-Per Go system Tick: C (CLK 0), C (CLK 1), E (CLK.I 0), E (CLK.I 1). Test
-writes are found at the first CPU Tick of a system Tick, so they come
-before both chips' records.
+Per system step: C (CLK 0), C (CLK 1), E (CLK.I 0), E (CLK.I 1). Test
+writes come before both chips' records of the step they land in.
 
 `tb_cpu_fpu.sv` wires the two RTL chips on their pins: one master clock,
 CPU CLK = CLK.I = CLK.D, /BSY to STOP and, with `bsywait`, to /WAIT while
@@ -177,53 +163,57 @@ inputs come from the records.
 | STOP, /WAIT | at each CLK fall, as the CPU took them |
 | /VI | at a CLK rise that takes it (an instruction's or HALT's sample) |
 | AD in | at a read's T3 rise (the rise before the fall that raises /DS) |
-| FPU ADDrive, BSY_n, INT_n, IEO, AD | at each CLK.I=1 E record: what the CPU sees next |
+| FPU ADDrive, BSY_n, INT_n, IEO, AD | at each CLK.I = 1 E record: what the CPU sees next |
 | memory | changed words in order against W; final memory, CPU and FPU registers |
 | AD drivers | two at once fails, but for an EPU store's data from the /AS rise over the CPU's address until it floats at T2 (spec p.546 drive edge), counted as `store-overlap` |
 
-## The `fpuenc` file
+### The `fpuenc` file
 
 ```
 K8000VEC 1 fpuenc
-W <IF1 bits 15:8> <digest>                         256 IF1 words: {first-byte flag, template found, template, ID}
-P <template> <word 1 bits 7:4> <code> <valid> <digest>   1024 word 2s: rounding, register, n-1
+W <IF1 bits 15:8> <digest>                               256 lines, each over 256 IF1 words: {first-byte flag, template found, template, ID}
+P <template> <word 1 bits 7:4> <code> <valid> <digest>   7168 lines, each over 1024 word 2s: rounding, register, n-1
 END
 ```
 
 Digests are FNV-1a 64 over each packed value, low byte first; the plan
 packs {valid, mnemonic, template, Fd, Fs, format, rounding, select, list
-byte, direction, words} as `cmd/fpuenc` does, 0 when invalid. Together the
-lines cover every IF1 word and every input the plan decode reads; a
-mismatch names the template, word 1 nibble and operation code.
+byte, direction, words}, 0 when invalid. Together the lines cover every
+IF1 word and every input the plan decode reads; a mismatch names the
+template, word 1 nibble and operation code.
 
-## Recording again
+## What is covered
 
-`make vectors-fpu` wipes `vectors/k8070_fpu`, runs `go test ./fpu/...`
-with `K8000_VEC_DIR` set (both recorders), `fpuenc` (the digests) and
-`fpuvecverify` (71 pass, 1 skipped: `TestSnapshotMidOperation.001`).
+* `make test-fpu`: 52 files, 51 PASS, 1 SKIP (TestSnapshotMidOperation.001:
+  a poke of internal state).
+* `make test-cpu-fpu`: 10 of 10 on the Z8001 and 10 of 10 on the Z8002.
+* `make test-fpu-enc`: 65536 IF1 words and 7 templates x 16 x 65536 word 2s
+  (7168 digests).
+* `make test-fpu-timing`: 62 checks.
+* `make test-fpu-dp`: 123,209 of 123,209 records over the 11 groups.
 
-## Assumed
+### Assumed
 
-Every choice no source settles. A later source replaces rows here, in the
-Go `Assumed` list and timing table, and in the code they name.
+Every choice no source settles. A later source replaces rows here and in
+the code they name.
 
-Encoding and behaviour (Go `isa.go` `Assumed`):
+Encoding and behaviour:
 
 | item | why |
 |---|---|
-| FCPZNF/FCPZXNF codes 01/02 on internal, memory and CPU templates | the software has only the flag-out rows; internal operand in word 1 bits 7:4 like FCPZ |
-| FLDCTLB on the EPU<-FCW template writes the compare flags | the software has no EPU<-FCW row |
-| FLDM and FLDNF share code 23, run as FLDNF | the assembler gives both names one row |
-| FLDCTL select 3 is Invalid opcode | the emulator serves it from a work register with no named register |
-| FLDBCD needs n = 5 | the assembler also has n = 1 rows (8510, 8110) with an extra operand of unknown meaning |
-| list target: word 1 bit 5 (trap) tested before bit 4 (compare byte) | the emulator tests bit 4 first; no row sets both |
-| list byte: bits 5:0 in word 2 bits 13:8, bits 7:6 in word 1 bits 7:6 | the emulator reads word 2 bits 15:8, which overlap the operation code |
+| FCPZNF/FCPZXNF codes 01/02 on internal, memory and CPU templates | no Zilog source gives the codes; internal operand in word 1 bits 7:4 like FCPZ |
+| FLDCTLB on the EPU<-FCW template writes the compare flags | no Zilog source lists an EPU<-FCW form |
+| FLDM and FLDNF share code 23, run as FLDNF | no separate codes are given |
+| FLDCTL select 3 is Invalid opcode | no register is named for select 3 |
+| FLDBCD needs n = 5 | n = 1 forms carry an extra operand whose meaning is not given |
+| list target: word 1 bit 5 (trap) tested before bit 4 (compare byte) | the order is not given; no form sets both |
+| list byte: bits 5:0 in word 2 bits 13:8, bits 7:6 in word 1 bits 7:6 | the layout is not given; word 2 bits 15:8 would overlap the operation code |
 | 8E with direction 11, and 0E/4E, raise Invalid opcode | no template (TM PDF p.232-236) |
 | PC1/PC2 = {0, SN6-0, 00, IF1 address}; PC1 takes PC2 when the queued instruction starts | the Z8000 interface sends no PC; format not given |
 | FOP exponent MSBs: FOP1/FOP2 exponent bits 14:13 copied into FFLAGS 27:26/25:24 | the spec gives the fields, not which exponent bits |
 | IEO blocked by a request from /AS rise to /DS rise of an acknowledge of the SC INTACK type | spec says only "Interrupt Acknowledge cycle" |
-| patent: Intermediate overlap: /BSY Low while a queued instruction and its operand words are complete (V1) | US 4,648,034 FIG. 7 (OVRLP 10: V1); p.535 stops the CPU after a second instruction is transferred |
-| patent: /BSY Low from a store's word-2 decode until its word is ready, both overlap modes; the board takes /BSY to /WAIT in EPU data cycles | US 4,648,034 FIG. 7, FIG. 11 (a decoded store forces the busy term); p.542 Wait during stores, p.546 WAIT extends transfers; Fig 14 draws STOP only |
+| Intermediate overlap: /BSY Low while a queued instruction and its operand words are complete (V1) | US 4,648,034 FIG. 7 (OVRLP 10: V1); p.535 stops the CPU after a second instruction is transferred |
+| /BSY Low from a store's word-2 decode until its word is ready, both overlap modes; the board takes /BSY to /WAIT in EPU data cycles | US 4,648,034 FIG. 7, FIG. 11 (a decoded store forces the busy term); p.542 Wait during stores, p.546 WAIT extends transfers; Fig 14 draws STOP only |
 | exception flush: an arithmetic trap drops the queued instruction, complete or in transfer; PC2 keeps its address | p.535, p.558 flush on an exception; which exceptions is not said, the trapped ones are those a handler re-transfers |
 | byte drives (vector, flag byte, FLDCTLB) put 00 on AD15-8 | spec names AD7-0 only |
 | SC VIS ignored | status format not given |
@@ -232,12 +222,7 @@ Encoding and behaviour (Go `isa.go` `Assumed`):
 | a subnormal single or double bus operand reaches the Data Processor unnormalized (integer bit 0); only FABS/FNEG and FOP1 keep that form; it raises DE, as any unnormal operand does (p.535 "a denormalized number") | the Interface Processor moves fields; the Data Processor's unpack renormalizes every operand |
 | FOP1 of FLDIL/FLDIQ is the integer in the significand field, of FLDBCD the container | FOP1 is the input operand (p.534); its form for a conversion is not given |
 | FOP2 of an integer store is the integer in the significand field; of a tiny single or double store its denormalized form (subnormal exponent, integer bit 0) | FOP2 is the default result (p.534); the Data Processor holds a store's result in its fields |
-| F0-F7 and FOP1/FOP2 cleared by /RESET | p.542 names only USER, FFLAGS and SC; the Go model clears every register. The RTL clears neither: F0-F7, FOP1 and FOP2 are one RAM (it powers up 0); no vector writes them before a second reset |
-
-Also taken from the Go model, not in its `Assumed` list:
-
-| item | why |
-|---|---|
+| F0-F7 and FOP1/FOP2 cleared by /RESET | p.542 names only USER, FFLAGS and SC. The RTL keeps them in one RAM that powers up 0 and is not cleared by a later reset; no vector writes them before a second reset |
 | a store word is driven from the /AS rise to the /DS rise | p.546 text: "places the data on the bus when AS rises"; Fig 16 draws it after the address |
 | FLDCTL SC privilege is the N/S level at the last transfer's /AS rise | p.534 says only "privileged"; the cycle is not named |
 | FLDCTL into PC1, PC2, FOP1 or FOP2 is dropped without an interrupt | p.533-534 make them read only; the effect of a write is not given |
@@ -245,8 +230,8 @@ Also taken from the Go model, not in its `Assumed` list:
 | float to integer out of range, NaN or infinity: the most negative integer | not given |
 | BCD store out of range (IX): the low 19 digits of the rounded integer (of the significand's 64 bits at 2^64 or more); NaN and infinity a zero container | not given |
 
-Data Processor clocks (Go `fpcore/timing.go`; published: add/sub 18/18/18,
-mul 28/42/48, div 29/43/49, p.532):
+Data Processor clocks (published: add/sub 18/18/18, mul 28/42/48, div
+29/43/49, p.532):
 
 | operation | single/double/extended | reading |
 |---|---|---|
@@ -272,3 +257,11 @@ mul 28/42/48, div 29/43/49, p.532):
 
 The split of every count into clocks, published total or not, is a guess;
 `rtl/k8070_fpu/z8070_dp_ucode.txt` names each clock and tags each routine.
+
+## Known gaps
+
+* Every "Assumed" row above, and the clock split of every Data Processor
+  routine.
+* OPT1-OPT0: only the Z8000 interface (11) is built.
+* TestSnapshotMidOperation.001 SKIPs: its poke of internal state has no
+  `P` form.

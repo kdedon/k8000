@@ -1,4 +1,4 @@
-// tb_cpu_fpu -- closed-loop replay of a Go-recorded CPU + Z8070 system
+// tb_cpu_fpu -- closed-loop replay of a recorded CPU + Z8070 system
 // vector (`K8000VEC 1 cpufpu`) against the tb_cpu_fpu board: the RTL CPU
 // and FPU on real pins, with a bench memory.
 //
@@ -450,7 +450,7 @@ int main(int argc, char** argv) {
         printf("RESULT FAIL %s %s pins-ok final-state-mismatch (%ld fields)\n", vecPath.c_str(), variant.c_str(), finalFails);
     if (!quiet) {
         if (firstTick >= 0) {
-            printf("  ---- context: C rows: CLK RESET AD_in, inputs recorded | as seen, outputs expected (Go) | actual (RTL); E rows: FPU outputs expected | actual ----\n");
+            printf("  ---- context: C rows: CLK RESET AD_in, inputs recorded | as seen, outputs expected | actual (RTL); E rows: FPU outputs expected | actual ----\n");
             printf("   tick   C R AD   SWv | SWv | Dr AS DS MRQ RW BW ST   AD   SN | Dr AS DS MRQ RW BW ST   AD   SN\n");
             for (auto& r : ctx) printf("%s\n", r.c_str());
             for (auto& r : after) printf("%s\n", r.c_str());

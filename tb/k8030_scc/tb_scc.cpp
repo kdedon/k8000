@@ -1,5 +1,5 @@
-// tb_scc -- per-record pin-equality replay of a Go-recorded Z8030 SCC vector
-// file against the Verilated z8030_scc (FPGA_BIBLE 0.3 tier 1, Ch.5).
+// tb_scc -- per-record pin-equality replay of a Z8030 SCC vector file
+// against the Verilated z8030_scc.
 //
 //   tb_scc <file.vec> [--context N] [--vcd out.vcd] [--quiet]
 //                     [--stop-first] [--no-final]
@@ -7,8 +7,8 @@
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP (unsupported vector / poke), 4
 // usage/parse error.
 //
-// The vector is a verbatim log of every TickPins(Inputs) Outputs call a
-// Go test made (see docs/K8030_SCC_TESTS.md). Replay is OPEN LOOP: the recorded
+// The vector is a pin-level log, one record per pin sample (see
+// docs/K8030_SCC_TESTS.md). Replay is OPEN LOOP: the recorded
 // inputs are driven regardless of what the RTL does. One T record == one
 // posedge of the fabric clock `clk`, followed by N-1 more master clocks with
 // inputs held (N cycles through the comma list `--mclk P` / env K8000_MCLK,
@@ -20,9 +20,9 @@
 // Comparison rules (docs/K8030_SCC_TESTS.md "What is compared"):
 //   always:  ADDrive INT_n IEO TxD[A/B] RTS_n[A/B] DTR_n[A/B]
 //            TRxCDrive[A/B] SYNCDrive[A/B]
-//   AD       only while BOTH models drive it (Go ADDrive && RTL ad_drive)
-//   TRxCOut  only while the Go model drives it (TRxCDrive)
-//   SYNCOut  only while the Go model drives it (never, today)
+//   AD       only while BOTH sides drive it (vector ADDrive && RTL ad_drive)
+//   TRxCOut  only while the vector drives it (TRxCDrive)
+//   SYNCOut  only while the vector drives it (SYNCDrive)
 // P records poke the register inventory through tb/k8030_scc/scc_access.h before
 // the next record; F records compare it after the last one.
 
@@ -54,7 +54,7 @@ struct Out {
     uint8_t ad;
 };
 
-// Bit orders == sim/scc/vecdump_test.go vecInBits / vecOutBits.
+// Bit orders of the vector's input and output fields.
 static In decodeIn(unsigned bits, unsigned ad) {
     In i;
     i.pclk = bits >> 21 & 1; i.as_n = bits >> 20 & 1; i.ds_n = bits >> 19 & 1; i.r_w = bits >> 18 & 1;
@@ -186,10 +186,10 @@ int main(int argc, char** argv) {
     auto dump = [&]() {};
 #endif
 
-    // Quiescent start == Go defaultInputs(): strobes negated, deselected,
+    // Quiescent start: strobes negated, deselected,
     // serial lines marking, PCLK low. The chip has no reset pin: /AS and /DS
     // Low together across PCLK rises (TwRES) reset it, then six idle PCLKs
-    // leave the Go New() state. Two fabric clocks per PCLK level.
+    // leave the reset state. Two fabric clocks per PCLK level.
     In idle{}; idle.pclk = false; idle.as_n = idle.ds_n = idle.cs0_n = idle.intack_n = idle.iei = true;
     idle.r_w = true; idle.cs1 = false; idle.ad = 0;
     for (int c = 0; c < 2; c++) { idle.rxd[c] = idle.cts_n[c] = idle.dcd_n[c] = true; }
@@ -257,7 +257,7 @@ int main(int argc, char** argv) {
             tick++;
             if (in.pclk && !prevPclk) pclks++;
             prevPclk = in.pclk;
-            // One TickPins call == N master clocks: drive the recorded
+            // One record == N master clocks: drive the recorded
             // inputs, take a posedge, settle, compare.
             top->clk = 0; top->eval(); dump();
             driveIn(top, in);
@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
         printf("RESULT FAIL %s pins-ok final-state-mismatch (%ld fields)\n", vecPath.c_str(), finalFails);
     if (!quiet) {
         if (firstTick >= 0) {
-            printf("  ---- context: inputs | expected (Go) | actual (RTL) ----\n");
+            printf("  ---- context: inputs | expected | actual (RTL) ----\n");
             printf("   tick   pclk  P ADRcCIe AD Rx CT DC XT | drv INT IEO TxD RTS DTR TRxC AD | drv INT IEO TxD RTS DTR TRxC AD\n");
             for (auto& r : ctx) printf("%s\n", r.c_str());
             for (auto& r : after) printf("%s\n", r.c_str());

@@ -2,37 +2,32 @@
 //
 // STATUS: register write/read, RR8 FIFO pop, resets, WR0 commands,
 // DCD/CTS ext/status, BRG, WR11 clock mux, the async transmitter and
-// the async receiver. Every register below is a
-// field of scc.Channel / scc.ChannelSnapshot in ~/git/z8000/sim/scc
-// (scc.go:53-171, snapshot.go:22-96) -- FPGA_BIBLE Ch.5.2 "Structure to
-// port". tb/k8030_scc/scc_access.h pokes/peeks these by
+// the async receiver. tb/k8030_scc/scc_access.h pokes/peeks these by
 // hierarchical name (z8030_scc.u_cha.<name> / u_chb.<name>); keep the
 // names or update that one file in the same change.
 //
-// Clocking (FPGA_BIBLE 5.2 + 0.2.3): single fabric clock `clk`; `pclk_rise`
+// Clocking: single fabric clock `clk`; `pclk_rise`
 // is a one-master-clock edge pulse from the board divider -- never a clock.
 // /RTxC and /TRxC arrive as rise/fall pulse pairs; the pin level is rebuilt
 // here and sampled at PCLK rises (prev_* update only under pclk_rise). Everything in
-// this module commits on posedge clk when pclk_rise is high, mirroring
-// the PCLK(rise) block of scc.go tickPins / advancePins.
+// this module commits on posedge clk when pclk_rise is high.
 //
-// Implementation order (Bible 5.2, 5.5; Go file:line):
-//   1. WR write / RR read mux            scc.go writeReg:735 readReg:640 (via top)
-//   2. deferred WR0 command              scc.go execWR0:810 applyWR0Cmd:844
-//   3. DCD/CTS sync + ext/status latch   scc.go advancePins:1264-1300, raiseExtStatusIP:251
-//      NOTE the Go chain updates sync0 AND sync1 in the same tick
-//      (sync1 = new sync0): effectively ONE stage of latency. Mirror it
-//      exactly or fix the sim in the same change (Bible 0.3).
-//   4. BRG counter (2*(TC+2)) + WR11 mux  scc.go brgPeriod:1115 advancePins:1300-1345
-//   5. TX FSM (txIdle..txPending)        scc.go txAdvance:1528, loadTSR:1228, beginStartBit:1243
-//   6. RX FSM + 3-deep FIFO + latches    scc.go rxAdvance:1373, rxPush:178, rxPop:213
-//   7. TBR->TSR handoff on PCLK          scc.go advancePins:1350-1370
+// Blocks:
+//   1. WR write / RR read mux (via top)
+//   2. deferred WR0 command
+//   3. DCD/CTS sync + ext/status latch
+//      sync0 and sync1 update on the same PCLK (sync1 = new sync0):
+//      effectively ONE stage of latency, as the vectors expect.
+//   4. BRG counter (2*(TC+2)) + WR11 mux
+//   5. TX FSM (idle..pending)
+//   6. RX FSM + 3-deep FIFO + latches
+//   7. TBR->TSR handoff on PCLK
 
 module z8030_scc_channel (
   input  logic        clk,
   input  logic        pclk_rise,     // PCLK rises on this master clock (one-clock pulse)
 
-  // serial / modem pins (Go Inputs.RxD/CTS_n/DCD_n[i], TRxCIn/RxCIn[i])
+  // serial / modem pins
   input  logic        rxd,
   input  logic        cts_n,
   input  logic        dcd_n,
@@ -41,8 +36,8 @@ module z8030_scc_channel (
   input  logic        rxc_rise,      // /RTxC rises on this master clock (one-clock pulse)
   input  logic        rxc_fall,      // /RTxC falls on this master clock (one-clock pulse)
   input  logic        sync_in,       // /SYNC pin level
-  output logic        txd,           // Go Channel.TxD
-  output logic        trxc_out_level, // Go Channel.trxcOutLevel
+  output logic        txd,
+  output logic        trxc_out_level, // /TRxC output level
   output logic [7:0]  wr9,            // channel A's copy is the chip's WR9
 
   // register port (from the top's bus decode)
@@ -64,53 +59,53 @@ module z8030_scc_channel (
 );
   /*verilator inline_module*/
 
-  // ---- register inventory (ChannelSnapshot order) ----------------------------
+  // ---- register inventory -------------------------------------------------
   logic [7:0]  wr [16];              // WR0..WR15
-  logic [7:0]  tx_buf;               // TxBuf (TBR)
-  logic        tx_buf_empty;         // TxBufEmpty  (RR0 D2)
-  logic        tx_all_sent;          // TxAllSent   (RR1 D0)
-  logic [7:0]  rx_fifo_data [3];     // RxFIFOData0..2
-  logic [7:0]  rx_fifo_err  [3];     // RxFIFOErr0..2 (bit0 parity, bit1 overrun, bit2 framing)
-  logic [1:0]  rx_fifo_len;          // RxFIFOLen 0..3
-  logic [7:0]  rx_err_sticky;        // RxErrSticky
-  logic [7:0]  rx_shift_err;         // RxShiftErr
-  logic        tx_underrun_eom;      // TxUnderrunEOM (RR0 D6)
-  logic [17:0] baud_counter;         // BaudCounter (max 2*(65535+2))
-  logic [15:0] brg_tc;               // BrgTC: time constant loaded into the counter
-  logic        brg_load;             // BrgLoad: the next BRG clock loads brg_tc (after a hardware reset)
-  logic        rxd_q;                // RxD (pin sampled at PCLK rise)
-  logic [2:0]  rx_state;             // RxState: 0 idle 1 start 2 data 3 parity 4 stop
-  logic [7:0]  rx_shift;             // RxShift
-  logic [3:0]  rx_bit_count;         // RxBitCount
-  logic [6:0]  rx_sub_count;         // RxSubCount (1..64)
-  logic [1:0]  rx_stop_bit;          // RxStopBit
-  logic        rx_break;             // RxBreak (RR0 D7 live)
-  logic        txd_q;                // TxD
-  logic        tx_break;             // TxBreak: Send Break as taken at a bit cell
-  logic [2:0]  tx_state;             // TxState: 0 idle 1 start 2 data 3 parity 4 stop 5 pending
-  logic [7:0]  tx_shift;             // TxShift (TSR)
-  logic [3:0]  tx_bit_count;         // TxBitCount
-  logic [6:0]  tx_sub_count;         // TxSubCount
-  logic [1:0]  tx_stop_bit;          // TxStopBit
-  logic        tx_ip;                // TxIP
-  logic        rx_int_next_char;     // RxIntNextChar
-  logic        rx_int_forced;        // RxIntForced
+  logic [7:0]  tx_buf;               // TBR
+  logic        tx_buf_empty;         // RR0 D2
+  logic        tx_all_sent;          // RR1 D0
+  logic [7:0]  rx_fifo_data [3];
+  logic [7:0]  rx_fifo_err  [3];     // bit0 parity, bit1 overrun, bit2 framing
+  logic [1:0]  rx_fifo_len;          // 0..3
+  logic [7:0]  rx_err_sticky;
+  logic [7:0]  rx_shift_err;
+  logic        tx_underrun_eom;      // RR0 D6
+  logic [17:0] baud_counter;         // max 2*(65535+2)
+  logic [15:0] brg_tc;               // time constant loaded into the counter
+  logic        brg_load;             // the next BRG clock loads brg_tc (after a hardware reset)
+  logic        rxd_q;                // pin sampled at PCLK rise
+  logic [2:0]  rx_state;             // 0 idle 1 start 2 data 3 parity 4 stop
+  logic [7:0]  rx_shift;
+  logic [3:0]  rx_bit_count;
+  logic [6:0]  rx_sub_count;         // 1..64
+  logic [1:0]  rx_stop_bit;
+  logic        rx_break;             // RR0 D7 live
+  logic        txd_q;
+  logic        tx_break;             // Send Break as taken at a bit cell
+  logic [2:0]  tx_state;             // 0 idle 1 start 2 data 3 parity 4 stop 5 pending
+  logic [7:0]  tx_shift;             // TSR
+  logic [3:0]  tx_bit_count;
+  logic [6:0]  tx_sub_count;
+  logic [1:0]  tx_stop_bit;
+  logic        tx_ip;
+  logic        rx_int_next_char;
+  logic        rx_int_forced;
   logic        rx_lock;              // a special character read holds the FIFO exit
-  logic        ext_ip;               // ExtIP
-  logic        dcd_latch;            // DcdLatch
-  logic        cts_latch;            // CtsLatch
-  logic        dcd_sync1;            // DcdSync1 (the model's DcdSync0 is the same sample)
-  logic        cts_sync1;            // CtsSync1 (likewise CtsSync0)
-  logic        ext_latch_closed;     // ExtLatchClosed
-  logic        break_latch;          // BreakLatch
-  logic        underrun_latch;       // UnderrunLatch
-  logic        pending_wr0;          // PendingWR0
-  logic [2:0]  pending_wr0_cmd;      // PendingWR0Cmd
-  logic        prev_rtxc;            // PrevRTxC
-  logic        prev_trxc;            // PrevTRxC
-  logic        trxc_out_lvl;         // TrxcOutLevel
-  logic        rts_hold;             // RtsHold (Auto Enables /RTS hold, R-SCC-045)
-  // SDLC framing (Go sdlcState)
+  logic        ext_ip;
+  logic        dcd_latch;
+  logic        cts_latch;
+  logic        dcd_sync1;            // sync0 is the same sample
+  logic        cts_sync1;            // likewise
+  logic        ext_latch_closed;
+  logic        break_latch;
+  logic        underrun_latch;
+  logic        pending_wr0;
+  logic [2:0]  pending_wr0_cmd;
+  logic        prev_rtxc;
+  logic        prev_trxc;
+  logic        trxc_out_lvl;
+  logic        rts_hold;             // Auto Enables /RTS hold
+  // SDLC framing
   logic [15:0] sd_tx_sr;             // bits still to send, LSB first
   logic [4:0]  sd_tx_n;
   logic [1:0]  sd_tx_kind;           // 0 flag/mark/abort, 1 data, 2 CRC
@@ -123,25 +118,24 @@ module z8030_scc_channel (
   logic [31:0] sd_rx_hist;           // data bits after zero deletion, newest in D31
   logic [15:0] sd_rx_crc;
   logic [7:0]  sd_residue;           // RR1 D3:D1
-  // Byte sync (Go sdlcState byte-sync fields)
+  // Byte sync
   logic        sd_tx_crc_on;         // WR5 D0 taken with the character
   logic [1:0]  sd_rx_pend;           // bits until the assembled character loads
   logic        sd_crc_on, sd_strip_prev, sd_sync_out, sync_pin;
-  // SDLC Loop (Go sdlcState Loop fields)
+  // SDLC Loop
   logic        lp_on, lp_send, lp_poll, lp_bit, lp_conv;
   logic [2:0]  lp_drain;
-  // DPLL and line coding (Go dpllState)
+  // DPLL and line coding
   logic        dp_on, dp_search, dp_brg, dp_fm, dp_seen, dp_miss1, dp_miss2;
   logic [4:0]  dp_cnt;
   logic [1:0]  dp_adj, dp_next, dp_miss_n; // corrections: 1 add, 2 drop a count
   logic        dp_clk, dp_rx_in, dp_rxo, dp_txo, tx_line, tx_raw, rx_prev, rx_bit;
-  // live modem levels (Go Channel.DCD/CTS: pin sampled at PCLK rise,
-  // active-high; not part of the snapshot)
+  // live modem levels (pin sampled at PCLK rise, active-high)
   logic        dcd_live;
   logic        cts_live;
 
   // No power-up values: every flop starts at 0 and the hardware reset
-  // (the top holds it through the first clock) sets the Go New() state.
+  // (the top holds it through the first clock) sets the reset state.
 
   // ---- status and read mux ------------------------------------------------
   logic       rx_avail, sync_mode;

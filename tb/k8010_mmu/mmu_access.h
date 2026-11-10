@@ -1,8 +1,8 @@
 // mmu_access.h -- THE HARNESS CONTRACT between tb_mmu.cpp and rtl/k8010_mmu/z8010_mmu.sv.
 //
-// tb_mmu replays Go-recorded MMU vectors that poke register state between
-// clocks (the Go tests write ModeReg / SAR / DSC / VTR / Desc[] directly and
-// call AcknowledgeTrap(); LATCHED_ST / ADDR_LATCHED pokes are still accepted
+// tb_mmu replays MMU vectors that poke register state between
+// clocks (Mode, SAR, DSC, VTR and descriptors written directly, and a
+// trap acknowledge; LATCHED_ST / ADDR_LATCHED pokes are still accepted
 // but no current vector uses them) and always compare the final register
 // state. It reaches into the Verilated model through the
 // accessors below (built with --public-flat-rw, so every signal is visible
@@ -15,9 +15,9 @@
 //   bcsr trap_pending viol_captured addr_latched latched_st ack_pending
 //   desc_bh[64] desc_bl[64] desc_lm[64] desc_at[64] desc_ok desc_cpui desc_dmai
 //
-// If SEGT_n is a separately registered output in your RTL (as Go's
-// out.SEGT_n is) rather than derived from trap_pending, extend ack() to
-// release it too: the Go invariant is SEGT_n == !trapPending at all times
+// If SEGT_n is a separately registered output in your RTL rather than
+// derived from trap_pending, extend ack() to release it too: the vectors
+// assume SEGT_n == !trap_pending at all times
 // (SEGT is released at the AS-rise sample of the acknowledge cycle; the
 // identifier phase then uses ack_pending, which ack() also clears).
 
@@ -75,11 +75,11 @@ struct MmuAccess {
     uint8_t  bcsr() const               { return top->rootp->z8010_mmu__DOT__bcsr; }
     bool     trap_pending() const       { return top->rootp->z8010_mmu__DOT__trap_pending; }
 
-    // Go-only helpers the tests use between Ticks.
+    // Vector-only pokes between records.
     void     set_latched_st(uint8_t v)  { top->rootp->z8010_mmu__DOT__latched_st = v & 0x0F; }
     void     set_addr_latched(bool v)   { top->rootp->z8010_mmu__DOT__addr_latched = v; }
-    // AcknowledgeTrap(): mmu.go -- trapPending=0, violCaptured=0,
-    // addrLatched=0, ViolType=0, ViolOverflow=0, SEGT_n released.
+    // Trap acknowledge: clears the trap, the captured violation and the
+    // address latch; SEGT_n released.
     void     ack() {
         top->rootp->z8010_mmu__DOT__trap_pending  = 0;
         top->rootp->z8010_mmu__DOT__viol_captured = 0;

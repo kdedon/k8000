@@ -1,6 +1,6 @@
-// tb_alu -- combinational ALU vs the Go golden ALU (sim/cpu/alu).
+// tb_alu -- combinational ALU vs the ALU vectors.
 //
-// Replays one "A" vector file (vectors/k800x_cpu/alu/*.vec = the alu package's own
+// Replays one "A" vector file (vectors/k800x_cpu/alu/*.vec = directed
 // tests + constrained random; vectors/k800x_cpu/alu_from_cpu/*.vec = every Execute
 // call the CPU tests made) through z8000_alu. Checks value exactly and
 // flags under the affected-flag mask; the mask itself must match exactly.
@@ -52,7 +52,7 @@ module tb_alu
     endcase
   endfunction
 
-  // Go alu.Width is 1/2/4; the RTL code is 1/2/3.
+  // The vector width is 1/2/4 bytes; the RTL code is 1/2/3.
   function automatic logic [1:0] wcode(input logic [7:0] gw);
     case (gw)
       8'd1: return WIDTH_BYTE; 8'd2: return WIDTH_WORD; 8'd4: return WIDTH_LONG; default: return WIDTH_NONE;

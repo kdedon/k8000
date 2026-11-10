@@ -1,15 +1,15 @@
 # mk/k8070_fpu.mk -- Z8070 FPU: vectors, lint, build, test.
 #
-#   make gen-fpu             [MAINTAINER, needs ~/git/z8000] the decode table package and its digests from the Go model,
+#   make gen-fpu             [MAINTAINER, needs $(Z8000)] the decode table package and its digests from the model,
 #                            and the Data Processor microcode package from rtl/k8070_fpu/z8070_dp_ucode.txt
-#   make vectors-fpu          [MAINTAINER, needs ~/git/z8000] record vectors/k8070_fpu/fpu (pins) and dp (Data Processor) from the Go fpu suite (+ Go self-check)
+#   make vectors-fpu          [MAINTAINER, needs $(Z8000)] record vectors/k8070_fpu/fpu (pins) and dp (Data Processor) from the model's FPU tests (+ self-check)
 #   make lint-fpu             verilator -Wall on rtl/k8070_fpu (top, decoder, Interface Processor, Data Processor)
 #   make build-fpu            build obj_dir/tb_fpu/tb_fpu
 #   make test-fpu             replay every vectors/k8070_fpu/fpu/*.vec, print the ladder
 #   make fpu ONLY=TestName    one vector with full divergence context (VCD=1, CONTEXT=N, MCLK=P)
 #   make ladder-fpu           every FPU vector shortest-first with status
 #   make test-fpu-timing      the specification bench
-#   make test-fpu-enc         the RTL decode against the Go decode digests, every input
+#   make test-fpu-enc         the RTL decode against the decode digests, every input
 #   make test-fpu-dp [ONLY=g,...]  the Data Processor alone against vectors/k8070_fpu/dp (groups: add load sign cmp mul div sqrt fint rem conv bcd)
 #
 # Hooked into the top-level gen/vectors/lint/build/test via CHIP_*.
@@ -106,7 +106,7 @@ test-fpu-dp: $(FPU_DP_TB)
 	@$(FPU_DP_TB) $(if $(ONLY),--only $(ONLY),) $(if $(MCLK),--mclk $(MCLK),) vectors/k8070_fpu/dp/*.vec $(if $(ONLY),,|| true)
 
 # ---- CPU + FPU system bench (C++) ------------------------------------------
-#   make vectors-cpu-fpu  [MAINTAINER, needs ~/git/z8000] record vectors/k8070_fpu/system from the Go sim/system FPU tests
+#   make vectors-cpu-fpu  [MAINTAINER, needs $(Z8000)] record vectors/k8070_fpu/system from the model's system FPU tests
 #   make test-cpu-fpu     replay every system vector through tb/k8070_fpu/tb_cpu_fpu.sv (z8000_cpu + z8070_fpu), Z8001 then Z8002
 #   make cpu-fpu ONLY=TestName[.Z8001.000] [VCD=1] [CONTEXT=N] [MCLK=P]   one vector, full context
 CHIP_VECTORS += vectors-cpu-fpu

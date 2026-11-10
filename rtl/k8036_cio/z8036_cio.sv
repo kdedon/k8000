@@ -1,8 +1,8 @@
 // z8036_cio -- Zilog Z8036 Z-CIO counter/timer and parallel I/O unit.
 //
-// The pins match the Go model's Inputs/Outputs one for one, plus the
-// board master clock `clk`. The chip has no reset pin: /AS and /DS Low
-// together reset it; the board applies that at power-up.
+// The chip's pins, plus the board master clock `clk`. There is no reset
+// pin: /AS and /DS Low together reset it; the board applies that at
+// power-up.
 //
 // One `clk` edge is one pin sample. /AS latches AD, /CS0 and /INTACK
 // while Low; CS1 and R/W are the levels at the /DS fall, where the

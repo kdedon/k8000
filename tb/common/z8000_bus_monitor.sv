@@ -1,18 +1,18 @@
 // z8000_bus_monitor -- continuous Z-Bus protocol/timing checker for the CPU.
 //
-// This is a SPEC checker, not a golden-model comparison: every rule below is
+// This is a SPEC checker, not a vector comparison: every rule below is
 // taken from the Zilog Z8001/Z8002 Product Specification (1988 Z8000 Family
 // Data Book pp.150-160: Fig 12 memory read/write, Fig 13 input/output, Fig 14
 // interrupt acknowledge, Fig 15 bus request/acknowledge, Fig 16 stop, Fig 17
 // internal operation, Fig 18 memory refresh, Fig 19 reset + back-to-back, AC
 // Characteristics p.159-160) and the Z8000 CPU Reference Manual sec 9.  The
-// vector-replay harness (tb/k800x_cpu/tb_cpu.cpp) proves "same as the Go model"; this
+// vector-replay harness (tb/k800x_cpu/tb_cpu.cpp) proves "same as the vectors"; this
 // module proves "legal on the bus" -- it fires on the clock the RTL first
 // misbehaves, with the citation, whatever program is running.
 //
 // Sampling convention: `clk` is the CPU's CLK; the monitor samples on both
 // of its edges, each sample seeing the pins as the previous edge left them
-// (identical to the Go model's per-Tick outputs).  Offsets are counted in
+// (as the vectors record them).  Offsets are counted in
 // half clocks from the sample where /AS first went Low (T1's first half =
 // 0): an odd offset is the second half of a clock, after its fall.
 //
@@ -220,7 +220,7 @@ module z8000_bus_monitor #(
     if (is_mem(t_st) && !t_rw && t_bw && t_ds_fall >= 0 &&
         ad_q[15:8] != ad_q[7:0])
       viol("byte write not duplicated",
-           "Ref Manual 9.4.2 p.234 (R-CPU-513): on a byte write the CPU places the same byte on BOTH halves of the bus",
+           "Ref Manual 9.4.2 p.234: on a byte write the CPU places the same byte on BOTH halves of the bus",
            $sformatf("byte write data AD=%04h (AD15:8=%02h AD7:0=%02h)", ad_q, ad_q[15:8], ad_q[7:0]));
 
     transactions = transactions + 1;

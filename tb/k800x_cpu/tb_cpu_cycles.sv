@@ -1,11 +1,8 @@
 // tb_cpu_cycles -- CYCLE-ACCURACY conformance for the CPU.
 //
 // Cycle counts are datasheet facts: Z8000 CPU Technical Manual Mar81 sec 6.7
-// "Instruction Execution Times".  The Go golden model reproduces them
-// structurally (~/git/z8000/docs/CYCLE_ACCURACY_PLAN.md: every figure emerges from
-// cyclesPLA(ctrl) driving a sequencer that does real work each clock -- no
-// stored totals, no calibration padding), and vectors/k800x_cpu/cycles/cycles.vec is
-// generated from it by ~/git/z8000/hdl/gen/cmd/cyclevec.
+// "Instruction Execution Times".  vectors/k800x_cpu/cycles/cycles.vec holds
+// the curated cases.
 //
 // Each record is a small program plus two PCs.  The bench runs the program on
 // the RTL and measures the clocks between the IF1 (ST=1101) /AS fall at the
@@ -15,11 +12,11 @@
 // pipeline steady state (the Z8000 prefetches: a first execution after a
 // different instruction borrows fetch clocks from its predecessor).
 //
-// Records are tagged `exact` when that measured interval equals the Mar81 /
-// cyclesPLA figure (29 of the 33 curated cases) and `approx` when it does not
+// Records are tagged `exact` when that measured interval equals the Mar81
+// figure (29 of the 33 curated cases) and `approx` when it does not
 // -- single-shot branch/stack cases, and shifts whose n_rec is base + per-step
 // clocks while the decode-time PLA figure is only the base.  Both are asserted
-// against the measured golden number; the tag tells you whether the datasheet
+// against the measured number; the tag tells you whether the datasheet
 // figure and the pin-observable interval coincide for that instruction.
 //
 // Run: make test-cpu-cycles

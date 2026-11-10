@@ -4,7 +4,7 @@ The manuals print totals (clock counts per instruction and addressing mode) and 
 
 Sources: TM = Z8000 CPU Technical Manual (Mar81, Jan83); Fawcett = the Z8000 book; DB = Zilog 1988 Data Book. Page cites are PDF pages, with printed numbers in brackets where the source gave them.
 
-Confidence: **strong** (an identity holds across several modes or editions, or a manual states it); **plausible** (consistent with the totals and a shared routine, one or two independent supports); **guess** (fits the total, nothing else). Status: **adopted** (in the RTL and/or DECISIONS), **proposed** (a reading or small change not yet taken), **parked** (waiting for a C900 trace), **open** (no reading found).
+Confidence: **strong** (an identity holds across several modes or editions, or a manual states it); **plausible** (consistent with the totals and a shared routine, one or two independent supports); **guess** (fits the total, nothing else). Status: **adopted** (in the RTL and/or DECISIONS), **proposed** (a reading or small change not yet taken), **parked** (waiting for a silicon trace), **open** (no reading found).
 
 ## 0. Method and cost model
 
@@ -64,7 +64,7 @@ Settled in DECISIONS (see "one serial unit", "multiply and divide" and "shift" r
 - Reading: there is no tail branch on the normal path; its two clocks are LD r2,#0 and LD r3,#0 masked by Z at the finish routine's entry. One finish routine for both paths: call (2), LD r2 (Z), LD r3 (Z), Z routine (7), C routine (7), flags, ending in line. Normal 4 + 256 + 2 + 2 + 7 + 7 + 1 = 279; zero 4 + 3 + TEST + 2 + 2 + 7 + 7 + 1 = 27. Both paths spend 19 after their decision; today the zero path ends in line and the normal path pays an exit branch, an asymmetry with no support.
 - Reuse: the masked pass (NEG by K, SBC by Z in DIVL's frame 0: a write gated by a latched flag, the clock paid either way).
 - Corroborates: MULT zero (jump, clear, pair flags, ending in line); DIVL frame-0 un-negate masked by Z. Counter-example: MULT's normal path has no finish (67 = 2 + 65; flags come from the unit's finish routine on the zero path only), so MULT does not run a masked clear.
-- Logic: the normal path's loop exit branches into the finish routine instead of the Z routine, the clears write only when Z, FLAGS ends in line; the finish's cycle end moves to the C routine's fifth clock (two states earlier), keeping the baseline /AS placement. Vectors unchanged.
+- Logic: the normal path's loop exit branches into the finish routine instead of the Z routine, the clears write only when Z, FLAGS ends in line; the finish's cycle end moves to the C routine's fifth clock (two states earlier), keeping the reference /AS placement. Vectors unchanged.
 - Confidence: plausible. Status: adopted (DECISIONS "one serial unit").
 
 ### 1.4 DIVL's unread CP in the pair flag routine
@@ -84,8 +84,8 @@ Settled in DECISIONS (see "one serial unit", "multiply and divide" and "shift" r
 ### 1.7 Case 3 (past the width) and the -2^N boundary
 - Case 3 is adopted as DECISIONS records ("case 3"). Evidence: Jan83 TM PDF p.106 (printed 6-47) case 3 text ("the destination register contains an undefined value", V set, C and Z cleared, S undefined) and case 2 ("remains unchanged"); p.108 (6-49) Note 2.
 - Two things the manual does not settle:
-  - Destination after case 3: whether the passes' partial words are stored (W1) or the destination is left alone (W2). The manual calls it undefined. Predicted under W1: `DIV RR0,R2` with RR0 = 0x00020000, R2 = 2 gives RR0 = 0x00020003; RR0 = 0xFFFE0000, R2 = 1 gives 0xFFFAFFFD; `DIVL RQ0,RR4` with RQ0 = 0x0000000200000000, RR4 = 2 gives RQ0 = 0x0000000000000001. Status: parked pending C900 trace.
-  - The -2^N boundary: a single trial cannot tell a quotient of exactly -2^16 (-2^32) from case 3. The exact class is O = trial fits, unless the remainder is 0, the quotient negative and the low half < |D| (|D| x 2^N has no low bits). Test: `DIV RR0,R2` with RR0 = 0x00020001, R2 = 0xFFFE is case 4 (107, C = V = 1) by the manual, or 25 if the chip compares only the high half. Status: parked pending C900 trace.
+  - Destination after case 3: whether the passes' partial words are stored (W1) or the destination is left alone (W2). The manual calls it undefined. Predicted under W1: `DIV RR0,R2` with RR0 = 0x00020000, R2 = 2 gives RR0 = 0x00020003; RR0 = 0xFFFE0000, R2 = 1 gives 0xFFFAFFFD; `DIVL RQ0,RR4` with RQ0 = 0x0000000200000000, RR4 = 2 gives RQ0 = 0x0000000000000001. Status: parked pending a silicon trace.
+  - The -2^N boundary: a single trial cannot tell a quotient of exactly -2^16 (-2^32) from case 3. The exact class is O = trial fits, unless the remainder is 0, the quotient negative and the low half < |D| (|D| x 2^N has no low bits). Test: `DIV RR0,R2` with RR0 = 0x00020001, R2 = 0xFFFE is case 4 (107, C = V = 1) by the manual, or 25 if the chip compares only the high half. Status: parked pending a silicon trace.
 - Assumption behind 22 and 48: an inline microword's next-address select is 2-way (DIV needs RLCQ to split O from count Z), a routine's return is multi-way (DIVL's SHF return goes three ways). Consistent with R3's existing conditional return; an assumption. Confidence: guess.
 
 ### 1.8 Operand wait and DIV order
@@ -94,7 +94,7 @@ Settled in DECISIONS (see "one serial unit", "multiply and divide" and "shift" r
 - Confidence: strong for the hold model (all forms reproduce), plausible for the reading of DIV's order.
 
 ### 1.9 Internal-cycle placement (/AS grid)
-- The Go model's MD cycle strings were written for the register form and fitted to other forms by aligning to the end of the work. No uniform event (microword, 8-clock cap, T3) reproduces them in all forms. Loops of MULT, DIV, DIVL steady state and the shifts end their cycles at the unit's cycle-end microword (a routine call's second clock, the rotate of each frame, the shift clock); the packed stretches (MULT zero, MULTL finish and zero, DIV case 3, DIVL prologue and zero) keep the baseline placement and every clock inside is a named microword. Status: adopted (DECISIONS "internal cycles follow the unit"). Open: whether to move the packed stretches to the unit's grid (changes pins, not totals).
+- The reference MD cycle strings were written for the register form and fitted to other forms by aligning to the end of the work. No uniform event (microword, 8-clock cap, T3) reproduces them in all forms. Loops of MULT, DIV, DIVL steady state and the shifts end their cycles at the unit's cycle-end microword (a routine call's second clock, the rotate of each frame, the shift clock); the packed stretches (MULT zero, MULTL finish and zero, DIV case 3, DIVL prologue and zero) keep the reference placement and every clock inside is a named microword. Status: adopted (DECISIONS "internal cycles follow the unit"). Open: whether to move the packed stretches to the unit's grid (changes pins, not totals).
 
 ### 1.10 Where reuse explains clocks and area
 Logic-reuse readings that keep every clock's name and total:
@@ -174,8 +174,8 @@ See section 3.4.
 
 ### 3.5 Long IR/IM +1 (LDL, ADDL, CPL IR and IM; POPL R; LDPS IR first word)
 - Reading: P pointer + 2 to MAR, the second word's address on the ALU. A register pointer has no incrementer; a DA/X word's +2 rides the MAR incrementer (A1), which is why DA pays nothing. IM pays it because IM runs the IR routine. POPL R 12 = POP R 8 + R + 1: same clock.
-- Counter: the chip would spend it between the reads, whereas the generator places it after the second read: same total, the second read's /AS one clock later. A pin move, so this needs a trace, not a naming.
-- Confidence: plausible. Status: parked pending C900 trace of LDL @Rs.
+- Counter: the chip would spend it between the reads, whereas the vectors place it after the second read: same total, the second read's /AS one clock later. A pin move, so this needs a trace, not a naming.
+- Confidence: plausible. Status: parked pending a silicon trace of LDL @Rs.
 
 ### 3.6 Long ALU on registers
 ADDL/SUBL/CPL R 8 = X lo to B; P lo; X hi to B; P hi (with carry); MERGE. Memory forms: R, R, then lo, hi, MERGE (+3). Strong (ADDL minus LDL = 3 in five modes). Status: adopted as named.
@@ -269,7 +269,7 @@ All fit with work only; strong (several totals each): LD R,R 3; ADD R,R 4; ADC/D
 ### 6.7 MREQ (12 + 7n)
 - Mar81 TM PDF p.144-145 (printed 6-91, 6-92); Jan83 TM PDF p.154: the loop is "a finite delay to allow for propagation ... by repeatedly decrementing the destination until its value is zero"; "The original value of the counter must be greater than 2. Then the MI pin is tested." Variants: DB 12 + n; one text 10 + 7n; the ROM uses 12 + 7n.
 - Clocks: c4 BR on /MI (sampled at the T3 edge) and on Rd = 0; c5 Z cleared, /MO Low if /MI High. Counting I7: c1 Rd - 1 to Rd (step adder); c2 zero to the decision latch; c3 BR; c4-c7 a labelled wait, the propagation delay the loop exists to make (the 3 + 4 split is a guess); final I7 runs the body at zero, the same delay, then c7: /MI sampled as it opens, S and Z to the FCW, /MO High if not granted.
-- An earlier call-and-return framing (reusing DJNZ's decrement body) was dropped. Not checked in the model: the counter's original value must be greater than 2.
+- An earlier call-and-return framing (reusing DJNZ's decrement body) was dropped. Not checked: the counter's original value must be greater than 2.
 - Confidence: strong (purpose of the delay), guess (split). Status: adopted as a labelled wait; the manual's greater-than-2 condition is parked.
 
 ### 6.8 Dispatch cost and single-cycle forms summary
@@ -277,7 +277,7 @@ Per-clock tables for the remaining tails (heads, single internal-cycle register 
 
 ## 7. Open questions
 
-- DIVL case 3 and DIV case 3 destination: partial words stored or the destination left alone (section 1.7); and the exact -2^N boundary (same section). Both need the three C900 divides listed there.
+- DIVL case 3 and DIV case 3 destination: partial words stored or the destination left alone (section 1.7); and the exact -2^N boundary (same section). Both need the three silicon divides listed there.
 - Whether the packed internal-cycle stretches (MULT zero, MULTL finish and zero, DIV case 3, DIVL prologue and zero) should move to the unit's own cycle grid; this changes pins and requires regenerating vectors.
 - DIV BR2 and MULTL's second BR: accept the shared-routine readings (1.1, 1.2) or leave them tagged unexplained.
 - DIV's TEST versus MULT's TEST costs (1.6): the structural rule is a guess from three cases.
@@ -286,17 +286,17 @@ Per-clock tables for the remaining tails (heads, single internal-cycle register 
 - Long IR/IM +1: pin placement relative to the two reads (3.5).
 - LDM/EPU/shift head c6-c7 (6.2); DJNZ c4 (6.4); RET c4-c6 (2.1); PUSH IR c5 and +1 (2.3); TESTL R's 7 clocks (6.6); MREQ's 3 + 4 split (6.7).
 - Block exit c2 (PC fix-up changes nothing at the exit) (5.1).
-- SCC CRC cut by Tx Enable: which flag or sync bit fills each remaining CRC bit time (taken as bit j of the pattern repeated, slot j kept), whether re-enabling mid-CRC resumes the CRC, and whether /CTS under Auto Enables cuts it too (DECISIONS). A C900 trace with WR5 D3 cleared mid-CRC settles the first.
+- SCC CRC cut by Tx Enable: which flag or sync bit fills each remaining CRC bit time (taken as bit j of the pattern repeated, slot j kept), whether re-enabling mid-CRC resumes the CRC, and whether /CTS under Auto Enables cuts it too (DECISIONS). A silicon trace with WR5 D3 cleared mid-CRC settles the first.
 - SCC SDLC Loop: whether a run of 1s already past seven when Go Active On Poll is set puts the channel on loop; how FM is repeated; what RR10 D4 and D1 mean outside Loop mode (UM010902 p.185 says both "can be polled in SDLC mode to determine when the closing flag has been sent"; both read 0 here).
-- The C900 trace targets that would settle most of the above: `LDL @Rs` (3.5), the three divides (1.7), an EPU internal instruction (4.2).
+- The silicon trace targets that would settle most of the above: `LDL @Rs` (3.5), the three divides (1.7), an EPU internal instruction (4.2).
 
 ## 8. Decisions
 
-- EPU internal: 15 clocks (Jan83, 11 + 4n at n = 1, 4-clock slot), replacing Mar81's 14. Adopted 2026-11-01: the program is `F1+4 Fn+1 I4`, the slot an internal cycle.
+- EPU internal: 15 clocks (Jan83, 11 + 4n at n = 1, 4-clock slot), replacing Mar81's 14. Adopted: the program is `F1+4 Fn+1 I4`, the slot an internal cycle.
 
 ## 9. Z8070 FPU
 
-The Z8070 was published only as a Preliminary Product Specification (no pinout, package or AC table) and a software emulation package. Where the spec is silent the readings below say so; nothing here is adopted yet.
+The Z8070 was published only as a Preliminary Product Specification (no pinout, package or AC table) and a software emulation package. Where the spec is silent the readings below say so. Adopted choices are in DECISIONS.md and the "Assumed" list of K8070_FPU_TESTS.md.
 
 Sources: DB85 = Zilog 1985 Data Book, Z8070 FPU Preliminary Product Specification, April 1985, PDF p.540-567 (printed 531-558), and the Z8070 Floating-Point Emulation Package, PDF p.1012-1019 (printed 1003-1010); DB82 = Zilog 1982 Data Book, emulation product brief, PDF p.322-323 (printed 311-312); TM = Jan83 CPU Technical Manual; Fawcett PDF = printed + 11. The 1988 Data Book has no Z8070 pages; its EPA overview (PDF p.20) adds nothing. Period software, used only where the PDFs are silent: the CP/M-8000 Z8000 assembler's predefinition table (`asz8k.pd`), the CP/M-8000 floating-point emulator source (`FPE.Z8K`, change log 1980-1982) and the assembled CP/M-8000 `startup.o`. Tags: **explicit** (a PDF states it), **software** (period software shows it), **interpretation**, **guess**.
 
@@ -368,7 +368,7 @@ Template frame, explicit (TM PDF p.232-236, printed 6-171 to 6-175):
 
 0E and 4E have no template. TM PDF p.235 prints the segmented FCW <- EPU w0 as 10 001111, the nonsegmented as 10 001110: a misprint by the other six.
 
-Operation field, software (the assembler table and the emulator decoder agree; the assembled CP/M-8000 startup bytes `8F58 C000` = FLDCTL USER,R0, `8F48 C001` = FLDCTL FFLAGS,RR0, `8F08 8021` ... `8F78 8021` = FLDIL F0..F7,RR0 decode by it):
+Operation field, software (the assembler table and the FPE.Z8K decoder agree; the assembled CP/M-8000 startup bytes `8F58 C000` = FLDCTL USER,R0, `8F48 C001` = FLDCTL FFLAGS,RR0, `8F08 8021` ... `8F78 8021` = FLDIL F0..F7,RR0 decode by it):
 
 - Operation code: 6 bits, {w2[15:14], w2[7:4]}.
 - w2[13:12]: rounding precision (the `rnd` suffix).
@@ -376,7 +376,7 @@ Operation field, software (the assembler table and the emulator decoder agree; t
 - F registers: internal forms, destination in w0[7:4], source in w2[11:8]; CPU forms, F in w0[6:4], CPU register in w2[11:8]; memory forms, F in w2[11:8].
 - Control register select for FLDCTL in w0[7:4]: SC 0, PC1 1, PC2 2, FFLAGS 4, USER 5, FOP1 6, FOP2 7.
 - "Transfer flags to CPU" is the FCW <- EPU template (8E00) on the plain operation: FCPF = FCP's code, FREMSTEP = FREMSNF's.
-- FSETFLG/FRESFLG/FSETTRAP/FRESTRAP: w2 bit 4 set or reset; w0 bit 5 selects the USER trap enables, w0 bit 4 the compare byte, neither the sticky flags. Where the 8-bit list sits is unclear: the emulator builds it from w2[15:8], whose top bits are the operation code.
+- FSETFLG/FRESFLG/FSETTRAP/FRESTRAP: w2 bit 4 set or reset; w0 bit 5 selects the USER trap enables, w0 bit 4 the compare byte, neither the sticky flags. Where the 8-bit list sits is unclear: FPE.Z8K builds it from w2[15:8], whose top bits are the operation code.
 
 | code | op | code | op | code | op |
 |---|---|---|---|---|---|
@@ -391,13 +391,13 @@ Operation field, software (the assembler table and the emulator decoder agree; t
 | | | 23 | FLDM / FLDNF | 33 | FSETFLG / FSETTRAP |
 | | | 24 | FLDTL / FLDTQ (by n) | 34 | FSETMODE |
 
-The emulator also decodes 3F (FSTP, no datasheet mnemonic). FCPZNF and FCPZXNF have no row; FLDNF shares FLDM's. Internal forms are assembled with w2[3:0] = 0, so the CPU's 11 + 4n is 15 for them, as the k8000 CPU runs (section 8).
+FPE.Z8K also decodes 3F (FSTP, no datasheet mnemonic). FCPZNF and FCPZXNF have no row; FLDNF shares FLDM's. Internal forms are assembled with w2[3:0] = 0, so the CPU's 11 + 4n is 15 for them, as the k8000 CPU runs (section 8).
 
 ### 9.5 Timing
 
 - Published (DB85 PDF p.541, printed 532), "Number of Cycles" (the clock is not named; the Data Processor has its own, so CLK.D is the reading): add/subtract 18/18/18, multiply 28/42/48, divide 29/43/49 for single/double/extended; 1 cycle = 40 ns at 25 MHz. Speed grades 10-25 MHz (PDF p.540). Single multiply "under three microseconds" at 10 MHz.
 - Readings (interpretation): add constant across precisions implies single-pass alignment and normalization; multiply 16 + n/2 for n = 24, 52 (the hidden bit known), 64 is 2 bits per clock, matching the "multiplier array"; divide = multiply + 1 with the "quotient predictor" is radix-4 SRT on the same datapath.
-- No figure for square root, remainder, compare, conversions, BCD, control or the Interface Processor. The emulator: "most operations finish in under one millisecond on a 6 MHz CPU" (PDF p.1012).
+- No figure for square root, remainder, compare, conversions, BCD, control or the Interface Processor. The emulation package: "most operations finish in under one millisecond on a 6 MHz CPU" (PDF p.1012).
 - No AC table. EPU bus timing follows the CPU's transactions (Fig 16, 17).
 
 ### 9.6 Architecture
@@ -415,7 +415,7 @@ Explicit (PDF p.541, printed 532): two processors with separate clocks. The Inte
 | VIS status format; USER bit 6 "J" | not described |
 | PC1/PC2 capture point (IF1 address, segment) | not described for the Z8000 interface |
 | Vector drive edge in a Z8000 acknowledge | only the Universal-interface timing is drawn |
-| FCPZNF/FCPZXNF and FLDNF encodings; code 3F; the flag-list field | no software row; the emulator's list decode overlaps the operation code |
+| FCPZNF/FCPZXNF and FLDNF encodings; code 3F; the flag-list field | no software row; FPE.Z8K's list decode overlaps the operation code |
 | Invalid EPU ID: raised only for another EPU's ID whose EPUIDS bit is set, not this EPU's own | PDF p.543 silent |
 
 ### 9.8 Patent US 4,648,034 (EPU busy interface)

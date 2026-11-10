@@ -1,5 +1,5 @@
-// tb_cpu -- per-edge pin-equality replay of a Go-recorded CPU vector file
-// against the Verilated z8000_cpu (FPGA_BIBLE 0.3 tier 1, lesson sv-46).
+// tb_cpu -- per-edge pin-equality replay of a CPU vector file
+// against the Verilated z8000_cpu.
 //
 //   tb_cpu_<variant> <file.vec> [--context N] [--vcd out.vcd] [--quiet]
 //                               [--stop-first] [--no-final] [--mclk P]
@@ -21,16 +21,16 @@
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP (unsupported vector), 3 wrong variant
 // binary, 4 usage/parse error.
 //
-// The vector is a verbatim log of every Tick(Inputs) Outputs call a Go test
-// made (see docs/VECTOR_FORMAT.md). Replay is OPEN LOOP: the recorded
+// The vector is a pin-level log, one record per pin sample (see
+// docs/VECTOR_FORMAT.md). Replay is OPEN LOOP: the recorded
 // inputs are driven regardless of what the RTL does, and every output pin
-// is compared after every Tick -- low sample (before the edge) and high
+// is compared after every record -- low sample (before the edge) and high
 // sample (after it) alike, exactly the two-calls-per-clock convention.
 // The first divergence names the tick, the clock, and the pin, and prints
 // the surrounding ticks (expected | actual). It then keeps counting so you
 // also learn how bad it is.
 //
-// AD is compared only when the Go model drives it (ADDrive=1) and the
+// AD is compared only when the vector drives it (ADDrive=1) and the
 // Product Spec defines it; SN only for SEGMENTED builds and only while /AS
 // is low. Everything else always. See the tolerance windows in the compare
 // block and docs/K800X_CPU_TESTS.md.
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
     bool sawEnd = false;
 
     // Pokes are applied to the model, then settled with an eval() at the
-    // current clock level (the Go test wrote state between two Ticks).
+    // current clock level (the vector sets state between two records).
     auto poke = [&](const std::string& what, uint64_t v) -> bool {
         if (what.size() >= 2 && what[0] == 'R' && isdigit((unsigned char)what[1])) { dut.set_reg(atoi(what.c_str() + 1), (uint16_t)v); }
         else if (what == "FCW") dut.set_fcw((uint16_t)v);
@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
             auto cmp = [&](bool ok, const char* pin) { if (!ok) { if (!marks.empty()) marks += ","; marks += pin; } };
             // Spec-tolerance windows (docs/K800X_CPU_TESTS.md "Spec conformance
             // ledger"): pins the Product Spec leaves undefined are not
-            // compared there, so an RTL that differs from the Go model's
+            // compared there, so an RTL that differs from the vector's
             // deterministic stand-in value is not penalised.
             //   ST=0000 internal operation (Fig 17): AD undefined, B/W
             //     undefined.
@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
             //   SN (Fig 12): valid from ~one clock before the address until
             //     early T2, so it is compared only while /AS is low; the
             //     silicon (and an RTL) may drive it a clock earlier than the
-            //     Go model does.
+            //     vectors do.
             const bool internalOp = exp.st == 0x0;
             const bool refresh = exp.st == 0x1;
             const bool addressless = (exp.st >= 0x4 && exp.st <= 0x7) || exp.st == 0xE;
@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
     if (!quiet) {
         if (!hint.empty()) printf("  program: %s\n", hint.c_str());
         if (firstTick >= 0) {
-            printf("  ---- context: inputs | expected (Go) | actual (RTL) ----\n");
+            printf("  ---- context: inputs | expected | actual (RTL) ----\n");
             printf("   tick  clock  C R AD_in SWBNnvTAM | drv AS DS MRQ RW BW NS ST   AD   SN | drv AS DS MRQ RW BW NS ST   AD   SN\n");
             for (auto& r : ctx) printf("%s\n", r.c_str());
             for (auto& r : after) printf("%s\n", r.c_str());

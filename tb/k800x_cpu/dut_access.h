@@ -1,7 +1,7 @@
 // dut_access.h -- THE HARNESS CONTRACT between tb_cpu.cpp and your RTL.
 //
-// tb_cpu replays Go-recorded vectors that sometimes poke architectural state
-// between clocks (the Go tests wrote registers directly) and always compare
+// tb_cpu replays vectors that sometimes poke architectural state
+// between clocks (registers written directly) and always compare
 // the final architectural state. It reaches into the Verilated model through
 // the accessors below (built with --public-flat-rw, so every signal is
 // visible as rootp->z8000_cpu__DOT__<hier>__DOT__<name>).

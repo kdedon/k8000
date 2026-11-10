@@ -535,12 +535,12 @@ module tb_fpu_timing;
     release dut.u_ip.cnt_q;
     data_cycle(ST_EDATA, 1'b1);
     ck(dut.u_ip.cnt_q == 3'd7, "lost-word count saturates at 7",
-       "Go outWord is unbounded", $sformatf("count %0d", dut.u_ip.cnt_q));
+       "assumed: a 3-bit count that saturates", $sformatf("count %0d", dut.u_ip.cnt_q));
     while (dut.dp_busy) clk_cycle();
     data_cycle(ST_EDATA, 1'b1);
     ck(!drv[0] && !drv[1] && !drv[2] && !drv[3] && dut.u_ip.state_q == 3'd0,
        "result after every word was lost: idle, AD not driven",
-       "Go: drive only while outWord < Words",
+       "assumed: drive only while words remain",
        $sformatf("driven %0b%0b%0b%0b, state %0d", drv[0], drv[1], drv[2], drv[3], dut.u_ip.state_q));
 
     $display("");

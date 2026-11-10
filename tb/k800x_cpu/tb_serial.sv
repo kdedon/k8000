@@ -1,14 +1,13 @@
-// tb_serial -- the serial unit's MULT / DIV / SHIFT routines vs the Go golden
-// MultState / DivState / ShiftState (sim/cpu/alu/alu.go).
+// tb_serial -- the serial unit's MULT / DIV / SHIFT routines vs the vectors.
 //
 // Replays vectors/k800x_cpu/serial/random.vec. Per record the contract is: the
 // operand-load protocol, the EXACT tick count to done (cycle counts must
-// EMERGE from the FSM), the Remaining() lower bound after each tick (the
+// EMERGE from the FSM), the remaining-clocks lower bound after each tick (the
 // CPU's internal-op bus dressing consults it), and the result/flag fields.
-// Protocol (see rtl/k800x_cpu/z8000_serial.sv header): start pulse at edge E0 (Go
-// Start), ticks are the following edges, a long's high word (x_hi) the edge
+// Protocol (see rtl/k800x_cpu/z8000_serial.sv header): start pulse at edge E0,
+// ticks are the following edges, a long's high word (x_hi) the edge
 // before its low word, src_valid during the edge of tick
-// (delay+1) (Go SetMultiplier/SetDivisor before that Tick).
+// (delay+1), when the multiplier or divisor arrives.
 //   obj_dir/tb_serial/tb_serial +vec=vectors/k800x_cpu/serial/random.vec [+only=M|D|S]
 
 module tb_serial
@@ -302,7 +301,7 @@ module tb_serial
       if (tok == "END") break;
       fail_this = 0;
       if (tok == "M") begin
-        // The Go record's own operand delay and Remaining() run are not the
+        // The record's own operand delay and remaining-clocks run are not the
         // CPU's; the unit is run with the multiplier arriving where the CPU
         // gives it (register, IM, IR, DA/X), the clocks to done must be the
         // CPU's (Jan83 6-99 less the program's 3), and the result is final

@@ -1,7 +1,7 @@
-# mk/k8030_scc.mk -- Z8030 SCC (FPGA_BIBLE Ch.5). Hooked into the top Makefile via
+# mk/k8030_scc.mk -- Z8030 SCC. Hooked into the top Makefile via
 # CHIP_GEN / CHIP_VECTORS / CHIP_LINT / CHIP_BUILD / CHIP_TEST.
 #
-#   make vectors-scc   [MAINTAINER, needs ~/git/z8000] record vectors/k8030_scc/*.vec from the Go sim/scc test suite
+#   make vectors-scc   [MAINTAINER, needs $(Z8000)] record vectors/k8030_scc/*.vec from the model's SCC tests
 #                      (K8000_VEC_DIR), then self-check them with sccvecverify
 #   make lint-scc      verilator -Wall on rtl/k8030_scc/*.sv (zero suppressions)
 #   make build-scc     build obj_dir/tb_scc/tb_scc

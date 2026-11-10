@@ -3,14 +3,14 @@
 // p.648) and the SCC/ESCC User Manual UM010903.
 //
 // Spec checks, not vector replay: the companion tb_scc.cpp proves per-record
-// equality with the Go golden model, this bench proves the strobe protocol.
+// equality with the vectors, this bench proves the strobe protocol.
 //
-// Clocking convention == docs/K8030_SCC_TESTS.md sec 1.2: one posedge of `clk` is
-// one Go TickPins call, the PCLK rise is a one-master-clock pulse on
+// Clocking convention == docs/K8030_SCC_TESTS.md "Clocking": one posedge of `clk` is
+// one vector record, the PCLK rise is a one-master-clock pulse on
 // `pclk_rise`, and one bus phase is (no pulse, pulse) -- so `phase()` below is
-// two posedges.  The Z8030's bus-cycle service runs on the PCLK rise (ledger
-// sec 1.2); the AD float at /DS rise is combinational and is checked with NO
-// PCLK edge, which is what p.648 row 23 TdDS(DRz) requires.
+// two posedges.  The Z8030's bus-cycle service runs on the PCLK rise; the
+// AD float at /DS rise is combinational and is checked with NO PCLK edge,
+// which is what p.648 row 23 TdDS(DRz) requires.
 //
 // Run: make test-scc-timing
 
@@ -228,8 +228,7 @@ module tb_scc_timing;
     // register, glitch the strobes together for less than one PCLK, and
     // require the programming to survive.
     // Exactly ONE PCLK rising edge with the strobes coincident -- the most a
-    // real turnaround glitch can straddle, and the boundary the Go model's
-    // TestPins_BriefASDSOverlapIsNotReset pins.  Two would be a reset.
+    // real turnaround glitch can straddle.  Two would be a reset.
     scc_write(CH_A, 12, 8'h5A);
     as_n = 1'b0; ds_n = 1'b0;   phase();
     as_n = 1'b1; ds_n = 1'b1;   phase();

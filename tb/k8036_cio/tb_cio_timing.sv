@@ -4,8 +4,8 @@
 //
 // This bench does NOT replay vectors: it drives the Z-Bus strobe patterns the
 // datasheet figures show and asserts what the chip must do.  Companion to
-// tb_cio.cpp (which proves per-Tick equality with the Go golden model);
-// together they cover "same as the model" and "legal per the spec".
+// tb_cio.cpp (which proves per-record equality with the vectors);
+// together they cover "same as the vectors" and "legal per the spec".
 //
 // Sampling convention == the vector harness: one posedge of `clk` is one bus
 // sample, pins are set before the edge.  PCLK is held Low for the whole bus
@@ -50,7 +50,7 @@ module tb_cio_timing;
     .pc_out(pc_out), .pc_oe(pc_oe)
   );
 
-  // ---- Z8036 register numbers used here (cio.go RegXxx / p.680 Table 3) ----
+  // ---- Z8036 register numbers used here (p.680 Table 3) ----
   localparam logic [7:0] REG_MICR      = 8'h00;
   localparam logic [7:0] REG_MCCR      = 8'h01;
   localparam logic [7:0] REG_PA_DIR    = 8'h23;
@@ -64,9 +64,9 @@ module tb_cio_timing;
 
   // The address on AD is the register number shifted into AD6:AD1 with RJA=0
   // (p.681 "Right Justified Address": with RJA=0 the register address occupies
-  // AD6-AD1 and AD0 is ignored).  cio.go regAddr does (port>>1) & 0x3F.
+  // AD6-AD1 and AD0 is ignored): register = (AD >> 1) & 0x3F.
   function automatic logic [7:0] adr(input logic [7:0] reg_no);
-    return {1'b0, reg_no[5:0], 1'b1};   // AD0=1 mirrors the C900 odd-port wiring
+    return {1'b0, reg_no[5:0], 1'b1};   // AD0=1: a CIO on the odd byte lane
   endfunction
 
   int unsigned checks, fails;
@@ -89,7 +89,7 @@ module tb_cio_timing;
   //   T4  /DS High
   // /AS and /DS must never be Low together: that is the hardware reset.
   // as_pulse: one deselected /AS cycle -- the strobe a CPU issues on every
-  // transaction, which is the Z8036's clock (R-CIO-405).
+  // transaction, which is the Z8036's clock.
   task automatic as_pulse();
     as_n = 1'b0; @(posedge clk);
     as_n = 1'b1; @(posedge clk);
@@ -175,7 +175,7 @@ module tb_cio_timing;
        $sformatf("ad_drive was %0b during /DS Low and %0b after the rise", drove, drove_after));
 
     $display("");
-    $display("[3] what /AS latches vs what /DS samples (R-CIO-401/402)");
+    $display("[3] what /AS latches vs what /DS samples");
     // CS1 Low at the /AS fall, High at the /DS fall -> the access MUST happen.
     bus_write(REG_PB_DIR, 8'h00);
     as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b0; r_w = 1'b0; ad_in = adr(REG_PB_DIR); @(posedge clk);
@@ -205,8 +205,8 @@ module tb_cio_timing;
     // falling edge and drops /AS for the next transaction at the next edge, so
     // a rising-edge-sampled model sees both in ONE sample.  The chip's
     // end-of-cycle teardown must be applied BEFORE its /AS-fall latch or the
-    // second access is dropped -- R-CIO-409, the defect that left both C900
-    // CIOs stuck in power-on reset.
+    // second access is dropped and the CIO stays in power-on
+    // reset.
     as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b0; ad_in = adr(REG_PA_DIR); @(posedge clk);
     as_n = 1'b1;                                                                @(posedge clk);
     ds_n = 1'b0; ad_in = 8'h11;                                                 @(posedge clk);
@@ -222,7 +222,7 @@ module tb_cio_timing;
        $sformatf("Port A Direction = %02h, want 11", rd));
     bus_read(REG_PB_DIR, rd, drove);
     ck(rd == 8'h22, "second back-to-back write lands (teardown before /AS latch)",
-       "R-CIO-409 / Fig 19: the /DS-rise teardown must not wipe the ownership the same sample's /AS fall just latched",
+       "Fig 19: the /DS-rise teardown must not wipe the ownership the same sample's /AS fall just latched",
        $sformatf("Port B Direction = %02h, want 22", rd));
 
     $display("");
@@ -242,7 +242,7 @@ module tb_cio_timing;
        $sformatf("Port A Direction = %02h after the hardware reset, want 00", rd));
 
     $display("");
-    $display("[6] /AS is the chip's clock (R-CIO-405)");
+    $display("[6] /AS is the chip's clock");
     // p.695 Note 1: PCLK is used ONLY by the timer-mode counters, the
     // deskew timers and REQUEST/WAIT. Everything else -- the port input
     // register, the 1's catchers, the pattern match, the handshake FSMs

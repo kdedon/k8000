@@ -49,7 +49,7 @@ sort -n -o "$RES/cio_ladder.txt" "$RES/cio_ladder.txt"
 
 pass=$(grep -c ' PASS ' "$RES/cio_ladder.txt"); fail=$(grep -c ' FAIL ' "$RES/cio_ladder.txt")
 skip=$(grep -c ' SKIP ' "$RES/cio_ladder.txt"); part=$(grep -c '(partial)' "$RES/cio_ladder.txt")
-echo "== cio vectors: $pass pass, $fail fail, $skip skip ($part partial: compared up to the Go test's first non-pin poke)"
+echo "== cio vectors: $pass pass, $fail fail, $skip skip ($part partial: compared up to the first non-pin poke)"
 echo "   full ladder: $RES/cio_ladder.txt   raw: $RES/cio.txt"
 if [ "${1:-}" = "--ladder" ]; then
   cat "$RES/cio_ladder.txt"

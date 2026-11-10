@@ -1,5 +1,5 @@
-// tb_cio -- per-Tick pin-equality replay of a Go-recorded Z8036 CIO vector
-// file against the Verilated z8036_cio (FPGA_BIBLE 0.3 tier 1, Ch.4.5).
+// tb_cio -- per-record pin-equality replay of a Z8036 CIO vector file
+// against the Verilated z8036_cio.
 //
 //   tb_cio <file.vec> [--context N] [--vcd out.vcd] [--quiet] [--stop-first]
 //                     [--mclk P] [--strict-out]
@@ -7,31 +7,31 @@
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP (unsupported vector), 4 usage/parse
 // error.
 //
-// The vector is a pin-level log of every TickPins(Inputs) Outputs call a Go
-// test made -- verbatim for pin-driven tests, transliterated into Z-Bus
-// cycles for tests that used the sim's functional API (docs/K8036_CIO_TESTS.md).
+// The vector is a pin-level log, one record per pin sample; register
+// accesses appear as Z-Bus cycles (docs/K8036_CIO_TESTS.md).
 // Replay is OPEN LOOP: the recorded inputs are driven regardless of what
 // the RTL does, then the fabric clock is stepped N posedges (N cycles through
 // the comma list `--mclk P` / env K8000_MCLK, default "1,2,1,3"; --fclk is
-// an alias) with the inputs held, and every output pin is compared. The PCLK
+// an alias) with the inputs held, and the outputs are compared. The PCLK
 // fall reaches the chip as a pulse on `pclk_fall`, high for exactly the first
-// master clock after the record that changed the level. One Go
-// TickPins call == one record == N master clocks: the Go model reacts to
-// a strobe edge and to a PCLK falling edge (the Z8036 PCLK-domain clock,
-// R-CIO-403) within the same call, so the RTL gets the record's first posedge to do the
+// master clock after the record that changed the level. One record ==
+// N master clocks: the vectors react to
+// a strobe edge and to a PCLK falling edge (the Z8036 PCLK-domain clock)
+// within the same record, so the RTL gets the record's first posedge to do the
 // same (a two-FF synchroniser on the strobes therefore needs --fclk 3 to
 // be fair; the vectors never place a strobe edge and a PCLK fall in the
-// same record -- F COINCIDENT is 0 -- so the intra-Tick ordering between
+// same record -- F COINCIDENT is 0 -- so the intra-record ordering between
 // the two domains never matters).
 //
-// Comparison (docs/K8036_CIO_TESTS.md): ADDrive, INT_n, IEO, PortAReq_n,
-// PortBReq_n and the three OE masks always; AD only while the Go model
-// drives it (ADDrive=1); PortA/B/C data bits only under the OE mask both
-// sides agree on (--strict-out compares all data bits: the Go model's
-// non-driven data bits mirror its output registers).
+// Comparison (docs/K8036_CIO_TESTS.md): ADDrive, INT_n, IEO and the three
+// OE masks always; PortAReq_n/PortBReq_n are not compared (they mirror
+// Port C levels, which are); AD only while both sides drive it;
+// PortA/B/C data bits only under the OE mask both
+// sides agree on (--strict-out compares all data bits: the vectors'
+// non-driven data bits mirror the output registers).
 //
-// `X partial <why>` ends the comparable part of a file early (the Go test
-// then poked state that has no pin equivalent); everything before it is
+// `X partial <why>` ends the comparable part of a file early (state
+// set next has no pin equivalent); everything before it is
 // compared and the result is reported as PASS/FAIL with a (partial) tag.
 // `X unsupported` (before any T) is SKIP.
 
@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
         top->clk = 1; top->eval(); dump();
     };
 
-    // Go New(): idle bus (defaultInputs), PCLK Low, in reset. The chip has
+    // Idle bus, PCLK Low, in reset. The chip has
     // no reset pin: /AS and /DS Low together reset it, then the bus idles.
     top->ad_in = 0; top->as_n = 1; top->ds_n = 1; top->r_w = 0; top->cs0_n = 1; top->cs1 = 0;
     top->intack_n = 1; top->iei = 1; top->pclk_fall = 0;
@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
             if (exp.ad_drive && got.ad_drive) cmp(exp.ad == got.ad, "AD");
             cmp(exp.int_n == got.int_n, "INT_n");
             cmp(exp.ieo == got.ieo, "IEO");
-            // PAReq_n/PBReq_n are the Go model's mirrors of a Port C level:
+            // PAReq_n/PBReq_n mirror a Port C level:
             // the Port C pins carry REQUEST/WAIT and are compared below.
             cmp(exp.pa_oe == got.pa_oe, "PAoe");
             cmp(exp.pb_oe == got.pb_oe, "PBoe");
@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
     printf("RESULT FAIL %s first-divergence tick=%ld pclk=%ld pins=%s mismatched-ticks=%ld/%ld%s\n",
            vecPath.c_str(), firstTick, firstPclk, firstPins.c_str(), mismTicks, tick, ptag);
     if (!quiet) {
-        printf("  ---- context: inputs | expected (Go) | actual (RTL) ----\n");
+        printf("  ---- context: inputs | expected | actual (RTL) ----\n");
         printf("   tick  pclks  P ADRcCIE AD PA PB C | drv AD INT IEO rA rB PAo/oe PBo/oe PCo/oe | drv AD INT IEO rA rB PAo/oe PBo/oe PCo/oe\n");
         for (auto& r : ctx) printf("%s\n", r.c_str());
         for (auto& r : after) printf("%s\n", r.c_str());

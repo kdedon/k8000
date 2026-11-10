@@ -1,7 +1,7 @@
 // tb_decode_table -- proves the committed decode ROM against the committed
 // DECODE TABLE, using nothing outside this repo.
 //
-// rtl/k800x_cpu/z8000_decode_table.txt states the decoder symbolically: 476
+// rtl/k800x_cpu/z8000_decode_table.txt states the decoder symbolically: 478
 // distinct control words, each with its fields named, over a few thousand
 // first-word ranges. It is the file a human reads and reviews when the
 // decoder changes. This bench makes it load-bearing rather than commentary:

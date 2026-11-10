@@ -1,12 +1,10 @@
 // scc_access.h -- THE HARNESS CONTRACT between tb_scc.cpp and the SCC RTL.
 //
-// tb_scc replays Go-recorded vectors that poke register state between
-// records (the Go test wrote registers through the functional facade --
-// ioWrite/rxPush/... -- instead of the pins; the recorder emits the
-// resulting register-inventory diff as `P <field> <hex>`) and always
+// tb_scc replays vectors that poke register state between records
+// (`P <field> <hex>`: register state set without the pins) and always
 // compares the final register inventory (`F <field> <hex>`). Field names
-// are the Go Snapshot field names (sim/scc/vecfields.go): chip-level
-// bare, per-channel prefixed A_ / B_, arrays suffixed with the index.
+// are the vector's: chip-level bare, per-channel prefixed A_ / B_, arrays
+// suffixed with the index.
 //
 // The harness reaches into the Verilated model through the table below
 // (built with --public-flat-rw, so every signal is visible as

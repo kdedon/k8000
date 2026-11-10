@@ -63,7 +63,7 @@ module z8070_dp
   input  logic        reset_n,
   output logic        busy,
   input  logic        start,
-  input  logic [5:0]  op_kind,    // the operation code of the Go model
+  input  logic [5:0]  op_kind,    // decoded operation
   input  logic [1:0]  op_prec,    // 0 single, 1 double, 2 extended
   input  logic [1:0]  op_rm,      // USER RM
   input  logic        op_out,

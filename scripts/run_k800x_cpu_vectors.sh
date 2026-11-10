@@ -54,7 +54,7 @@ sort -n -o "$RES/${OUT}_ladder.txt" "$RES/${OUT}_ladder.txt"
 
 pass=$(grep -c ' PASS ' "$RES/${OUT}_ladder.txt"); fail=$(grep -c ' FAIL ' "$RES/${OUT}_ladder.txt")
 skip=$(grep -c ' SKIP ' "$RES/${OUT}_ladder.txt"); other=$(grep -vc ' PASS \| FAIL \| SKIP ' "$RES/${OUT}_ladder.txt")
-echo "== $OUT vectors: $pass pass, $fail fail, $skip skip (Go-snapshot-restore tests), $other other"
+echo "== $OUT vectors: $pass pass, $fail fail, $skip skip (snapshot-restore vectors), $other other"
 echo "   full ladder: $RES/${OUT}_ladder.txt   raw: $RES/$OUT.txt"
 if [ "${1:-}" = "--ladder" ]; then
   cat "$RES/${OUT}_ladder.txt"

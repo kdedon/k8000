@@ -4,13 +4,13 @@
 // below are that document's.
 //
 // Spec checks, not vector replay: tb_mmu.cpp proves per-record equality with
-// the Go golden model; this bench proves the strobe protocol -- when the
+// the vectors; this bench proves the strobe protocol -- when the
 // command is latched, when the command data is taken, when PA and the command
 // read data are driven and floated, and that a back-to-back CPU cycle's
 // address survives the previous cycle's /DS rise, and that the offset is
 // latched at the /AS rise with PA following it before the next CLK rise.
 //
-// Clocking convention == the Go harness clkStep(): one bus phase is two
+// Clocking convention == the vectors: one bus phase is two
 // fabric samples (CLK Low then CLK High), so `phase()` is two posedges.
 //
 // Run: make test-mmu-timing

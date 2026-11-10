@@ -1,10 +1,10 @@
-# k8000 -- Z8000 CPU in SystemVerilog, verified in lockstep against the Go
-# golden model in ~/git/z8000 (FPGA_BIBLE.md Ch.6).
+# k8000 -- Z8000 CPU and peripherals in SystemVerilog, verified in lockstep
+# against vectors recorded from the reference model in $(Z8000).
 #
 # SELF-CONTAINED: everything under rtl/ and vectors/ is a COMMITTED artifact.
 # lint, build and test read nothing outside this repo -- a fresh clone with no
-# ~/git/z8000 and no Go toolchain runs the whole suite. Only the two REFRESH
-# targets below reach into the golden model, and only a maintainer runs them.
+# model and no Go toolchain runs the whole suite. Only the two REFRESH
+# targets below reach into the model, and only a maintainer runs them.
 #
 #   make lint       verilator -Wall on every RTL module (zero suppressions policy)
 #   make build      build every testbench (decode, alu, regfile, serial, refresh, seq-words, cpu x4 variants)
@@ -17,9 +17,9 @@
 #   make cpu ONLY=TestNOP VCD=1  ... and write obj_dir/TestNOP.000.vcd
 #   make ladder     list CPU vectors shortest-first with PASS/FAIL status
 #
-#   MAINTAINER ONLY (needs ~/git/z8000 + Go; refreshes committed artifacts):
+#   MAINTAINER ONLY (needs $(Z8000) + Go; refreshes committed artifacts):
 #   make refresh-rtl        rtl/k800x_cpu/gen/*.sv, the decode and program tables, the decode vectors
-#   make refresh-vectors    re-record every vectors/<device>/ from the Go suite
+#   make refresh-vectors    re-record every vectors/<device>/ from the model's tests
 #
 # Layout is BY DEVICE: rtl/k800x_cpu (the CPU, with its generated gen/ inside),
 # rtl/k8010_mmu, rtl/k8030_scc, rtl/k8036_cio, rtl/k8070_fpu; tb/, vectors/ and mk/ mirror
@@ -29,7 +29,7 @@
 # Requires: verilator >= 5.020, go (only for gen/vectors), gtkwave (optional).
 
 VERILATOR ?= verilator
-Z8000     ?= $(HOME)/git/z8000
+Z8000     ?= ../z8000
 GEN       := $(Z8000)/hdl/gen
 OBJ       := obj_dir
 RESULTS   := results
@@ -49,7 +49,7 @@ CPU_MODS  := rtl/k800x_cpu/z8000_regfile.sv rtl/k800x_cpu/z8000_decode.sv rtl/k8
 CPU_SRCS  := $(PKG_SRCS) $(MC_SRCS) $(GEN_SRCS) $(CPU_MODS) rtl/k800x_cpu/z8000_cpu.sv
 
 # ---- lint policy -----------------------------------------------------------
-# RTL: -Wall, no suppressions (FPGA_BIBLE 0.4). Testbenches: -Wall minus the
+# RTL: -Wall, no suppressions. Testbenches: -Wall minus the
 # width/unused nits that $sscanf-driven benches accumulate.
 RTL_W  := -Wall -Wno-DECLFILENAME
 TB_W   := -Wall -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-BLKSEQ
@@ -81,14 +81,14 @@ help:
 # These are the ONLY targets that read $(Z8000). Nothing in lint/build/test
 # depends on them: rtl/k800x_cpu/gen/*.sv and vectors/** are checked in, and
 # tb_decode proves the committed ROM against the committed decode vectors
-# without any external repo. Run these when the golden model changes, then
+# without any external repo. Run these when the model changes, then
 # commit the diff here.
 #
 # `gen` and `vectors` remain as aliases for the fingers that already know them.
 require-z8000:
 	@[ -d "$(GEN)" ] || { \
-	  echo "make: this target refreshes generated artifacts from the Z8000 Go"; \
-	  echo "      golden model, which is not present at $(Z8000)."; \
+	  echo "make: this target refreshes generated artifacts from the Z8000"; \
+	  echo "      reference model, which is not present at $(Z8000)."; \
 	  echo ""; \
 	  echo "      You do not need it to work on the RTL: rtl/ and vectors/ are"; \
 	  echo "      committed, and 'make lint build test' uses only this repo."; \
@@ -211,7 +211,7 @@ $(eval $(call CPU_BUILD,z8004,0,1,Z8004))
 test: test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-combined test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond $(CHIP_TEST)
 
 # Spec-timing ladder: everything that checks the datasheet's timing rather than
-# equality with the Go model.
+# equality with the vectors.
 test-timing: test-cpu-timing test-cpu-cycles $(CHIP_TIMING_TEST)
 
 test-decode: $(OBJ)/tb_decode/tb_decode

@@ -2,19 +2,21 @@
 
 Three questions, three kinds of bench:
 
-| question | bench | golden source |
+| question | bench | reference |
 |---|---|---|
-| does it behave like the audited model, edge for edge? | `tb/<device>/tb_{cpu,mmu,scc,cio}.cpp` (vector replay) | recorded `vectors/<device>/*.vec` |
+| does it match the reference vectors, edge for edge? | `tb/<device>/tb_{cpu,mmu,scc,cio,fpu}.cpp` (vector replay) | recorded `vectors/<device>/*.vec` |
 | is what it does **legal per the datasheet**? | `tb/<device>/tb_*_timing.sv` + `tb/common/z8000_bus_monitor.sv` | Zilog product specs, cited per check |
-| does each instruction take the **documented number of clocks**? | `tb/k800x_cpu/tb_cpu_cycles.sv` | `vectors/k800x_cpu/cycles/cycles.vec`, the Go model's cited totals |
+| does each instruction take the **documented number of clocks**? | `tb/k800x_cpu/tb_cpu_cycles.sv` | `vectors/k800x_cpu/cycles/cycles.vec`, the cited totals (Mar81 TM 6.7) |
 
-`<device>` is `k800x_cpu`, `k8010_mmu`, `k8030_scc` or `k8036_cio`; bench
+`<device>` is `k800x_cpu`, `k8010_mmu`, `k8030_scc`, `k8036_cio` or `k8070_fpu`; bench
 modules keep the short `tb_<chip>_timing` names, like the make targets.
 `z8000_bus_monitor.sv` is in `tb/common/` because it checks any Z-Bus DUT.
 
 `make test-timing` runs every spec bench plus the cycle bench; individually:
 `make test-cpu-timing`, `make test-cpu-cycles`, `make test-mmu-timing`,
-`make test-cio-timing`, `make test-scc-timing`. `make test` runs them too.
+`make test-cpu-mmu-clk`, `make test-cio-timing`, `make test-cio-iack`,
+`make test-scc-timing`, `make test-scc-iack`, `make test-fpu-timing`.
+`make test` runs them too.
 
 A failing check prints its spec citation (figure or AC row). Results:
 `docs/STATUS.md`.
@@ -27,8 +29,8 @@ Watches the CPU's pins on both CLK edges and flags anything the Z8001/2
 Product Spec (1988 Data Book pp.150-160) forbids, on the half clock it first
 happens. Instantiate it next to the DUT in any bench.
 
-Each sample sees the pins as the previous CLK edge left them (the Go
-model's per-Tick outputs). Offsets are half clocks from the sample where
+Each sample sees the pins as the previous CLK edge left them (one vector
+record's outputs). Offsets are half clocks from the sample where
 `/AS` first went Low (T1's first half = 0); an odd offset is a clock's
 second half.
 
@@ -50,7 +52,7 @@ in every class.
 | cycle class | `/MREQ` | `/DS` falls | `/DS` rises | other |
 |---|---|---|---|---|
 | memory read | 1 | 2 | 5 | AD released while `/DS` Low |
-| memory write | 1 | 3 | 5 | write data held for the whole `/DS` Low window; a BYTE write duplicates the byte on both halves of AD (Ref Manual 9.4.2 p.234, R-CPU-513) |
+| memory write | 1 | 3 | 5 | write data held for the whole `/DS` Low window; a BYTE write duplicates the byte on both halves of AD (Ref Manual 9.4.2 p.234) |
 | I/O (0010/0011) | never | 3 | 7 | one automatic wait, Fig 13 |
 | acknowledge (0100..0111) | never | 10 | 15 | five automatic waits, `/DS` falls at the fourth so the IEI/IEO chain settles, Fig 14 |
 | refresh (0001) | 1 | never | -- | `R/W`, `B/W`, `N/S` unchanged from the preceding transaction (Fig 18 / Ref Manual 9.4.6) |
@@ -79,10 +81,9 @@ write landed at the address latched at `/AS`.
 
 ## 3. `tb_cpu_cycles.sv` -- instruction cycle counts
 
-Cycle counts are datasheet facts. The Go model keeps one cited total per
+Cycle counts are datasheet facts. The generator keeps one cited total per
 instruction form and reaches it with the form's machine-cycle program, so
-its `hdl/gen/cmd/cyclevec` generates a table the RTL can be checked against
-from the pins alone.
+it emits a table the RTL can be checked against from the pins alone.
 
 Each record is a short program plus two PCs. The bench counts clocks from
 the IF1 (`ST=1101`) `/AS` fall at the first PC to the next IF1 `/AS` fall,
@@ -123,9 +124,9 @@ mnemonic, so a mistyped encoding fails the build.
   p.695 Note 1: the register read/write path has no PCLK term);
 * AD driven from the `/DS` fall, floating at the `/DS` rise alone;
 * what `/AS` latches (AD, `/CS0`, `/INTACK`) versus what `/DS` samples (CS1,
-  R/W) -- R-CIO-401/402, checked both ways round;
+  R/W) -- checked both ways round;
 * **back-to-back cycles**: the `/DS` rise sharing a sample with the next
-  `/AS` fall (Product Spec Fig 19), R-CIO-409;
+  `/AS` fall (Product Spec Fig 19);
 * the `/AS`+`/DS` hardware reset (p.674 footnote, p.684).
 
 `tb_scc_timing.sv` (Z8030, z8030_scc.pdf pp.631-651): register round-trip
@@ -144,14 +145,28 @@ completing even when `/CS` is released before `/DS` (AC #34/#35) -- then
 translation (PA = base<<8 + offset, PA floating at the `/DS` rise, AC #6) and
 the same back-to-back rule as the CIO.
 
+`tb_cpu_mmu_clk.sv`: a Z8001 and a Z8010 on one CLK net, the board address
+latch and memory on {A23:A8, A7:A0}; at every CLK rise while /DS is Low in a
+memory cycle the physical address must be driven and equal the bench's own
+translation. Runs master:CLK 2:1, 3:1, 4:1, 5:1, 7:1, 2,3,2,4 and 1:1.
+
+`tb_cio_iack.sv`, `tb_scc_iack.sv`: two chips on one daisy chain. A chip
+with IEI Low keeps /INT High, and a request arriving after an acknowledge's
+/AS does not take that acknowledge (UM0109 2.4.5.1).
+
+`tb_fpu_timing.sv` (Z8070, 1985 DB printed pp.531-558): reset and idle
+pins, the IF1 and word-2 snoop, transfer drive windows, the store wait,
+/BSY at the STOP samples in both overlap modes, the acknowledge (IEO,
+vector window, SV, NV, DLC), Interface Processor state recovery and the
+lost-word count.
+
 ### Peripheral cycle accuracy
 
 Vector replay already enforces peripheral cycle accuracy: each record is one
 fabric clock and every output pin is compared, so a counter one clock early
 fails. The spec benches add the datasheet's protocol rules.
 
-The vectors do not pin down rates the Go tests never exercise. Not yet
-checked:
+The vectors do not pin down rates no vector exercises. Not yet checked:
 
 * Z8036 C/T: the down-counter is clocked at **half** the PCLK frequency in
   timer mode (p.683). Program a time constant, freeze the count with RCC,

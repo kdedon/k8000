@@ -1,7 +1,6 @@
-// tb_fpu_enc -- the RTL decode equals the Go decode over every input.
+// tb_fpu_enc -- the RTL decode equals the vector decode over every input.
 //
-// Replays vectors/k8070_fpu/enc/enc.vec (emitted by cmd/fpuenc from the Go
-// model): for each IF1 high byte, a digest of the template decode of all
+// Replays vectors/k8070_fpu/enc/enc.vec: for each IF1 high byte, a digest of the template decode of all
 // 256 words; for each template x word-1 bits 7:4 x operation code, a digest
 // of the plan for all 1024 word 2s (rounding, register, n-1). Values are
 // packed as the generator packs them; an invalid plan packs to 0.
@@ -84,7 +83,7 @@ module tb_fpu_enc;
         wlines++;
         if (h != want) begin
           fails++;
-          if (fails <= 20) $display("  FAIL IF1 %02h__: digest %016h, Go %016h", a[7:0], h, want);
+          if (fails <= 20) $display("  FAIL IF1 %02h__: digest %016h, want %016h", a[7:0], h, want);
         end
       end else if (line[0] == "P") begin
         n = $sscanf(line, "%s %d %h %h %d %h", tag, a, b, c, valid, want);
@@ -102,7 +101,7 @@ module tb_fpu_enc;
         if (h != want) begin
           fails++;
           if (fails <= 20)
-            $display("  FAIL template %0d, word 1 bits 7:4 = %h, code %02h: %0d valid (Go %0d), digest %016h, Go %016h",
+            $display("  FAIL template %0d, word 1 bits 7:4 = %h, code %02h: %0d valid (want %0d), digest %016h, want %016h",
                      a, b[3:0], c[5:0], got_valid, valid, h, want);
         end
       end

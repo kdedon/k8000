@@ -173,7 +173,7 @@ module z8070_ip
   localparam logic [3:0] ST_IF1  = 4'hD;  // first instruction word
   localparam logic [3:0] ST_EPUX = 4'hE;  // CPU-EPU transfer
 
-  // FLDCTL selects (the CP/M-8000 assembler and emulator).
+  // FLDCTL selects.
   localparam logic [3:0] CTL_SC     = 4'd0;
   localparam logic [3:0] CTL_PC1    = 4'd1;
   localparam logic [3:0] CTL_PC2    = 4'd2;
@@ -778,8 +778,8 @@ module z8070_ip
   end
 
   // ---- transfer buffer -------------------------------------------------
-  // FLDCTLB flag groups, word 1 bits 7:4, as the CP/M-8000 emulator maps
-  // the sticky flags onto the FCW flags; group 4 sends the compare flags.
+  // FLDCTLB flag groups, word 1 bits 7:4, map the sticky flags onto the
+  // FCW flags; group 4 sends the compare flags.
   logic [7:0] st_fl;
   logic [7:0] cmp_byte;
   logic [7:0] grp_byte;

@@ -1,9 +1,9 @@
-# mk/k8010_mmu.mk -- Z8010 MMU fragment (FPGA_BIBLE Ch.3). Included by the top
+# mk/k8010_mmu.mk -- Z8010 MMU fragment. Included by the top
 # Makefile via -include mk/*.mk; hooks gen/vectors/lint/build/test through
 # the CHIP_* lists. Uses the top Makefile's VERILATOR / Z8000 / GEN / OBJ /
 # RESULTS / RTL_W / VFLAGS.
 #
-#   make vectors-mmu   [MAINTAINER, needs ~/git/z8000] record vectors/k8010_mmu from ~/git/z8000/sim/mmu tests + Go self-check
+#   make vectors-mmu   [MAINTAINER, needs $(Z8000)] record vectors/k8010_mmu from the model's MMU tests + self-check
 #   make lint-mmu      verilator -Wall on rtl/k8010_mmu/z8010_mmu.sv
 #   make build-mmu     build obj_dir/tb_mmu/tb_mmu
 #   make test-mmu      replay every vectors/k8010_mmu/*.vec, ladder summary
@@ -24,7 +24,7 @@ CHIP_TEST    += test-mmu test-mmu-timing
 CHIP_TIMING_TEST += test-mmu-timing
 
 # Nothing is code-generated for the MMU (no ROMs); the command table is a
-# hand-written case statement transcribed from mmu.go executeCommand.
+# hand-written case statement.
 gen-mmu: require-z8000
 	@:
 

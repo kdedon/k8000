@@ -1,5 +1,5 @@
 // tb_cpu_timing -- Z-Bus TIMING conformance for the CPU, straight from the
-// Zilog spec (no golden-model vectors involved).
+// Zilog spec (no vectors involved).
 //
 // Two layers:
 //   1. Directed checks the CPU must satisfy with no program at all:

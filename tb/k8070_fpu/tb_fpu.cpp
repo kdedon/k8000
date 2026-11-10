@@ -1,4 +1,4 @@
-// tb_fpu -- per-record pin-equality replay of a Go-recorded Z8070 vector
+// tb_fpu -- per-record pin-equality replay of a Z8070 vector
 // file against the Verilated z8070_fpu.
 //
 //   tb_fpu <file.vec> [--context N] [--vcd out.vcd] [--quiet]
@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
 #endif
     auto mtick = [&]() { top->clk = 0; top->eval(); dump(); top->clk = 1; top->eval(); dump(); };
 
-    // Quiescent start, as a fresh Go Z8070: no reset yet, bus idle, both
+    // Quiescent start: no reset yet, bus idle, both
     // clocks Low, so a first record with a clock High is a rise.
     top->clk = 0; top->clki_rise = 0; top->clki_fall = 0; top->clkd_rise = 0;
     top->reset_n = 1; top->ad_in = 0; top->as_n = 1; top->ds_n = 1; top->r_w = 1; top->b_w = 0;
@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
         printf("RESULT FAIL %s pins-ok final-state-mismatch (%ld fields)%s\n", vecPath.c_str(), finalFails, unc.c_str());
     if (!quiet) {
         if (firstTick >= 0) {
-            printf("  ---- context: inputs | expected (Go) | actual (RTL) ----\n");
+            printf("  ---- context: inputs | expected | actual (RTL) ----\n");
             printf("   tick  clock  ID R AD RWWN K X E id op AD  SN ST   | Dr BSY INT IEO AD  | Dr BSY INT IEO AD\n");
             for (auto& r : ctx) printf("%s\n", r.c_str());
             for (auto& r : after) printf("%s\n", r.c_str());

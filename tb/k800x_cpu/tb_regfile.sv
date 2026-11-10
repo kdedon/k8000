@@ -1,8 +1,8 @@
 // tb_regfile -- register file semantics.
 //
-// The 8 Go registers tests, write-enable and read-during-write checks, and a
-// seeded soak against a reference model written in the Go model's style so
-// it shares no index expressions with the DUT.
+// Directed register tests, write-enable and read-during-write checks, and a
+// seeded soak against a reference model that shares no index expressions
+// with the DUT.
 // Width code 0=byte 1=word 2=long 3=quad; data right-aligned.
 
 module tb_regfile;
@@ -59,7 +59,7 @@ module tb_regfile;
 
   always #5 clk <= ~clk;
 
-  // ---- reference model: registers.go idiom (sel-8, sel & 0xE, sel & 0xC) ----
+  // ---- reference model (sel-8, sel & 0xE, sel & 0xC) ----
   logic [15:0] ref_r [16];
   function automatic void ref_write(input logic [1:0] w, input logic [3:0] sel, input logic [63:0] d);
     int n;

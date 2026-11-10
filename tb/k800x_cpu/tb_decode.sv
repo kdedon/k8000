@@ -1,8 +1,7 @@
-// tb_decode -- exhaustive decode-ROM equivalence (FPGA_BIBLE PROMPT CPU-1).
+// tb_decode -- exhaustive decode-ROM equivalence.
 //
-// Replays vectors/k800x_cpu/decode/decode.vec (emitted by the z8000 codegen from Go
-// romLookup + DecodeAttrs) through z8000_decode. A '-' w1 nibble means the
-// Go result does not depend on word 2; both 0 and F are then applied.
+// Replays vectors/k800x_cpu/decode/decode.vec through z8000_decode. A '-'
+// w1 nibble means the result does not depend on word 2; both 0 and F are then applied.
 // Reports every mismatch (capped) with the field-by-field diff of the
 // packed control word, then PASS/FAIL. Run: make test-decode  (or
 // obj_dir/tb_decode +vec=vectors/k800x_cpu/decode/decode.vec)

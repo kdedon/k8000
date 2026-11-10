@@ -1,5 +1,5 @@
-// tb_mmu -- per-edge pin-equality replay of a Go-recorded Z8010 MMU vector
-// file against the Verilated z8010_mmu (FPGA_BIBLE 0.3 tier 1, Ch.3.6).
+// tb_mmu -- per-edge pin-equality replay of a Z8010 MMU vector file
+// against the Verilated z8010_mmu.
 //
 //   tb_mmu <file.vec> [--context N] [--vcd out.vcd] [--quiet]
 //                     [--stop-first] [--no-final] [--mclk P]
@@ -17,23 +17,23 @@
 // error. (3 = wrong-variant is reserved for parity with tb_cpu; the MMU has
 // no variants.)
 //
-// The vector is a verbatim log of every Tick(Inputs) Outputs call a Go test
-// made (see docs/K8010_MMU_TESTS.md). Replay is OPEN LOOP: the recorded inputs are
+// The vector is a pin-level log, one record per pin sample (see
+// docs/K8010_MMU_TESTS.md). Replay is OPEN LOOP: the recorded inputs are
 // driven regardless of what the RTL does, and every output pin is compared
-// after every Tick -- low sample (before the edge) and high sample (after
+// after every record -- low sample (before the edge) and high sample (after
 // it) alike, exactly the two-calls-per-clock convention. The first
 // divergence names the tick, the clock, and the pin, and prints the
 // surrounding ticks (expected | actual). It then keeps counting so you also
 // learn how bad it is.
 //
-// Comparison rules (why they are fair -- docs/K8010_MMU_TESTS.md "Comparison"):
-//   * One Go Tick == one sample of the pins == one record. Both models act
+// Comparison rules (why they are fair -- docs/K8010_MMU_TESTS.md "Comparison rules"):
+//   * One record == one sample of the pins. Both sides act
 //     on an /AS or /DS edge in the record that shows it and on CLK rises
 //     for SN, DMASYNC and the trap-acknowledge /SEGT release (p.570-573);
 //     the RTL sees the record's edges at its first master clock, so every
 //     output is comparable after every record, exactly.
 //   * /RESET is a level in both.
-//   * All Go outputs are registered (m.out persists between Ticks), so PA
+//   * The vector's outputs hold between records, so PA
 //     is compared only while PADrive=1 and Data only while DataDrive=1
 //     (DataMask always) --
 //     the held-but-undriven values are not pins.
@@ -160,8 +160,8 @@ int main(int argc, char** argv) {
     size_t mclkIdx = 0;
     auto mtick = [&]() { top->clk = 0; top->eval(); dump(); top->clk = 1; top->eval(); dump(); };
 
-    // Quiescent start == Go New(): no reset yet, strobes inactive, CLK low
-    // (a fresh Z8010 has prevCLK=false, so the first CLK=1 Tick IS an edge).
+    // Quiescent start: no reset yet, strobes inactive, CLK low
+    // (so the first CLK=1 record IS an edge).
     top->clk = 0; top->clk_in = 0; top->reset_n = 1; top->ad = 0; top->sn = 0; top->st = 0;
     top->as_n = 1; top->ds_n = 1; top->r_w = 1; top->n_s = 0; top->cs_n = 1; top->dmasync = 0;
     for (int k = 0; k < 2; k++) mtick();
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
     bool sawEnd = false;
 
     // Pokes are applied to the model, then settled with an eval() at the
-    // current clock level (the Go test wrote state between two Ticks).
+    // current clock level (the vector sets state between two records).
     auto poke = [&](std::istringstream& ss, const std::string& what) -> bool {
         std::string h1, h2, h3, h4;
         if (what == "MODE") { ss >> h1; dut.set_mode_reg((uint8_t)strtoul(h1.c_str(), nullptr, 16)); }
@@ -313,7 +313,7 @@ int main(int argc, char** argv) {
         printf("RESULT FAIL %s pins-ok final-state-mismatch (%ld fields)\n", vecPath.c_str(), finalFails);
     if (!quiet) {
         if (firstTick >= 0) {
-            printf("  ---- context: inputs | expected (Go) | actual (RTL) ----\n");
+            printf("  ---- context: inputs | expected | actual (RTL) ----\n");
             printf("   tick  clock  C R AD RW NS CS DY  AD   SN ST   | PAd SEGT SUP Dd  PA    Data | PAd SEGT SUP Dd  PA    Data\n");
             for (auto& r : ctx) printf("%s\n", r.c_str());
             for (auto& r : after) printf("%s\n", r.c_str());

@@ -1,4 +1,4 @@
-// tb_fpu_dp -- replay of Go-recorded Data Processor operations (`fpudp`
+// tb_fpu_dp -- replay of recorded Data Processor operations (`fpudp`
 // D records) into the Verilated z8070_dp alone.
 //
 //   tb_fpu_dp [--only g1,g2,...] [--mclk P] [--show N] [--quiet] file.vec...

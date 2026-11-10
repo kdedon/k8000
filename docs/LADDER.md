@@ -1,27 +1,28 @@
-# The ladder -- the execution plan
+# The ladder -- build order
 
 The order to make the tests pass. Each step gives what to implement, the
 command that judges it, and the known traps.
 
 Layout is by DEVICE: `rtl/k800x_cpu` (the CPU, x = the 8001/2/3/4 variant;
-generated `gen/` inside), `rtl/k8010_mmu`, `rtl/k8030_scc`, `rtl/k8036_cio`.
-`tb/`, `vectors/` and `mk/` mirror them; `tb/common` holds DUT-independent
-checkers. Ledgers: `docs/K800X_CPU_TESTS.md`, `K8010_MMU_TESTS.md`,
-`K8030_SCC_TESTS.md`, `K8036_CIO_TESTS.md`. Make targets use short names:
+generated `gen/` inside), `rtl/k8010_mmu`, `rtl/k8030_scc`, `rtl/k8036_cio`,
+`rtl/k8070_fpu`. `tb/`, `vectors/` and `mk/` mirror them; `tb/common` holds
+DUT-independent checkers. Ledgers: `docs/K800X_CPU_TESTS.md`,
+`K8010_MMU_TESTS.md`, `K8030_SCC_TESTS.md`, `K8036_CIO_TESTS.md`,
+`K8070_FPU_TESTS.md`. Make targets use short names:
 `make test-cio`, `make cio ONLY=...`.
 
 Rules:
 
-* **Never hand-edit `rtl/k800x_cpu/gen/*` or `vectors/*`.** They are
-  derived from the Go golden model but COMMITTED: `make lint build test`
-  reads nothing outside k8000 and needs no Go. Only the maintainer targets
-  `make refresh-rtl` / `make refresh-vectors` read the Go model, and they
-  fail with an explanation if it is absent. Refresh, review, commit. Review
+* **Never hand-edit `rtl/*/gen/*` or `vectors/*`.** They come from the
+  vector generator but are COMMITTED: `make lint build test` reads nothing
+  outside k8000. Only the maintainer targets `make refresh-rtl` /
+  `make refresh-vectors` run the generator, and they fail with an
+  explanation if it is absent. Refresh, review, commit. Review
   decoder changes in `rtl/k800x_cpu/z8000_decode_table.txt` (the same ROM,
   fields named); `make test-decode-table` proves the .sv matches it.
-* **Never change the Go model to make RTL pass**, unless the DATASHEET says
-  the model is wrong: then fix the model, add the cited regression test
-  there, `make refresh-vectors`, and add a row to `docs/<DEVICE>_TESTS.md`.
+* **Never change the vectors to make RTL pass**, unless a Zilog document
+  says they are wrong: then fix the generator with a cited regression test,
+  `make refresh-vectors`, and add a row to `docs/<DEVICE>_TESTS.md`.
 * **RTL has zero lint suppressions** (`make lint`, `RTL_W`). Only
   testbenches get relaxations.
 * Cycle counts EMERGE from the sequencer doing real work each clock. No
@@ -52,10 +53,10 @@ in order.
 bytes, R0-R15 words, RR0..RR14 longs (even pairs), RQ0/RQ4/RQ8/RQ12 quads.
 Ports: `we`, `wwidth` (0=byte 1=word 2=long 3=quad), `wsel`, `wdata[63:0]`,
 and a combinational read port `rwidth`/`rsel`/`rdata[63:0]`, right-aligned.
-Byte select: `wsel[3]` picks the half (Go `registers.File`), so RH0 is
+Byte select: `wsel[3]` picks the half, so RH0 is
 `wsel=0`, RL0 is `wsel=8`.
 
-**Acceptance.** `make test-regfile`: the 8 ported Go tests plus a 4000-case
+**Acceptance.** `make test-regfile`: 8 directed cases plus a 4000-case
 seeded soak against an independent inline reference model.
 
 **Watch out.** RR0 is R0:R1 with R0 HIGH. A byte write must not disturb the
@@ -75,14 +76,13 @@ two word passes; the composition rule is in the module header.
 
 **Acceptance.** `make test-alu` replays `vectors/k800x_cpu/alu/random.vec`
 (78000 constrained-random cases, reachable set only) and
-`vectors/k800x_cpu/alu_from_cpu/*.vec` (every `alu.Execute` call the CPU
-suite made). Long records run as two passes and must match bit-exactly.
+`vectors/k800x_cpu/alu_from_cpu/*.vec` (every ALU pass the CPU vectors
+make). Long records run as two passes and must match bit-exactly.
 Out-of-contract records (shift/EXTS unit tests, synthetic long logic ops)
 are skipped and the tally is printed. Clean before rung 3.
 
 **Watch out.** Flags C/Z/S/PV/D/H at bits 7/6/5/4/3/2. PV is overflow for
 arithmetic, parity for byte logicals; DAB and the BCD rotates read D and H.
-Source of truth: Go `sim/cpu/alu/alu.go` and its `FlagWritesFor` PLA.
 
 ## A3. `z8000_serial.sv` -- `make test-serial`
 
@@ -189,8 +189,8 @@ register/immediate modes.
 Held elsewhere: `TestShiftRegister` needs the shifter driven by the
 sequencer (the MULT/DIV hookup).
 
-**Watch out.** Every instruction is its machine-cycle program (Go
-`sim/cpu` `cycle_program.go`; ledger items 41, 42, 46): the next IF1
+**Watch out.** Every instruction is its machine-cycle program (ledger
+items 41, 42, 46): the next IF1
 starts only after the last cycle, tail included, and nothing is fetched
 ahead. Long ops: the ALU is 16 bits, so a long op is two word passes, low
 then high for ADD/SUB/CP, placed in the clocks the program names: the low
@@ -206,9 +206,8 @@ passes do not show on the pins, only the program's length does.
 
 ## Rung 4 -- memory operands, stores, RMW
 
-**Implement.** `execReadOp` / `execWriteOp` / long variants for IR, DA, X,
-BA, BX, RA; byte lanes (even address -> AD15:8, odd -> AD7:0); a byte
-WRITE puts the byte on BOTH halves (Ref Manual 9.4.2 p.234, R-CPU-513; the
+**Implement.** Reads, writes and long forms for IR, DA, X, BA, BX, RA; byte lanes (even address -> AD15:8, odd -> AD7:0); a byte
+WRITE puts the byte on BOTH halves (Ref Manual 9.4.2 p.234; the
 monitor checks it).
 
 **Acceptance.** `TestLD_R_IR`, `TestLD_IR_R`, `TestLD_R_ADDR`,
@@ -248,9 +247,8 @@ Drive the A3 sequencers from the program's internal cycles. With a memory
 or immediate operand the setup and first steps run during the operand
 transactions (ledger item 49).
 
-**Acceptance.** `TestMULT*`, `TestDIV*`, `TestMultDivROM`, and
-`TestArithmeticSpecGap`, which alone gates mul/div cycles and flags
-(`enforceArithSpec`); `cycle_audit_test.go` covers the other classes.
+**Acceptance.** `TestMULT*`, `TestDIV*`, `TestMultDivROM` and
+`TestArithmeticSpecGap` (mul/div cycles and flags).
 
 Cycle rows: `mult_r_r_x1` and `mult_r_r_xffff` (70; if they differ, the FSM
 has a per-bit term), `multl_rq_rr_n3` (303) and `multl_rq_rr_n5` (317),
@@ -264,9 +262,9 @@ I/O bus cycle: 4 clocks minimum, /MREQ never asserted, /DS Low from TWA
 through T3 (Fig 13). A byte I/O write repeats the byte on both halves
 of AD; a byte read takes the half the port's A0 picks, as memory.
 
-**Acceptance.** The 41 tests in `cpu_block_test.go` (`TestLDIR*`,
-`TestCPIR*`, `TestCPSD*`, `TestINIR*`...), `cpu_io_bytelane_test`,
-`cpu_blockio_bytelane_test`, `TestCycleAuditBlockOps`,
+**Acceptance.** The block vectors (`TestLDIR*`, `TestCPIR*`, `TestCPSD*`,
+`TestINIR*`...), the I/O and block I/O byte-lane vectors,
+`TestCycleAuditBlockOps`,
 `TestCycleAuditBlockCompare`, `TestBusSpec_IOCycleDS`,
 `TestMachineCycleBlock`. Cycle rows: `inb` (12), `outb` (12), `ldi_1` (20),
 and 11+9n: `ldir_n4` and `lddr_n4` (47), `ldir_n64` (587), `cpir_n3` (38),
@@ -290,30 +288,28 @@ position.
 
 ## Rung 10 -- interrupts, traps, refresh, STOP, BUSREQ, VMPU
 
-`cpu_interrupt_test.go` (16 tests), `intack_ds_test` (/DS falls at the
-fourth automatic wait, Low 3 clocks), `epu_test`, `stop_test` (fetch FIRST,
+The interrupt vectors, the acknowledge /DS vectors (/DS falls at the
+fourth automatic wait, Low 3 clocks), the EPU and STOP vectors (fetch FIRST,
 then refresh until STOP samples High), `TestRefresh*` (refresh keeps R/W,
 B/W, N/S from the previous transaction, never asserts /DS), `TestG78_*`,
 `TestBusReq*` + `TestBusSpec_BusRequestTiming` (sampled at a machine-cycle
 boundary, /BUSACK High one clock after release, CPU resumes two after),
 `TestBusSpec_HaltInternalOpsAndTwoSampleExit`,
-`TestBusSpec_AbortedIF1RunsInProgramMode`, `cpu_vmpu_test.go`
-(Z8003/Z8004 ABORT/SAT/TSET), `TestSysCall*`, `TestPrivTrap*`.
+`TestBusSpec_AbortedIF1RunsInProgramMode`, the Z8003/Z8004 vectors
+(ABORT/SAT/TSET), `TestSysCall*`, `TestPrivTrap*`.
 
-Green here means `make test-cpu-timing` 12/12 and `make test-cpu-cycles`
+Green here means `make test-cpu-timing` 13/13 and `make test-cpu-cycles`
 45/45.
 
-## Skipped forever (`X unsupported`)
+## Snapshot and refresh-pending vectors
 
-`TestSaveRestore*` restore Go snapshots, and some `TestMachineCycle*`
-files set a refresh pending directly; they test the Go model's internals,
-not the CPU's pins.
+`TestSaveRestore*` start a CPU from another CPU's records up to the save,
+so it reaches the state through its pins; a pending refresh is the
+`RFSH_PEND` poke. None is skipped.
 
 ---
 
 # Part C -- Z8010 MMU, `rtl/k8010_mmu` (`make test-mmu`, `make test-mmu-timing`)
-
-Rungs follow the header of `rtl/k8010_mmu/z8010_mmu.sv`.
 
 ## M1. Reset final state
 Fix the reset values (`mode_reg`, `sar`, `dsc`, `viol_*`, `bcsr`, `isn`,
@@ -321,14 +317,15 @@ Fix the reset values (`mode_reg`, `sar`, `dsc`, `viol_*`, `bcsr`, `isn`,
 Acceptance: `make mmu ONLY=TestReset`.
 
 ## M2. Strobe capture + translate comparator
-Latch `sn`/`ad`/`st`/`r_w`/`n_s` at the /AS fall; drive `pa` and
-`pa_drive` from the /AS RISE; float `pa` at the /DS rise (AC #6 TdDS(Af)).
-`pa = {base,8'h00} + offset`, one comparator tree.
+Latch `ad`/`st`/`r_w`/`n_s`/`cs_n` while /AS is Low, closed at its rise; SN
+from the last CLK rise. Drive `pa` (A23:8) from the master clock that sees
+the /AS fall (AC #28), hold it from the /AS rise, float it at the /DS rise
+(AC #6 TdDS(Af)). `pa = base + offset[15:8]`, one comparator tree.
 Acceptance: `make mmu ONLY=TestBasicTranslation`, then `TestChangedFlag`,
 `TestPhysicalAddress16BitBase`; `make test-mmu-timing` section [2].
 
 ## M3. Command engine (Special I/O)
-`executeCommand`'s 22-entry table: command latched at the /AS rise (`cs_n`
+The 22-entry command table: command latched at the /AS rise (`cs_n`
 sampled THERE only), executed at the first /DS Low sample, read data driven
 ONLY while /DS is Low and only on AD15:8 (no AD0-7 pins). 0x0D = Limit,
 0x0E = Attribute (UM010401 Table 3-6); easy to swap.
@@ -354,11 +351,11 @@ no SEGT, no violation capture. **Apply the /DS-rise teardown BEFORE the
 # Part D -- Z8036 CIO, `rtl/k8036_cio` (`make test-cio`, `make test-cio-timing`)
 
 ## C1. Strobe capture, cycle ownership, reset
-* Latch `ad_in`, `cs0_n`, `intack_n` while /AS is Low (R-CIO-401).
-* `cs1` and `r_w` are LEVELS at the /DS fall, not /AS-latched (R-CIO-402).
+* Latch `ad_in`, `cs0_n`, `intack_n` while /AS is Low.
+* `cs1` and `r_w` are LEVELS at the /DS fall, not /AS-latched.
 * /AS + /DS Low together = hardware reset: registers 0, MICR bit 0 set,
   ports and catchers cleared.
-* **Teardown before latch** (R-CIO-409): in the same `always_ff`, the
+* **Teardown before latch**: in the same `always_ff`, the
   /DS-rise clear of `ad_drive`/cycle ownership runs BEFORE the /AS-fall
   latch. Backwards, every back-to-back write is dropped and the chip stays
   in power-on reset.
@@ -377,24 +374,24 @@ Acceptance: `TestAddressDecoding`, `TestRegisterReadWrite*`,
 
 ## C3. Ports A/B/C
 Mode/direction/polarity, OE masks, input sampling, 1's catchers,
-`effectiveInput`. Acceptance: `TestPortCData`, `TestPortData`,
+the effective input. Acceptance: `TestPortCData`, `TestPortData`,
 `TestSetPortBInputLatch`, `TestPortDirection*`.
 
 ## C4. Counter/timers
-PCLK/2 prescaler toggling on PCLK FALLING edges (R-CIO-403), TC -> reload
-gap, TC=0 = 65536, compute-then-commit in `advance()`, gate/trigger in the
+PCLK/2 prescaler toggling on PCLK FALLING edges, TC -> reload
+gap, TC=0 = 65536, compute then commit, gate/trigger in the
 PCLK domain, counter-mode count input sampled asynchronously on every
-`clk` (R-CIO-404). Acceptance: `TestCounter*`, `TestTimer*`, `TestCT3*`.
+`clk`. Acceptance: `TestCounter*`, `TestTimer*`, `TestCT3*`.
 
 ## C5. Pattern match, handshake, interrupts
 LPM latch and deferred ERR; handshake unit and REQUEST/WAIT on Port C;
-priority encoder, `int_n` level, `ieo = !DLC && iei && !anyIUS &&
-!pendingDuringIntack`, INTACK vector driven at the /DS fall, NV=1
-inhibiting it (R-CIO-407). Acceptance: `TestPatternMatch*`,
+priority encoder, `int_n` level, `ieo = !DLC && iei && !anyIUS` and, in an
+acknowledge, no request latched at its /AS; INTACK vector driven at the /DS fall, NV=1
+inhibiting it. Acceptance: `TestPatternMatch*`,
 `TestHandshake*`, `TestIntACK*`, `TestG80_13_IEOIntackAndDLC`.
 
-**The /AS domain (R-CIO-405).** Port sampling, pattern match, handshake
-and IP->INT are clocked by **/AS**, not PCLK, in silicon and model. Build
+**The /AS domain.** Port sampling, pattern match, handshake
+and IP->INT are clocked by **/AS**, not PCLK, in silicon. Build
 C1/C3/C5 that way: `as_rise = ~as_q & as_n` clocks the input register, the
 catchers, the pattern comparison (both synchroniser stages) and the /INT
 request latch; `int_n` is that latch inverted. PCLK (falling-edge enable)
@@ -411,8 +408,8 @@ vectors check them within 3 ticks.
 
 ## S1. Strobe capture + the /AS-clocked interrupt latch
 AD/CS0/INTACK latch transparent while Low, frozen at the /AS RISE;
-`int_latch <= int_pending` at every /AS rise AND at the INTACK /DS fall
-(UM010903 p.21, TdAS(INT)); `int_n = ~int_latch`; `ieo = ~DLC & iei &
+`int_latch <= int_pending & iei` at every /AS rise; the INTACK /DS fall can
+only release it (UM010903 p.21, TdAS(INT)); `int_n = ~int_latch`; `ieo = ~DLC & iei &
 (ius==0) & ~(as_intack & int_latch)` with the /AS-LATCHED intack.
 Acceptance: `make scc ONLY=TestW2_19_NVFloatsADDuringINTACK`,
 `TestG81_12_IEOIntackAndDLC`, `TestTickPinsINTOnRxAvailable`.
@@ -446,7 +443,7 @@ Acceptance: the bulk of the vector ladder, `TestPins_TX_BackToBack`,
 
 `make test-timing` runs them all. While building Part B:
 
-* **`make test-cpu-timing`** needs no vectors or golden model. From rung 1
+* **`make test-cpu-timing`** needs no vectors. From rung 1
   it finds a misplaced strobe fastest: clock, transaction, Product Spec
   figure.
 * **`make test-cpu-cycles`** goes green in blocks (per-rung "Cycle rows").
@@ -476,19 +473,19 @@ update `docs/STATUS.md`.
 # Part H -- Z8070 FPU, `rtl/k8070_fpu` (`make test-fpu`, `make test-fpu-timing`, `make test-fpu-dp`)
 
 The datasheet where it speaks; every other choice is in the "Assumed"
-section of `docs/K8070_FPU_TESTS.md`. Rungs follow the RTL headers.
+section of `docs/K8070_FPU_TESTS.md`.
 
-## F0. Go baseline
-`make vectors-fpu` records `vectors/k8070_fpu/fpu` and `dp`;
-`fpuvecverify` replays them into a fresh Go FPU. Pass: Go tests green,
-fpuvecverify 100% (one `X unsupported` snapshot vector).
+## F0. Vector baseline
+`make vectors-fpu` records `vectors/k8070_fpu/fpu` and `dp` and replays
+them through the generator. Pass: the self-check 100% (one
+`X unsupported` snapshot vector).
 
 ## F1. Reset and idle pins
 SC, USER, FFLAGS cleared but SC.ID from the ID pins; AD floated, /BSY and
 /INT High, IEO = IEI. Pass: `make fpu ONLY=TestResetLatchesID`; timing [1].
 
 ## F2. Strobe capture, snoop, ID match, word 2, decode table
-Pass: `make test-fpu-enc` (RTL decode = Go decode, every input);
+Pass: `make test-fpu-enc` (RTL decode = the decode digests, every input);
 `TestIDMatchTwoFPUs.000`, `TestInvalidOpcodeInterrupt`,
 `TestInvalidEPUIDInterrupt`; timing [2] (1101 capture at /DS, next
 non-refresh 1100, /BUSACK ignore); the F0-F7 file with pokes and checked
@@ -556,10 +553,9 @@ Pass: interrupt vectors; timing [5] (IEO rule, vector drive window, NV
 float).
 
 ## F10. CPU + FPU system bench
-`make test-cpu-fpu`: the Go system FPU tests with both RTL chips on one
+`make test-cpu-fpu`: the system vectors with both RTL chips on one
 master clock. Pass: all, Z8001 first.
 
 ## F11. Fit
-Quartus 18.1, 5CSEBA6U23I7, 48 MHz, plain logic + MLAB, zero lint
-suppressions. Pass: positive slack, at most 2,700 ALMs; a four-instance
-fit for the quad-CPU budget.
+Quartus 17.0.2, 5CSEBA6U23I7, 48 MHz, plain logic + MLAB, zero lint
+suppressions. Pass: positive slack, at most 2,700 ALMs.

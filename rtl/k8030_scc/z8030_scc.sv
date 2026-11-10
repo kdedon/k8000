@@ -1,17 +1,15 @@
 // z8030_scc -- Zilog Z8030 Z-SCC (Z-Bus serial communications controller),
-// top level. Pin seam == ~/git/z8000/sim/scc/pins.go (Inputs/Outputs)
-// one-for-one; index [0] = Channel A, [1] = Channel B (Go ChA/ChB).
+// top level. Index [0] = Channel A, [1] = Channel B.
 //
-// The lockstep contract is per-record pin equality against the Go model:
-// tb/k8030_scc/tb_scc.cpp replays vectors/k8030_scc/*.vec (one T record == one TickPins
-// call == one posedge of `clk`) through these ports -- see
+// tb/k8030_scc/tb_scc.cpp replays vectors/k8030_scc/*.vec (one T record ==
+// one posedge of `clk`) through these ports and compares every pin -- see
 // docs/K8030_SCC_TESTS.md for exactly what is compared when.
 //
 // STATUS: strobe capture, /INT latch, IEO, address decode, register read
 // and write, WR9 and /AS+/DS resets, interrupt priority and acknowledge.
 // No serial logic.
 //
-// Spec-audit notes (docs/K8030_SCC_TESTS.md sec 7, 2026-08-16):
+// Spec notes:
 //   * /INT is NOT int_pending: the Z8030 clocks its interrupt request
 //     latch with /AS (int_latch <= int_pending & iei at every as_rise; the
 //     INTACK ds_fall can only release it) -- SCC/ESCC UM p.21,
@@ -28,61 +26,53 @@
 //   * The /AS+/DS reset is qualified by WIDTH, not by level (p.648: row 39
 //     TwRES >= 250 ns "Coincident Low for Reset", rows 37/38 name 15-30 ns
 //     approaches as "Delay for No Reset"). A level detector wipes a
-//     configured chip on a legal bus turnaround -- a real defect, fixed in
-//     the Go model 2026-08-16. HERE, count the coincidence in FABRIC clocks
-//     against 250 ns of real time (e.g. >= 13 at 50 MHz), NOT in pclk_rise
-//     enables: at 6 MHz PCLK a 250 ns window straddles 1 or 2 rises and a
-//     30 ns window 0 or 1, so PCLK-edge counting cannot separate the two
-//     bands at the boundary. This port counts 2 PCLK rises, as the Go
-//     model does, so the vectors stay in lockstep; a fabric-clock width
-//     needs the same change in the model. Bench check: tb_scc_timing [5]
-//     and [6].
+//     configured chip on a legal bus turnaround. Counting the coincidence
+//     in fabric clocks against 250 ns (e.g. >= 13 at 50 MHz) would separate
+//     the bands; at 6 MHz PCLK a 250 ns window straddles 1 or 2 rises and a
+//     30 ns window 0 or 1. This port counts 2 PCLK rises, as the vectors
+//     do. Bench check: tb_scc_timing [5] and [6].
 //   * A /DS fall is a data strobe ONLY after an intervening /AS rise.
 //     Cycle ownership latches at as_rise and is never cleared at
 //     end-of-cycle, so an unpaired ds_fall would otherwise replay a write
 //     to whatever register the LAST access decoded, with whatever is on AD.
-//     Gate the ds_fall capture on as_n being High (Go: the same guard, 2026-08-16).
-//     Note this is the SCC's variant of the R-CIO-409 family: cycle-ownership
-//     state that outlives its cycle. The CIO answer was to order the
-//     teardown before the latch; the SCC answer is to qualify the strobe.
+//     Gate the ds_fall capture on as_n being High.
 //
-// Clocking decision (Bible 0.2.3 + 15.1, documented in docs/K8030_SCC_TESTS.md):
-//   * `clk` is the board master clock: one or more posedges per Go TickPins call.
+// Clocking (documented in docs/K8030_SCC_TESTS.md):
+//   * `clk` is the board master clock: one or more posedges per record.
 //   * `pclk_rise` is the PCLK rising edge as a one-master-clock pulse from
-//     the board divider (Go pclkRising) -- never a derived clock. Pulses may
-//     fire on consecutive master clocks.
+//     the board divider -- never a derived clock. Pulses may fire on
+//     consecutive master clocks.
 //   * /RTxC and /TRxC use both edges and the level: `rxc_rise/rxc_fall` and
 //     `trxc_rise/trxc_fall` ([1:0] per channel) are pulse pairs. Each channel
 //     rebuilds the pin level (set by _rise, cleared by _fall; a pulse on
 //     the current clock counts at once). The level is sampled only at PCLK
 //     rises and compared with the level at the previous PCLK rise, so an
-//     edge between PCLK rises is seen exactly as the level model saw it.
+//     edge between PCLK rises is seen at the next one.
 //   * /AS //DS //INTACK are oversampled by `clk`: <x>_fall = <x>_q & ~<x>_n
 //     is combinational against the registered previous level, so a strobe
 //     transition seen in the SAME record as a PCLK rise is serviced in that
-//     record (Go: async capture block runs before the PCLK block in the
-//     same call). Pending flags carry transitions across records to the
-//     next PCLK rise, exactly the Go pinPending* flags.
+//     record, before the PCLK work. Pending flags carry transitions across
+//     records to the next PCLK rise.
 //   * Hardware reset = /AS and /DS both Low across two PCLK rises (no
 //     reset pin); see the width note above. The board applies it at
 //     power-up through the same pins.
 //   * Asynchronous inputs are not synchronised here, so lockstep with the
-//     model holds: /DCD, /CTS and /SYNC take one PCLK sample, RxD is used
+//     vectors holds: /DCD, /CTS and /SYNC take one PCLK sample, RxD is used
 //     as it stands at the PCLK rise, and /RTxC and /TRxC compare the last
 //     PCLK's level with the present one. The system top must put 2-flop
 //     synchronisers on RxD, /RTxC, /TRxC, /SYNC, /DCD, /CTS and the bus
 //     strobes.
 //   * AD is an in/out/oe triplet (ad_in / ad_out / ad_drive); ad_drive
-//     drops combinationally when ds_n is High (scc.go:598-604) and is
-//     never asserted during INTACK when WR9 NV=1 (W2-19).
+//     drops combinationally when ds_n is High and is never asserted
+//     during INTACK when WR9 NV=1.
 //
-// Implementation order (Bible 5.2/5.5; Go file:line):
-//   1. strobe capture + AS-latched AD/RW/CS/INTACK, DS-latched AD/IEI   scc.go tickPins:426-455
-//   2. address decode: AD4:1 = register, A//B on AD5 (Shift Left) or AD0  scc.go decodeAddr:613
-//   3. register read mux (RR0/1/2/3/8/10/12/13/15) + write core          scc.go readReg:640 writeReg:735
-//      WR2/WR9 shared; WR9 D7:6 reset commands                            scc.go execWR9:887 hardwareReset:1748
-//   4. INTACK: vector at DS(fall) if IEI, IUS latch, RR2 modification     scc.go intAck:1091 modifyVector:1062
-//   5. INT_n = ~int_latch (IEI in the latch); IEO = ~DLC & iei & (ius==0) & ~(as_intack & int_latch)  scc.go tickPins
+// Blocks:
+//   1. strobe capture + AS-latched AD/RW/CS/INTACK, DS-latched AD/IEI
+//   2. address decode: AD4:1 = register, A//B on AD5 (Shift Left) or AD0
+//   3. register read mux (RR0/1/2/3/8/10/12/13/15) + write core
+//      WR2/WR9 shared; WR9 D7:6 reset commands
+//   4. INTACK: vector at DS(fall) if IEI, IUS latch, RR2 modification
+//   5. INT_n = ~int_latch (IEI in the latch); IEO = ~DLC & iei & (ius==0) & ~(as_intack & int_latch)
 //   6. two channel instances (rtl/k8030_scc/z8030_scc_channel.sv)
 //
 // Harness contract (tb/k8030_scc/scc_access.h peeks/pokes these by hierarchical
@@ -92,7 +82,7 @@
 module z8030_scc (
   input  logic        clk,          // board master clock
 
-  // Inputs (pins.go Inputs)
+  // Inputs
   input  logic [7:0]  ad_in,        // AD7:0 (the chip's only bus pins)
   input  logic        as_n,         // address strobe; AD/CS0/INTACK latched at its RISE (transparent while Low)
   input  logic        ds_n,         // data strobe
@@ -111,7 +101,7 @@ module z8030_scc (
   input  logic [1:0]  rxc_fall,     // /RTxC falling edge pulse
   input  logic [1:0]  sync_in,
 
-  // Outputs (pins.go Outputs)
+  // Outputs
   output logic [7:0]  ad_out,
   output logic        ad_drive,     // 1 while the SCC sources AD
   output logic        int_n,        // open-drain, 0 = asserted
@@ -125,14 +115,14 @@ module z8030_scc (
   output logic [1:0]  sync_drive
 );
 
-  // ---- chip-level registers (Snapshot: IntVector IntPending IntLatch ShiftRight IUSMask)
+  // ---- chip-level registers
   logic [7:0] int_vector;
   logic       int_pending;          // PCLK-side request condition (from the IP bits)
-  logic       int_latch;            // /AS-clocked /INT pin latch (Go intLatch)
-  logic       shift_right;          // 0 = Shift Left (A//B on AD5, the C900 mode)
+  logic       int_latch;            // /AS-clocked /INT pin latch
+  logic       shift_right;          // 0 = Shift Left (A//B on AD5)
   logic [7:0] ius_mask;             // one bit per 3-bit source code
 
-  // ---- pin-side state (Go: asyncPrev*, pinPending*, pinAsLatched*, pinDsLatched*, pinBus*, pinOut)
+  // ---- pin-side state
   logic       as_q, ds_q, intack_q;
   logic       pend_as_fall, pend_as_rise, pend_ds_fall, pend_ds_rise, pend_intack_rise;
   logic [7:0] as_ad;                // AD sampled while /AS Low, frozen at the rise (channel + register)
@@ -144,7 +134,7 @@ module z8030_scc (
   logic [7:0] ad_out_q;
   logic       ad_drive_q;
 
-  // ---- edge detects against the registered previous level (Bible 0.2.3)
+  // ---- edge detects against the registered previous level
   logic as_fall, as_rise, ds_fall, ds_rise, intack_rise, hw_reset;
   assign as_fall     = as_q & ~as_n;
   assign as_rise     = ~as_q & as_n;
@@ -400,7 +390,7 @@ module z8030_scc (
   // ---- outputs: power-up pin state -----------------------------------------
   always_comb begin
     ad_out     = ad_out_q;
-    ad_drive   = ad_drive_q & ~ds_n;   // Go: release on /DS High is combinational
+    ad_drive   = ad_drive_q & ~ds_n;   // release on /DS High is combinational
     int_n      = ~int_latch;
     // A requesting SCC holds IEO Low through an acknowledge; DLC forces it Low.
     ieo        = ~wr9[2] & iei & (ius_mask == 8'h00) & ~(~as_intack_now & int_latch);
