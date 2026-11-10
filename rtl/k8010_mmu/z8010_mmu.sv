@@ -33,15 +33,15 @@
 //   write data         command write: AD15-AD8 while /DS is Low.
 //
 // Outputs:
-//   A23-A8   driven here from the /AS rise (the chip starts driving at the
-//            /AS fall, #28 TdAS(Ad)); valid at the latest
+//   A23-A8   driven from the /AS fall (#28 TdAS(Ad)), valid at the latest
 //            one CLK after the T1 rise (#29 TdC(Av) 255 ns from the CLK rise
 //            under /AS, #25 TdOFF(Av) from the offset, #26 TdST(Ad) from
-//            status). PA is combinational from the latch, SN and the
-//            descriptor in the master clock that sees the /AS rise and held
-//            from then on, so a CPU sharing CLK reads a valid PA at its next
-//            CLK rise even at one master clock per CLK. Floats at the /DS
-//            rise (#27 TdDS(Af)) and at the next /AS fall.
+//            status). While /AS is Low, PA and its drive follow the pins
+//            through the open latch, SN from the latest CLK rise (one in the
+//            same master clock included); the master clock that sees the /AS
+//            rise decides again, and PA holds from then on, so a CPU sharing
+//            CLK reads a valid PA at its next CLK rise even at one master
+//            clock per CLK. Floats at the /DS rise (#27 TdDS(Af)).
 //   /SEGT    asserted from the /AS rise of the violating access (#30
 //            TdAS(SEGT)), in the master clock that sees it; released at the
 //            third CLK rise from the /AS rise of the trap-acknowledge cycle
@@ -169,12 +169,16 @@ module z8010_mmu (
   wire dma_go  = clk_en & dmasync & dma_low[1];
   wire dma_blk = (dma_active & ~ds_rise) | dma_go;
 
-  // A DMA address is translated in the sample it arrives, straight off the pins.
-  wire [6:0]  x_sn = dma_go ? sn   : sn_clk;
-  wire [7:0]  x_ad = dma_go ? ad   : latched_ad;
-  wire [3:0]  x_st = dma_go ? st   : latched_st;
-  wire        x_rw = dma_go ? r_w  : latched_rw;
-  wire        x_ns = dma_go ? n_s  : latched_ns;
+  // A DMA address is translated in the sample it arrives, straight off the
+  // pins; while /AS is Low the pins flow through the open latch, and SN
+  // through its CLK-rise register.
+  wire        as_open = ~as_n & ~dma_blk;
+  wire        x_pins  = dma_go | as_open;
+  wire [6:0]  x_sn = (dma_go | (as_open & clk_en)) ? sn : sn_clk;
+  wire [7:0]  x_ad = x_pins ? ad   : latched_ad;
+  wire [3:0]  x_st = x_pins ? st   : latched_st;
+  wire        x_rw = x_pins ? r_w  : latched_rw;
+  wire        x_ns = x_pins ? n_s  : latched_ns;
 
   // ---- translate: one lookup, one adder, one comparator tree ------------------
   // Translation and command access never overlap, so they share one lookup.
@@ -208,6 +212,7 @@ module z8010_mmu (
 
   wire as_cyc    = as_rise & addr_latched & ~dma_blk;
   wire drive_pa  = as_cyc & responds;
+  wire drive_low = as_open & responds;
   wire ack_start = as_cyc & (latched_st == 4'h4) & mode_reg[7];
   localparam logic [1:0] ACK_RELEASE_RISE = 2'd3;
   wire [1:0] ack_cnt = ack_start ? ACK_RELEASE_RISE : ack_wait;
@@ -420,7 +425,7 @@ module z8010_mmu (
         data_drive_q <= 8'h01 << mode_reg[2:0];
       end
 
-      // PA floats at the start of the next cycle.
+      // The previous cycle's PA drive ends at the /AS fall.
       if (as_fall) begin
         pa_drive_q   <= 1'b0;
         data_drive_q <= 8'h00;
@@ -532,7 +537,7 @@ module z8010_mmu (
   end
 
   // ---- pins: each output follows its strobe edge in the same master clock
-  // (PA, /SEGT, /SUP the /AS rise; command data and the identifier the /DS
+  // (PA the /AS fall and rise, /SEGT, /SUP the /AS rise; command data and the identifier the /DS
   // fall), then holds from its register; all are released while /RESET is Low.
   wire       sup_now  = (trap & viol)
                       | (as_cyc & (latched_st != 4'hD) & sup_instr_hold
@@ -542,8 +547,8 @@ module z8010_mmu (
   wire       id_now   = addr_latched & (latched_st == 4'h4) & ~ds_n & mode_reg[7];
   wire [7:0] id_line  = 8'h01 << mode_reg[2:0];
   always_comb begin
-    pa         = drive_pa ? x_pa : pa_q;
-    pa_drive   = (pa_drive_q | drive_pa) & reset_n;
+    pa         = (drive_pa | drive_low) ? x_pa : pa_q;
+    pa_drive   = ((pa_drive_q & ~as_open) | drive_pa | drive_low) & reset_n;
     segt_n     = ~((trap_pending | segt_now) & reset_n);
     sup_n      = ~((sup_held | sup_now) & reset_n);
     data       = rd_now ? rd_byte : id_now ? (ack_pending ? id_line : 8'h00) : data_q;

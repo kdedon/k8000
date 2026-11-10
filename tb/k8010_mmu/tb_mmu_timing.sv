@@ -122,8 +122,8 @@ module tb_mmu_timing;
 
   logic [7:0] rd;
   logic       early, during, late;
-  logic [15:0] pa_seen;
-  logic        pa_drv_live, pa_drv_after;
+  logic [15:0] pa_seen, pa_low;
+  logic        pa_drv_live, pa_drv_after, pa_drv_low, pa_drv_io;
   logic [7:0]  data_low_seen;
 
   initial begin
@@ -182,12 +182,25 @@ module tb_mmu_timing;
 
     idle_bus();
     sn = 7'h05; ad = 16'h1234; st = ST_DATA_MEM; r_w = 1'b1; n_s = 1'b0;
-    as_n = 1'b0; ds_n = 1'b1; cs_n = 1'b1;                       phase();
+    as_n = 1'b0; ds_n = 1'b1; cs_n = 1'b1;
+    @(posedge clk); #3; pa_low = pa; pa_drv_low = pa_drive;      // /AS Low, after the T1 CLK rise
+    @(posedge clk);
     as_n = 1'b1; ds_n = 1'b0;                                    phase();
     #1; pa_seen = pa; pa_drv_live = pa_drive;
     ds_n = 1'b1;                                                 phase();
     #1; pa_drv_after = pa_drive;
     idle_bus();
+    st = 4'b0010; ad = 16'h1234; sn = 7'h05; as_n = 1'b0;          // I/O cycle
+    @(posedge clk); #3; pa_drv_io = pa_drive;
+    @(posedge clk); as_n = 1'b1;                                 phase();
+    idle_bus();
+
+    ck(pa_drv_low && pa_low == 16'h0112, "PA is driven, translated, while /AS is Low",
+       "AC #28 TdAS(Ad): A23-A8 driven from the /AS fall; #25/#29: valid from the offset and the T1 CLK rise",
+       $sformatf("pa=%04h drive=%0b with /AS Low, want 0112", pa_low, pa_drv_low));
+    ck(!pa_drv_io, "PA floats while /AS is Low for a non-memory cycle",
+       "p.571: the MMU translates memory cycles only; #26 TdST(Ad): the drive follows the status",
+       $sformatf("pa_drive=%0b with /AS Low in an I/O cycle", pa_drv_io));
 
     ck(pa_drv_live, "PA is driven for a translated CPU cycle",
        "p.565: the MMU drives the 24-bit physical address after the segment number and offset are latched by /AS",

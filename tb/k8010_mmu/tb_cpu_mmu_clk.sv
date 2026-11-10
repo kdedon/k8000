@@ -137,11 +137,22 @@ module tb_cpu_mmu_clk;
     return {base + {8'h00, off[15:8]}, off[7:0]};
   endfunction
 
-  int checks, fails, if1_seen, rd_hit, wr_hit, loops;
+  int checks, low_checks, fails, if1_seen, rd_hit, wr_hit, loops;
   logic [23:0] first_if1;
   logic clr = 1'b0;      // the run task clears the counters through this
   always @(posedge mclk) if (clr) begin
-    checks = 0; fails = 0; if1_seen = 0; rd_hit = 0; wr_hit = 0; loops = 0; first_if1 = 24'h0;
+    checks = 0; low_checks = 0; fails = 0; if1_seen = 0; rd_hit = 0; wr_hit = 0; loops = 0; first_if1 = 24'h0;
+  end else if (reset_n && !as_n && st >= 4'h8 && st <= 4'hD) begin
+    // A23-A8 are driven and valid from the master clock that sees /AS Low.
+    logic [23:0] want;
+    want = expect_phys(sn, ad_out);
+    low_checks++;
+    if (!pa_drive || pa != want[23:8]) begin
+      fails++;
+      if (fails <= 8)
+        $display("    FAIL t=%0t /AS Low st=%h logical %02h:%04h: PA %s %04h, want %04h", $time, st,
+                 sn, ad_out, pa_drive ? "drives" : "floats", pa, want[23:8]);
+    end
   end else if (reset_n && clk_rise && !ds_n && mem_cyc) begin
     logic [23:0] want;
     want = expect_phys(lat_sn, lat_ad);
@@ -208,10 +219,10 @@ module tb_cpu_mmu_clk;
     clr = 1'b0;
     reset_n = 1'b1;
     for (int k = 0; k < 400000 && loops < 3; k++) @(posedge mclk);
-    if (fails == 0 && if1_seen && first_if1 == 24'h000038 && rd_hit > 0 && wr_hit > 0 && loops >= 3
+    if (fails == 0 && low_checks > 0 && if1_seen && first_if1 == 24'h000038 && rd_hit > 0 && wr_hit > 0 && loops >= 3
         && mem.exists(32'h121236 >> 1) && mem[32'h121236 >> 1] == 16'hC0EF)
-      $display("  PASS  %-10s %0d PA checks, first IF1 %h, read 12:1234, read Mode C0, wrote 12:1236 = C0EF",
-               name, checks, first_if1);
+      $display("  PASS  %-10s %0d PA checks (%0d with /AS Low), first IF1 %h, read 12:1234, read Mode C0, wrote 12:1236 = C0EF",
+               name, checks, low_checks, first_if1);
     else begin
       total_fail++;
       $display("  FAIL  %-10s checks=%0d fails=%0d first IF1 %h (seen %0d) rd=%0d wr=%0d loops=%0d word=%04h",
