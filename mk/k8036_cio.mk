@@ -12,13 +12,13 @@
 CIO_SRCS := rtl/k8036_cio/z8036_cio.sv
 CIO_TB   := $(OBJ)/tb_cio/tb_cio
 
-.PHONY: gen-cio vectors-cio lint-cio build-cio test-cio cio ladder-cio test-cio-timing
+.PHONY: gen-cio vectors-cio lint-cio build-cio test-cio cio ladder-cio test-cio-timing test-cio-iack
 CHIP_GEN     += gen-cio
 CHIP_VECTORS += vectors-cio
 CHIP_LINT    += lint-cio
-CHIP_BUILD   += build-cio $(OBJ)/tb_cio_timing/tb_cio_timing
-CHIP_TEST    += test-cio test-cio-timing
-CHIP_TIMING_TEST += test-cio-timing
+CHIP_BUILD   += build-cio $(OBJ)/tb_cio_timing/tb_cio_timing $(OBJ)/tb_cio_iack/tb_cio_iack
+CHIP_TEST    += test-cio test-cio-timing test-cio-iack
+CHIP_TIMING_TEST += test-cio-timing test-cio-iack
 
 # The CIO has no generated RTL (no ROMs/PLAs to codegen).
 gen-cio: require-z8000
@@ -62,3 +62,12 @@ $(OBJ)/tb_cio_timing/tb_cio_timing: $(CIO_SRCS) tb/k8036_cio/tb_cio_timing.sv
 
 test-cio-timing: $(OBJ)/tb_cio_timing/tb_cio_timing
 	@$(OBJ)/tb_cio_timing/tb_cio_timing | grep -v '\$$finish'
+
+# Daisy-chain acknowledge bench: two chips, the first's IEO into the second's IEI.
+$(OBJ)/tb_cio_iack/tb_cio_iack: $(CIO_SRCS) tb/k8036_cio/tb_cio_iack.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_cio_iack \
+	  $(CIO_SRCS) tb/k8036_cio/tb_cio_iack.sv -o tb_cio_iack >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+test-cio-iack: $(OBJ)/tb_cio_iack/tb_cio_iack
+	@$(OBJ)/tb_cio_iack/tb_cio_iack | grep -v '\$$finish'

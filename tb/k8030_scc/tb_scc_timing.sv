@@ -240,6 +240,55 @@ module tb_scc_timing;
        $sformatf("WR12 read back %02h after a brief overlap, want 5A", rd));
 
     $display("");
+    $display("[7] one access per /AS: a further /DS without /AS is ignored (INFERRED)");
+    // A DMA master with no /AS strobes /DS after the CPU's last cycle; the
+    // data book does not say what the chip does.  Model: the select is
+    // spent at the first /DS rise.
+    as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b0; ad_in = adr(CH_A, 12); phase();
+    as_n = 1'b1;                                                              phase();
+    ds_n = 1'b0; ad_in = 8'h11;                                               phase();
+    ds_n = 1'b1;                                                              phase();
+    ds_n = 1'b0; ad_in = 8'h22;                                               phase();
+    ds_n = 1'b1;                                                              phase();
+    cs0_n = 1'b1; cs1 = 1'b0;                                                  phase();
+    scc_read(CH_A, 12, rd, drove);
+    ck(rd == 8'h11, "a second /DS write without /AS is ignored",
+       "INFERRED (user 2026-11-07): one access per /AS",
+       $sformatf("WR12=%02h, want 11", rd));
+
+    as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b1; ad_in = adr(CH_A, 12); phase();
+    as_n = 1'b1;                                                              phase();
+    ds_n = 1'b0;                                                              phase();
+    #1; drove = ad_drive;
+    ds_n = 1'b1;                                                              phase();
+    ds_n = 1'b0;                                                              phase();
+    #1; drove_after = ad_drive;
+    ds_n = 1'b1;                                                              phase();
+    cs0_n = 1'b1; cs1 = 1'b0;                                                  phase();
+    ck(drove && !drove_after, "a second /DS read without /AS is ignored",
+       "INFERRED (user 2026-11-07): one access per /AS",
+       $sformatf("ad_drive first /DS = %0b, second = %0b", drove, drove_after));
+
+    // Interrupt acknowledge: WR2 vector, MIE, DCD external/status source.
+    scc_write(CH_A, 2, 8'h40);
+    scc_write(CH_A, 15, 8'h08);   // DCD IE
+    scc_write(CH_A, 1, 8'h01);    // Ext Int Enable
+    scc_write(CH_A, 9, 8'h08);    // MIE, NV = 0, VIS = 0
+    dcd_n[CH_A] = 1'b0;
+    repeat (4) phase();
+    as_n = 1'b0; intack_n = 1'b0;                                              phase();
+    as_n = 1'b1;                                                              phase();
+    ds_n = 1'b0;                                                              phase();
+    #1; rd = ad_out; drove = ad_drive;
+    ds_n = 1'b1;                                                              phase();
+    ds_n = 1'b0;                                                              phase();
+    #1; drove_after = ad_drive;
+    ds_n = 1'b1; intack_n = 1'b1;                                              phase();
+    ck(rd == 8'h40 && drove && !drove_after, "acknowledge drives the vector at the first /DS only",
+       "INFERRED (user 2026-11-07): one access per /AS",
+       $sformatf("vector %02h drive %0b, second /DS drive %0b", rd, drove, drove_after));
+
+    $display("");
     if (fails == 0) $display("RESULT PASS  tb_scc_timing  %0d checks", checks);
     else            $display("RESULT FAIL  tb_scc_timing  %0d/%0d checks failed", fails, checks);
     $finish;

@@ -13,8 +13,12 @@
 //
 // Spec-audit notes (docs/K8030_SCC_TESTS.md sec 7, 2026-08-16):
 //   * /INT is NOT int_pending: the Z8030 clocks its interrupt request
-//     latch with /AS (int_latch <= int_pending at every as_rise, and at the
-//     INTACK ds_fall) -- SCC/ESCC UM p.21, TdAS(INT). int_n = ~int_latch.
+//     latch with /AS (int_latch <= int_pending & iei at every as_rise; the
+//     INTACK ds_fall can only release it) -- SCC/ESCC UM p.21,
+//     TdAS(INT); /INT needs IEI High (UM 2.4.5.1). int_n = ~int_latch.
+//   * Only a request latched at the acknowledge's /AS takes the
+//     acknowledge ("no additional interrupt requests during an Interrupt
+//     Acknowledge cycle", UM): one arriving later waits for the next /AS.
 //   * The AD/CS0/INTACK latch is transparent while /AS is Low and freezes
 //     at as_rise ("latched by the rising edge of AS"); decode at as_rise.
 //   * IEO uses the /AS-latched INTACK (as_intack_n) and int_latch, not the
@@ -78,7 +82,7 @@
 //   3. register read mux (RR0/1/2/3/8/10/12/13/15) + write core          scc.go readReg:640 writeReg:735
 //      WR2/WR9 shared; WR9 D7:6 reset commands                            scc.go execWR9:887 hardwareReset:1748
 //   4. INTACK: vector at DS(fall) if IEI, IUS latch, RR2 modification     scc.go intAck:1091 modifyVector:1062
-//   5. INT_n = ~int_latch; IEO = ~DLC & iei & (ius==0) & ~(as_intack & int_latch)  scc.go tickPins
+//   5. INT_n = ~int_latch (IEI in the latch); IEO = ~DLC & iei & (ius==0) & ~(as_intack & int_latch)  scc.go tickPins
 //   6. two channel instances (rtl/k8030_scc/z8030_scc_channel.sv)
 //
 // Harness contract (tb/k8030_scc/scc_access.h peeks/pokes these by hierarchical
@@ -158,9 +162,11 @@ module z8030_scc (
   // service sees this record's value, as does IEO.
   logic as_intack_now, ds_iei_now;
   assign as_intack_now = as_n ? as_intack_n : intack_n;
-  // A /DS fall is a data strobe only after /AS has risen.
+  // A /DS fall is a data strobe only after /AS has risen, and only the
+  // first one: the select is spent at that /DS rise until the next /AS.
+  logic ds_spent;
   logic ds_strobe;
-  assign ds_strobe = ds_fall & as_n;
+  assign ds_strobe = ds_fall & as_n & ~ds_spent;
   assign ds_iei_now = ds_strobe ? iei : ds_iei;
   logic [7:0] ad_wr;
   assign ad_wr = ds_strobe ? ad_in : ds_ad;
@@ -230,6 +236,7 @@ module z8030_scc (
       as_cs_n     <= cs0_n;
       as_intack_n <= intack_n;
     end
+    ds_spent <= as_n & (ds_spent | ds_rise);
     if (ds_strobe) begin
       ds_ad  <= ad_in;
       ds_iei <= iei;
@@ -237,8 +244,8 @@ module z8030_scc (
       ds_cs1 <= cs1;
     end
 
-    // /INT is clocked by /AS, selected or not.
-    if (as_rise) int_latch <= int_pending;
+    // /INT is clocked by /AS, selected or not; a Low IEI blocks it.
+    if (as_rise) int_latch <= int_latch_now;
 
     res_cnt <= !hw_reset ? 2'd0 : (pclk_rise && !res_cnt[1]) ? res_cnt + 2'd1 : res_cnt;
     bus_active <= bus_active_n;
@@ -264,8 +271,9 @@ module z8030_scc (
         if (bus_reg_n == 4'd0 && ad_wr[5:3] == 3'd7) ius_mask <= ius_mask & ~ius_top;
         if (bus_reg_n == 4'd0 && bus_ch_n && ad_wr[1]) shift_right <= ad_wr[0];
       end
-      // An acknowledge re-latches /INT from the request left after it.
-      if (ds_fall_p && !as_intack_now) int_latch <= pend_ack;
+      // An acknowledge re-latches /INT from the request left after it; a
+      // request newer than the acknowledge's /AS waits for the next one.
+      if (ds_fall_p && !as_intack_now) int_latch <= int_latch_now & pend_ack & ds_iei_now;
       if (ds_rise_p || intack_rise_p) ad_drive_q <= 1'b0;
     end else begin
       if (as_fall)     pend_as_fall     <= 1'b1;
@@ -277,9 +285,10 @@ module z8030_scc (
 
     if (pin_reset || wr9_hw) begin
       ius_mask    <= 8'h00;
-      shift_right <= 1'b0;
       int_latch   <= 1'b0;
     end
+    // WR9 Force Hardware Reset keeps the Shift Right/Shift Left bit.
+    if (pin_reset) shift_right <= 1'b0;
   end
 
   // ---- channels ------------------------------------------------------------
@@ -350,13 +359,16 @@ module z8030_scc (
   logic [3:0] cur;
   logic [2:0] src;
   logic [7:0] ius_ack, ius_top, mod_vec;
-  logic       mie, ack, pend_ack;
+  logic       mie, ack, pend_ack, int_latch_now;
   assign mie       = wr9[3];
   assign cur       = pick(src_req, ius_mask);
   assign src       = cur[2:0];
   assign int_pending = mie & cur[3];
-  // An acknowledge needs IEI High at the /DS fall.
-  assign ack       = pclk_rise & ds_fall_p & ~as_intack_now & ds_iei_now & int_pending;
+  // The /INT latch as a service in the same sample as the /AS rise sees it.
+  assign int_latch_now = as_rise ? int_pending & iei : int_latch;
+  // An acknowledge needs IEI High at the /DS fall and the request latched
+  // at its /AS.
+  assign ack       = pclk_rise & ds_fall_p & ~as_intack_now & ds_iei_now & int_latch_now & int_pending;
   assign ius_ack   = ack ? ius_mask | (8'h01 << src) : ius_mask;
   assign pend_ack  = mie & |(pick(src_req, ius_ack) & 4'b1000);
   // Status High puts the code bit-reversed in V6:V4, Status Low in V3:V1.

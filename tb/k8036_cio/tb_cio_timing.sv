@@ -95,6 +95,11 @@ module tb_cio_timing;
     as_n = 1'b1; @(posedge clk);
   endtask
 
+  // One sample with the inputs moved 1 ns past the edge.
+  task automatic step();
+    @(posedge clk); #1;
+  endtask
+
   task automatic bus_write(input logic [7:0] reg_no, input logic [7:0] data);
     as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b0; ad_in = adr(reg_no); @(posedge clk);
     as_n = 1'b1;                                                            @(posedge clk);
@@ -283,6 +288,58 @@ module tb_cio_timing;
     ck(!int_n, "/INT follows on the /AS clock",
        "p.692 rows 22-25: every /INT delay is quoted in AS cycles, so /INT is an /AS-clocked latch, not a combinational encoder output",
        $sformatf("int_n=%0b with IP+IE+MIE set", int_n));
+
+    $display("");
+    $display("[7] one access per /AS: a further /DS without /AS is ignored (INFERRED)");
+    // A DMA master with no /AS strobes /DS after the CPU's last cycle; the
+    // data book does not say what the chip does.  Model: the select is
+    // spent at the first /DS rise.
+    #1;
+    as_n = 1'b0; intack_n = 1'b0; ad_in = 8'h00;                            step();
+    as_n = 1'b1;                                                            step();
+    ds_n = 1'b0;                                                            step();
+    #1; drove = ad_drive;
+    ds_n = 1'b1;                                                            step();
+    ds_n = 1'b0;                                                            step();
+    #1; drove_after = ad_drive;
+    ds_n = 1'b1; intack_n = 1'b1;                                           step();
+    ck(drove && !drove_after, "acknowledge drives the vector at the first /DS only",
+       "INFERRED (user 2026-11-07): one access per /AS",
+       $sformatf("ad_drive first /DS = %0b, second = %0b", drove, drove_after));
+    @(posedge clk);   // back to the bus tasks' phase
+    bus_read(REG_PA_CS, rd, drove);
+    ck((rd & 8'h20) != 8'h00, "the acknowledge set IUS",
+       "p.684: IUS is set by the acknowledge",
+       $sformatf("Port A CS = %02h", rd));
+
+    bus_write(REG_PA_PP, 8'h5A);
+    #1;
+    as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b0; ad_in = adr(REG_PA_PP); step();
+    as_n = 1'b1;                                                            step();
+    ds_n = 1'b0; ad_in = 8'h11;                                             step();
+    ds_n = 1'b1;                                                            step();
+    ds_n = 1'b0; ad_in = 8'h22;                                             step();
+    ds_n = 1'b1;                                                            step();
+    cs0_n = 1'b1; cs1 = 1'b0;                                               step();
+    @(posedge clk);   // back to the bus tasks' phase
+    bus_read(REG_PA_PP, rd, drove);
+    #1;
+    ck(rd == 8'h11, "a second /DS write without /AS is ignored",
+       "INFERRED (user 2026-11-07): one access per /AS",
+       $sformatf("PA pattern polarity = %02h, want 11", rd));
+
+    as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b1; ad_in = adr(REG_PA_PP); step();
+    as_n = 1'b1;                                                            step();
+    ds_n = 1'b0;                                                            step();
+    #1; rd = ad_out; drove = ad_drive;
+    ds_n = 1'b1;                                                            step();
+    ds_n = 1'b0;                                                            step();
+    #1; drove_after = ad_drive;
+    ds_n = 1'b1;                                                            step();
+    cs0_n = 1'b1; cs1 = 1'b0;                                               step();
+    ck(rd == 8'h11 && drove && !drove_after, "a second /DS read without /AS is ignored",
+       "INFERRED (user 2026-11-07): one access per /AS",
+       $sformatf("first read %02h drive %0b, second /DS drive %0b", rd, drove, drove_after));
 
     $display("");
     if (fails == 0) $display("RESULT PASS  tb_cio_timing  %0d checks", checks);

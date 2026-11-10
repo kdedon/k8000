@@ -12,13 +12,13 @@
 SCC_SRCS := rtl/k8030_scc/z8030_scc_channel.sv rtl/k8030_scc/z8030_scc.sv
 SCC_TB   := $(OBJ)/tb_scc/tb_scc
 
-.PHONY: gen-scc vectors-scc lint-scc build-scc test-scc scc ladder-scc test-scc-timing
+.PHONY: gen-scc vectors-scc lint-scc build-scc test-scc scc ladder-scc test-scc-timing test-scc-iack
 CHIP_GEN     += gen-scc
 CHIP_VECTORS += vectors-scc
 CHIP_LINT    += lint-scc
-CHIP_BUILD   += build-scc $(OBJ)/tb_scc_timing/tb_scc_timing
-CHIP_TEST    += test-scc test-scc-timing
-CHIP_TIMING_TEST += test-scc-timing
+CHIP_BUILD   += build-scc $(OBJ)/tb_scc_timing/tb_scc_timing $(OBJ)/tb_scc_iack/tb_scc_iack
+CHIP_TEST    += test-scc test-scc-timing test-scc-iack
+CHIP_TIMING_TEST += test-scc-timing test-scc-iack
 
 # Nothing is code-generated for the SCC (no ROM/PLA); vectors come from the test suite.
 gen-scc: require-z8000
@@ -64,3 +64,12 @@ $(OBJ)/tb_scc_timing/tb_scc_timing: $(SCC_SRCS) tb/k8030_scc/tb_scc_timing.sv
 
 test-scc-timing: $(OBJ)/tb_scc_timing/tb_scc_timing
 	@$(OBJ)/tb_scc_timing/tb_scc_timing | grep -v '\$$finish'
+
+# Daisy-chain acknowledge bench: two chips, the first's IEO into the second's IEI.
+$(OBJ)/tb_scc_iack/tb_scc_iack: $(SCC_SRCS) tb/k8030_scc/tb_scc_iack.sv
+	@mkdir -p $(dir $@)
+	$(VERILATOR) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_scc_iack \
+	  $(SCC_SRCS) tb/k8030_scc/tb_scc_iack.sv -o tb_scc_iack >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+test-scc-iack: $(OBJ)/tb_scc_iack/tb_scc_iack
+	@$(OBJ)/tb_scc_iack/tb_scc_iack | grep -v '\$$finish'

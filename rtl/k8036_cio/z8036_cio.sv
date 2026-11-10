@@ -546,11 +546,15 @@ module z8036_cio (
   logic       ad_drive_q;
 
   logic       hw_reset, ds_fall, ds_rise;
+  logic       ds_spent;       // a /DS rose since the last /AS: one access per /AS
   logic [5:0] cyc_reg;
   assign hw_reset = !as_n && !ds_n;
-  assign ds_fall  = ds_q && !ds_n && as_n;
+  assign ds_fall  = ds_q && !ds_n && as_n && !ds_spent;
   assign ds_rise  = !ds_q && ds_n;
   assign as_rise  = !as_q && as_n;
+  // The /INT latch as a /DS fall in the same sample as the /AS rise sees it.
+  logic int_latch_now;
+  assign int_latch_now = as_rise && !in_reset ? mie && iei && |src_elig_as : int_latch;
   // RJA picks AD5:AD0; otherwise AD6:AD1. AD7 is never decoded.
   assign cyc_reg  = regs[REG_MICR][MICR_RJA] ? as_ad[5:0] : as_ad[6:1];
 
@@ -882,14 +886,14 @@ module z8036_cio (
       if (as_rise) begin
         pm_s1[0] <= in_a;  pm_s2[0] <= pm_s1[0];
         pm_s1[1] <= in_b;  pm_s2[1] <= pm_s1[1];
-        if (!in_reset) int_latch <= mie && iei && |src_elig_as;  // Low IEI blocks the request
+        if (!in_reset) int_latch <= int_latch_now;  // Low IEI blocks the request
       end
 
       // The /DS rise floats AD before the /AS latch starts the next cycle:
-      // back to back they land in the same sample. The /CS0 latch holds
-      // until the next /AS, so a /DS with no new /AS reaches the same
-      // register.
+      // back to back they land in the same sample. A further /DS with no
+      // new /AS is ignored.
       if (ds_rise) ad_drive_q <= 1'b0;
+      ds_spent <= as_n && (ds_spent || ds_rise);
 
       if (!as_n) begin
         as_ad       <= ad_in;
@@ -899,8 +903,9 @@ module z8036_cio (
       end
 
       // Interrupt acknowledge: the highest eligible source goes under
-      // service and, unless NV is set, drives its vector.
-      if (ds_fall && !as_intack_n && iei && !in_reset && mie && src_any) begin
+      // service and, unless NV is set, drives its vector. Only a request
+      // latched at the acknowledge's /AS takes part.
+      if (ds_fall && !as_intack_n && iei && !in_reset && int_latch_now && src_any) begin
         case (src_idx)
           3'd0:    regs[REG_CT3CS][CS_IUS]        <= 1'b1;
           3'd1:    {regs[REG_PACS][CS_IUS], pm_frz[0]} <= 2'b11;
@@ -995,11 +1000,12 @@ module z8036_cio (
   assign ad_out   = ad_q;
   assign ad_drive = ad_drive_q;
 
-  // IEO falls with DLC, any source under service, or a pending source
-  // during an acknowledge cycle.
+  // IEO falls with DLC, any source under service, or a request latched at
+  // an acknowledge's /AS. A source that asks later waits for the next /AS:
+  // IEO in an acknowledge moves only with /AS and IEI.
   assign int_n    = !int_latch;
   assign ieo      = !regs[REG_MICR][6] && iei && !(|src_ius)
-                    && !(!as_intack_n && !in_reset && mie && src_any);
+                    && !(!as_intack_n && !in_reset && int_latch);
 
   // /WAIT asserts only while the CPU accesses the data register of a port
   // that is not ready; REQUEST is the registered hs_drive level.
