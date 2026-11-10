@@ -73,6 +73,7 @@ docs/                 STATUS.md (results), LADDER.md (build order and acceptance
                       DECISIONS.md, RESEARCH.md, VECTOR_FORMAT.md, TIMING_TESTS.md,
                       K800X_CPU_TESTS.md, K8010_MMU_TESTS.md, K8030_SCC_TESTS.md,
                       K8036_CIO_TESTS.md, K8070_FPU_TESTS.md
+                      theory/ (Theory of Operation, one per chip)
 quartus/              build.sh <unit>: fit one unit on Cyclone V at 48 MHz;
                       measure/ wraps it in boundary flops
 scripts/              run_k{800x_cpu,8010_mmu,8030_scc,8036_cio,8070_fpu,8070_cpu_fpu}_vectors.sh,
