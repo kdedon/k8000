@@ -1,6 +1,6 @@
 # Status
 
-`make test`, 2026-11-10. Update when a bench moves.
+`make test`, 2026-11-11. Update when a bench moves.
 
 | bench | command | result |
 |---|---|---|
@@ -8,14 +8,14 @@
 | decode ROM vs table | `make test-decode-table` | PASS, 1048576 checks |
 | program ROM vs table | `make test-mc-table` | PASS, 1053342 checks (434 forms, 206 programs) |
 | register file | `make test-regfile` | PASS, 4056 checks (port B on the byte and word cases) |
-| ALU | `make test-alu` | PASS, 444 of 444 vector files (89037 records, 10692 long as two word passes, 39 out-of-contract skipped) |
+| ALU | `make test-alu` | PASS, 446 of 446 vector files (89061 records, 10712 long as two word passes, 39 out-of-contract skipped) |
 | Serial unit (MULT/DIV/SHIFT) | `make test-serial` | PASS, 5182 operations (2,136 divides at the case 3/4 edges) |
 | Refresh prescaler | `make test-refresh` | PASS, 7 checks |
 | Instruction word capture | `make test-seq-words` | PASS, 17 cases (address register and words 1, 2) |
 | Program paths and repeats | `make test-seq-paths` | PASS, 20 cases (JP/RET cc taken and not taken, shift counts, LDM counts and lengths) |
 | Condition codes | `make test-cond` | PASS, 256 checks (16 codes, every C Z S P/V) |
-| CPU vectors | `make test-cpu` | 2752 pass, 0 fail, 0 skip (Z8001 1135, Z8002 1595, Z8003 7, Z8004 15) |
-| CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 2752 pass, 0 fail, 0 skip |
+| CPU vectors | `make test-cpu` | 2784 pass, 0 fail, 0 skip (Z8001 1151, Z8002 1611, Z8003 7, Z8004 15) |
+| CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 2784 pass, 0 fail, 0 skip |
 | CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks (I/O with /WAIT included) |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, 45 of 45 |
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
@@ -94,6 +94,10 @@ fit predates the LDA and static-shift changes.
 - SCC: /W//REQ pins not built; also not built: SDLC Loop in FM, the
   sync-mode loop, /SYNC as an output in SDLC and its input in async,
   parity in SDLC, Zero Count, the DTR/REQ request.
+- CPU undefined words: 4236 undefined first words take the privileged trap.
+  9Cxy runs as TESTL RRx and 7B0D as MREQ R0; the real CPU runs the rest as
+  some other instruction (CPU RefMan 1982 p.274, note 3), unknown which until
+  the silicon study (RESEARCH 10).
 - CPU cycle counts: 10 of 45 records are `approx` (a base plus per-step
   clocks).
 - CIO: 53 vectors are `X partial`; bidirectional port mode (11) is not built.
@@ -105,7 +109,7 @@ fit predates the LDA and static-shift changes.
 
 | device | files | notes |
 |---|---|---|
-| CPU | 2752 | none skipped: a snapshot restore replays the source CPU's records, a pending refresh is a bench poke |
+| CPU | 2784 | none skipped: a snapshot restore replays the source CPU's records, a pending refresh is a bench poke |
 | CPU cycle counts | 45 | 35 `exact`, 10 `approx` |
 | MMU | 77 | |
 | FPU | 52 pin + 20 Data Processor + 20 system + decode digests | 1 `X unsupported`; dp 15 MB |

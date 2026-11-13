@@ -1,0 +1,239 @@
+lo,hi,step,family,alias_rule,alias_mnemonic,words_short,words_long,confidence,privileged,alt_alias,rationale,decode
+0C03,0CF3,10,T1-single-operand-IR,w-2,"CPB IR,#imm",2,2,low,no,w-1 (NEGB),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+0C07,0CF7,10,T1-single-operand-IR,w-2,"LDB IR,#imm",2,2,low,no,w-1 (TSETB),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+0C09,0CF9,10,T1-single-operand-IR,(w&0xFEFF)|0x0100,"PUSH @R,#imm",2,2,low,no,w-1 (CLRB),"PUSH #imm exists only as word IR (0Dx9); byte bit or mode assumed ignored, imm word still fetched",trap
+0C0A,0CFA,10,T1-single-operand-IR,(w&0xFFF0)|0x8,CLRB IR,1,1,low,no,(w&0xFFF7) (NEGB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0C0B,0CFB,10,T1-single-operand-IR,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,2,2,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0C0C,0CFC,10,T1-single-operand-IR,(w&0xFFF0)|0x8,CLRB IR,1,1,low,no,(w&0xFFF7) (TESTB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0C0D,0CFD,10,T1-single-operand-IR,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,2,2,low,no,(w&0xFFF7) (LDB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0C0E,0CFE,10,T1-single-operand-IR,(w&0xFFF0)|0x8,CLRB IR,1,1,low,no,(w&0xFFF7) (TSETB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0C0F,0CFF,10,T1-single-operand-IR,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,2,2,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0D03,0DF3,10,T1-single-operand-IR,w-2,"CP IR,#imm",2,2,low,no,w-1 (NEG),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+0D07,0DF7,10,T1-single-operand-IR,w-2,"LD IR,#imm",2,2,low,no,w-1 (TSET),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+0D0A,0DFA,10,T1-single-operand-IR,(w&0xFFF0)|0x8,CLR IR,1,1,low,no,(w&0xFFF7) (NEG),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0D0B,0DFB,10,T1-single-operand-IR,(w&0xFFF0)|0x9,"PUSH @R,#imm",2,2,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0D0C,0DFC,10,T1-single-operand-IR,(w&0xFFF0)|0x8,CLR IR,1,1,low,no,(w&0xFFF7) (TEST),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0D0D,0DFD,10,T1-single-operand-IR,(w&0xFFF0)|0x9,"PUSH @R,#imm",2,2,low,no,(w&0xFFF7) (LD),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0D0E,0DFE,10,T1-single-operand-IR,(w&0xFFF0)|0x8,CLR IR,1,1,low,no,(w&0xFFF7) (TSET),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+0D0F,0DFF,10,T1-single-operand-IR,(w&0xFFF0)|0x9,"PUSH @R,#imm",2,2,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+1C00,1CF0,10,T2-long-IR,(w&0xFFF0)|0x8,TESTL IR,1,1,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+1C02,1CF2,10,T2-long-IR,(w&0xFFF0)|0x8,TESTL IR,1,1,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+1C03,1CF3,10,T2-long-IR,(w&0xFFF0)|0x1,"LDM R,IR",2,2,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+1C04,1CF4,10,T2-long-IR,(w&0xFFF0)|0x8,TESTL IR,1,1,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+1C05,1CF5,10,T2-long-IR,(w&0xFFF0)|0x1,"LDM R,IR",2,2,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+1C06,1CF6,10,T2-long-IR,(w&0xFFF0)|0x8,TESTL IR,1,1,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+1C07,1CF7,10,T2-long-IR,(w&0xFFF0)|0x1,"LDM R,IR",2,2,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+1C0A,1CFA,10,T2-long-IR,(w&0xFFF0)|0x8,TESTL IR,1,1,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+1C0B,1CFB,10,T2-long-IR,(w&0xFFF0)|0x9,"LDM IR,R",2,2,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+1C0C,1CFC,10,T2-long-IR,(w&0xFFF0)|0x8,TESTL IR,1,1,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+1C0D,1CFD,10,T2-long-IR,(w&0xFFF0)|0x9,"LDM IR,R",2,2,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+1C0E,1CFE,10,T2-long-IR,(w&0xFFF0)|0x8,TESTL IR,1,1,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+1C0F,1CFF,10,T2-long-IR,(w&0xFFF0)|0x9,"LDM IR,R",2,2,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+3600,36FF,1,row3-reserved,LDA IR analogue of 76,"LDA R,@R (=LD R,R)",1,1,low,no,"w+1 (LDL BA,RR) or w-2 (LDA BA), 2 words","36 is to 76 (LDA DA/X) as 0x (IR) is to 4x (DA/X); MAME: 3600 BPT, the privileged trap; 3601-36FF a reserved no-op stub, not followed",trap
+3800,38FF,1,row3-7-reserved,w+0x100,LDPS @R,1,1,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+3A0C,3AFC,10,T3-io,w-8,INB DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+3A0D,3AFD,10,T3-io,w-8,SINB DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+3A0E,3AFE,10,T3-io,w-8,OUTB DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+3A0F,3AFF,10,T3-io,w-8,SOUTB DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+3B0C,3BFC,10,T3-io,w-8,IN DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+3B0D,3BFD,10,T3-io,w-8,SIN DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+3B0E,3BFE,10,T3-io,w-8,OUT DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+3B0F,3BFF,10,T3-io,w-8,SOUT DA,2,2,medium,yes,,"bit3 is the block direction (0-3 inc, 8-B dec); direct forms 4-7 assumed not to decode it",trap
+4C03,4C03,1,T1-single-operand-DA,w-2,"CPB DA,#imm",3,4,low,no,w-1 (NEGB),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4C07,4C07,1,T1-single-operand-DA,w-2,"LDB DA,#imm",3,4,low,no,w-1 (TSETB),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4C09,4C09,1,T1-single-operand-DA,w-1,CLRB DA + imm word,3,4,low,no,w-1 (CLRB),"PUSH #imm exists only as word IR (0Dx9); byte bit or mode assumed ignored, imm word still fetched",trap
+4C0A,4C0A,1,T1-single-operand-DA,(w&0xFFF0)|0x8,CLRB DA,2,3,low,no,(w&0xFFF7) (NEGB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C0B,4C0B,1,T1-single-operand-DA,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C0C,4C0C,1,T1-single-operand-DA,(w&0xFFF0)|0x8,CLRB DA,2,3,low,no,(w&0xFFF7) (TESTB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C0D,4C0D,1,T1-single-operand-DA,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (LDB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C0E,4C0E,1,T1-single-operand-DA,(w&0xFFF0)|0x8,CLRB DA,2,3,low,no,(w&0xFFF7) (TSETB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C0F,4C0F,1,T1-single-operand-DA,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C13,4CF3,10,T1-single-operand-X,w-2,"CPB X,#imm",3,4,low,no,w-1 (NEGB),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4C17,4CF7,10,T1-single-operand-X,w-2,"LDB X,#imm",3,4,low,no,w-1 (TSETB),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4C19,4CF9,10,T1-single-operand-X,w-1,CLRB X + imm word,3,4,low,no,w-1 (CLRB),"PUSH #imm exists only as word IR (0Dx9); byte bit or mode assumed ignored, imm word still fetched",trap
+4C1A,4CFA,10,T1-single-operand-X,(w&0xFFF0)|0x8,CLRB X,2,3,low,no,(w&0xFFF7) (NEGB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C1B,4CFB,10,T1-single-operand-X,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C1C,4CFC,10,T1-single-operand-X,(w&0xFFF0)|0x8,CLRB X,2,3,low,no,(w&0xFFF7) (TESTB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C1D,4CFD,10,T1-single-operand-X,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (LDB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C1E,4CFE,10,T1-single-operand-X,(w&0xFFF0)|0x8,CLRB X,2,3,low,no,(w&0xFFF7) (TSETB),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4C1F,4CFF,10,T1-single-operand-X,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D03,4D03,1,T1-single-operand-DA,w-2,"CP DA,#imm",3,4,low,no,w-1 (NEG),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4D07,4D07,1,T1-single-operand-DA,w-2,"LD DA,#imm",3,4,low,no,w-1 (TSET),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4D09,4D09,1,T1-single-operand-DA,w-1,CLR DA + imm word,3,4,low,no,w-1 (CLR),"PUSH #imm exists only as word IR (0Dx9); byte bit or mode assumed ignored, imm word still fetched",trap
+4D0A,4D0A,1,T1-single-operand-DA,(w&0xFFF0)|0x8,CLR DA,2,3,low,no,(w&0xFFF7) (NEG),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D0B,4D0B,1,T1-single-operand-DA,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D0C,4D0C,1,T1-single-operand-DA,(w&0xFFF0)|0x8,CLR DA,2,3,low,no,(w&0xFFF7) (TEST),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D0D,4D0D,1,T1-single-operand-DA,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (LD),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D0E,4D0E,1,T1-single-operand-DA,(w&0xFFF0)|0x8,CLR DA,2,3,low,no,(w&0xFFF7) (TSET),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D0F,4D0F,1,T1-single-operand-DA,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D13,4DF3,10,T1-single-operand-X,w-2,"CP X,#imm",3,4,low,no,w-1 (NEG),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4D17,4DF7,10,T1-single-operand-X,w-2,"LD X,#imm",3,4,low,no,w-1 (TSET),"bit0 marks an immediate word (CP 1, LD 5, PUSH 9); bit1 assumed unused there",trap
+4D19,4DF9,10,T1-single-operand-X,w-1,CLR X + imm word,3,4,low,no,w-1 (CLR),"PUSH #imm exists only as word IR (0Dx9); byte bit or mode assumed ignored, imm word still fetched",trap
+4D1A,4DFA,10,T1-single-operand-X,(w&0xFFF0)|0x8,CLR X,2,3,low,no,(w&0xFFF7) (NEG),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D1B,4DFB,10,T1-single-operand-X,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D1C,4DFC,10,T1-single-operand-X,(w&0xFFF0)|0x8,CLR X,2,3,low,no,(w&0xFFF7) (TEST),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D1D,4DFD,10,T1-single-operand-X,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (LD),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D1E,4DFE,10,T1-single-operand-X,(w&0xFFF0)|0x8,CLR X,2,3,low,no,(w&0xFFF7) (TSET),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+4D1F,4DFF,10,T1-single-operand-X,(w&0xFFF0)|0x9,no defined form (x9 slot) + imm word,3,4,low,no,(w&0xFFF7) (reserved),bit3 set: only CLR 8 / PUSH 9 defined; bits 2:1 assumed ignored,trap
+5C00,5C00,1,T2-long-DA,(w&0xFFF0)|0x8,TESTL DA,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C02,5C02,1,T2-long-DA,(w&0xFFF0)|0x8,TESTL DA,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C03,5C03,1,T2-long-DA,(w&0xFFF0)|0x1,"LDM R,DA",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C04,5C04,1,T2-long-DA,(w&0xFFF0)|0x8,TESTL DA,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C05,5C05,1,T2-long-DA,(w&0xFFF0)|0x1,"LDM R,DA",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C06,5C06,1,T2-long-DA,(w&0xFFF0)|0x8,TESTL DA,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C07,5C07,1,T2-long-DA,(w&0xFFF0)|0x1,"LDM R,DA",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C0A,5C0A,1,T2-long-DA,(w&0xFFF0)|0x8,TESTL DA,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C0B,5C0B,1,T2-long-DA,(w&0xFFF0)|0x9,"LDM DA,R",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C0C,5C0C,1,T2-long-DA,(w&0xFFF0)|0x8,TESTL DA,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C0D,5C0D,1,T2-long-DA,(w&0xFFF0)|0x9,"LDM DA,R",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C0E,5C0E,1,T2-long-DA,(w&0xFFF0)|0x8,TESTL DA,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C0F,5C0F,1,T2-long-DA,(w&0xFFF0)|0x9,"LDM DA,R",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C10,5CF0,10,T2-long-X,(w&0xFFF0)|0x8,TESTL X,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C12,5CF2,10,T2-long-X,(w&0xFFF0)|0x8,TESTL X,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C13,5CF3,10,T2-long-X,(w&0xFFF0)|0x1,"LDM R,X",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C14,5CF4,10,T2-long-X,(w&0xFFF0)|0x8,TESTL X,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C15,5CF5,10,T2-long-X,(w&0xFFF0)|0x1,"LDM R,X",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C16,5CF6,10,T2-long-X,(w&0xFFF0)|0x8,TESTL X,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C17,5CF7,10,T2-long-X,(w&0xFFF0)|0x1,"LDM R,X",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C1A,5CFA,10,T2-long-X,(w&0xFFF0)|0x8,TESTL X,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C1B,5CFB,10,T2-long-X,(w&0xFFF0)|0x9,"LDM X,R",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C1C,5CFC,10,T2-long-X,(w&0xFFF0)|0x8,TESTL X,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C1D,5CFD,10,T2-long-X,(w&0xFFF0)|0x9,"LDM X,R",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+5C1E,5CFE,10,T2-long-X,(w&0xFFF0)|0x8,TESTL X,2,3,low,no,,even low nibble: only TESTL 8 defined; bits 3:1 assumed ignored,trap
+5C1F,5CFF,10,T2-long-X,(w&0xFFF0)|0x9,"LDM X,R",3,4,low,no,,"odd low nibble is LDM (1 load, 9 store, bit3 = direction); bits 2:1 assumed ignored; second word is the register/count word",trap
+7800,7800,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7801,7801,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7802,7802,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7803,7803,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7804,7804,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7805,7805,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7806,7806,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7807,7807,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7808,7808,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7809,7809,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+780A,780A,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+780B,780B,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+780C,780C,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+780D,780D,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+780E,780E,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+780F,780F,1,row3-7-reserved,w+0x100,LDPS DA,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7810,78F0,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7811,78F1,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7812,78F2,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7813,78F3,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7814,78F4,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7815,78F5,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7816,78F6,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7817,78F7,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7818,78F8,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7819,78F9,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+781A,78FA,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+781B,78FB,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+781C,78FC,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+781D,78FD,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+781E,78FE,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+781F,78FF,10,row3-7-reserved,w+0x100,LDPS X,2,3,low,yes,,"beside LDPS (39 IR, 79 DA/X); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+7B01,7BF1,10,T7-system,0x7B00,IRET,1,1,low,yes,,low nibble 1-7: bits 2:0 assumed ignored,trap
+7B02,7BF2,10,T7-system,0x7B00,IRET,1,1,low,yes,,low nibble 1-7: bits 2:0 assumed ignored,trap
+7B03,7BF3,10,T7-system,0x7B00,IRET,1,1,low,yes,,low nibble 1-7: bits 2:0 assumed ignored,trap
+7B04,7BF4,10,T7-system,0x7B00,IRET,1,1,low,yes,,low nibble 1-7: bits 2:0 assumed ignored,trap
+7B05,7BF5,10,T7-system,0x7B00,IRET,1,1,low,yes,,low nibble 1-7: bits 2:0 assumed ignored,trap
+7B06,7BF6,10,T7-system,0x7B00,IRET,1,1,low,yes,,low nibble 1-7: bits 2:0 assumed ignored,trap
+7B07,7BF7,10,T7-system,0x7B00,IRET,1,1,low,yes,,low nibble 1-7: bits 2:0 assumed ignored,trap
+7B0B,7BFB,10,T7-system,(w&0xFFF0)|0xA,MBIT,1,1,low,yes,,nearest defined low nibble,trap
+7B0C,7BFC,10,T7-system,(w&0xFFF0)|0x8,MSET,1,1,low,yes,,nearest defined low nibble,trap
+7B0D,7B0D,1,T7-system,w,MREQ R0,1,1,documented,yes,,"defined, not an alias: CPU RefMan 1982 p.138 example is MREQ R0 (dddd field); MAME runs it",MREQ R0
+7B0E,7BFE,10,T7-system,(w&0xFFF0)|0xA,MBIT,1,1,low,yes,,nearest defined low nibble,trap
+7B0F,7BFF,10,T7-system,(w&0xFFF0)|0xD,MREQ,1,1,low,yes,,nearest defined low nibble,trap
+7B10,7BF0,10,T7-system,0x7B00,IRET,1,1,medium,yes,,IRET has no register field; bits 7:4 assumed ignored,trap
+7B18,7BF8,10,T7-system,0x7B08,MSET,1,1,medium,yes,,no register field; bits 7:4 assumed ignored,trap
+7B19,7BF9,10,T7-system,0x7B09,MRES,1,1,medium,yes,,no register field; bits 7:4 assumed ignored,trap
+7B1A,7BFA,10,T7-system,0x7B0A,MBIT,1,1,medium,yes,,no register field; bits 7:4 assumed ignored,trap
+7E00,7EFF,1,row7-reserved,w+0x100,SC #,1,1,low,no (system call),"w-0x200 (DI/EI, privileged)","beside SC (7F); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+8C03,8CF3,10,T1-register,w|0x0100,RESFLG,1,1,low,no,"(w&0xFFF0)|1 (LDCTLB R,FLAGS)",odd low nibble in register mode is the flag-operation group (8D: SETFLG/RESFLG/COMFLG/NOP); byte bit assumed ignored,trap
+8C05,8CF5,10,T1-register,w|0x0100,COMFLG,1,1,low,no,"(w&0xFFF0)|1 (LDCTLB R,FLAGS)",odd low nibble in register mode is the flag-operation group (8D: SETFLG/RESFLG/COMFLG/NOP); byte bit assumed ignored,trap
+8C07,8CF7,10,T1-register,w|0x0100,NOP,1,1,low,no,"(w&0xFFF0)|1 (LDCTLB R,FLAGS)",odd low nibble in register mode is the flag-operation group (8D: SETFLG/RESFLG/COMFLG/NOP); byte bit assumed ignored,trap
+8C0A,8CFA,10,T1-register,(w&0xFFF0)|0x8,CLRB,1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8C0B,8CFB,10,T1-register,(w&0xFFF0)|0x9,"LDCTLB FLAGS,R",1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8C0C,8CFC,10,T1-register,(w&0xFFF0)|0x8,CLRB,1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8C0D,8CFD,10,T1-register,(w&0xFFF0)|0x9,"LDCTLB FLAGS,R",1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8C0E,8CFE,10,T1-register,(w&0xFFF0)|0x8,CLRB,1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8C0F,8CFF,10,T1-register,(w&0xFFF0)|0x9,"LDCTLB FLAGS,R",1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8D09,8DF9,10,T1-register,w&0xFEFF,"LDCTLB FLAGS,Rb",1,1,low,no,w-1 (CLR),"8Cx9 is LDCTLB FLAGS,R; word bit assumed ignored",trap
+8D0A,8DFA,10,T1-register,(w&0xFFF0)|0x8,CLR,1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8D0B,8DFB,10,T1-register,(w&0xFFF0)|0x9,"LDCTLB FLAGS,Rb",1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8D0C,8DFC,10,T1-register,(w&0xFFF0)|0x8,CLR,1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8D0D,8DFD,10,T1-register,(w&0xFFF0)|0x9,"LDCTLB FLAGS,Rb",1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8D0E,8DFE,10,T1-register,(w&0xFFF0)|0x8,CLR,1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+8D0F,8DFF,10,T1-register,(w&0xFFF0)|0x9,"LDCTLB FLAGS,Rb",1,1,low,no,(w&0xFFF7),bit3 set: only CLR 8 / x9 defined; bits 2:1 assumed ignored,trap
+9C00,9CF0,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,field,no,,Olivetti M20 BASIC runs 9C20/9C40/9C80 as TESTL in normal mode; MAME runs 9Cx0 as TESTL,TESTL RR
+9C01,9CF1,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C02,9CF2,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C03,9CF3,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C04,9CF4,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C05,9CF5,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C06,9CF6,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C07,9CF7,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C09,9CF9,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C0A,9CFA,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C0B,9CFB,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C0C,9CFC,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C0D,9CFD,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C0E,9CFE,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9C0F,9CFF,10,T2-long-register,(w&0xFFF0)|0x8,TESTL RR,1,1,low,no,,"low nibble not decoded, as 9Cx0 (Olivetti M20 BASIC); MAME rejects this nibble",TESTL RR
+9D00,9DFF,1,row9-store-register,swap fields of 94 (RRr<-RRn),"LDL RR(7:4),RR(3:0)",1,1,low,no,trap,"register-mode slot of LDL store (1D IR, 5D DA/X): bits 7:4 address field read as the destination pair; MAME runs it as a reserved no-op stub, not followed",trap
+9F00,9FFF,1,row9-reserved,w-0x100,RET cc,1,1,low,no,CALL @R analogue of 1F/5F,"beside RET (9E); bit0 assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+B101,B1F1,10,B1-extend,(w&0xFFF0)|0x7,EXTSL RQ,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit0 assumed to select long",trap
+B102,B1F2,10,B1-extend,w&0xFFF0,EXTSB R,1,1,low,no,,EXTSB 0: bits 2:1 assumed ignored,trap
+B103,B1F3,10,B1-extend,(w&0xFFF0)|0x7,EXTSL RQ,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit0 assumed to select long",trap
+B104,B1F4,10,B1-extend,w&0xFFF0,EXTSB R,1,1,low,no,,EXTSB 0: bits 2:1 assumed ignored,trap
+B105,B1F5,10,B1-extend,(w&0xFFF0)|0x7,EXTSL RQ,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit0 assumed to select long",trap
+B106,B1F6,10,B1-extend,w&0xFFF0,EXTSB R,1,1,low,no,,EXTSB 0: bits 2:1 assumed ignored,trap
+B108,B1F8,10,B1-extend,(w&0xFFF0)|0xA,EXTS RR,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit3 assumed to select word",trap
+B109,B1F9,10,B1-extend,(w&0xFFF0)|0xA,EXTS RR,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit3 assumed to select word",trap
+B10B,B1FB,10,B1-extend,(w&0xFFF0)|0xA,EXTS RR,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit3 assumed to select word",trap
+B10C,B1FC,10,B1-extend,(w&0xFFF0)|0xA,EXTS RR,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit3 assumed to select word",trap
+B10D,B1FD,10,B1-extend,(w&0xFFF0)|0xA,EXTS RR,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit3 assumed to select word",trap
+B10E,B1FE,10,B1-extend,(w&0xFFF0)|0xA,EXTS RR,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit3 assumed to select word",trap
+B10F,B1FF,10,B1-extend,(w&0xFFF0)|0xA,EXTS RR,1,1,low,no,,"EXTSB 0, EXTSL 7, EXTS A: bit3 assumed to select word",trap
+B205,B2F5,10,T4-shift,w|0x0100,SLLL/SRLL RR,2,2,low,no,w&0xFFFB (byte shift),"bit2 is long in B3 (5,7,D,F); byte bit assumed ignored for long forms; both readings are 2 words",trap
+B207,B2F7,10,T4-shift,w|0x0100,SDLL RR,2,2,low,no,w&0xFFFB (byte shift),"bit2 is long in B3 (5,7,D,F); byte bit assumed ignored for long forms; both readings are 2 words",trap
+B20D,B2FD,10,T4-shift,w|0x0100,SLAL/SRAL RR,2,2,low,no,w&0xFFFB (byte shift),"bit2 is long in B3 (5,7,D,F); byte bit assumed ignored for long forms; both readings are 2 words",trap
+B20F,B2FF,10,T4-shift,w|0x0100,SDAL RR,2,2,low,no,w&0xFFFB (byte shift),"bit2 is long in B3 (5,7,D,F); byte bit assumed ignored for long forms; both readings are 2 words",trap
+B801,B8F1,10,T5-translate,(w&0xFEF0)|0x0,TRIB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B803,B8F3,10,T5-translate,(w&0xFEF0)|0x2,TRTIB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B805,B8F5,10,T5-translate,(w&0xFEF0)|0x4,TRIRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B807,B8F7,10,T5-translate,(w&0xFEF0)|0x6,TRTIRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B809,B8F9,10,T5-translate,(w&0xFEF0)|0x8,TRDB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B80B,B8FB,10,T5-translate,(w&0xFEF0)|0xA,TRTDB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B80D,B8FD,10,T5-translate,(w&0xFEF0)|0xC,TRDRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B80F,B8FF,10,T5-translate,(w&0xFEF0)|0xE,TRTDRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B900,B9F0,10,T5-translate,(w&0xFEF0)|0x0,TRIB,2,2,low,no,BA-style transfer (LDI/LDD),"only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored; MAME runs it as a reserved no-op stub, not followed",trap
+B901,B9F1,10,T5-translate,(w&0xFEF0)|0x0,TRIB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B902,B9F2,10,T5-translate,(w&0xFEF0)|0x2,TRTIB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B903,B9F3,10,T5-translate,(w&0xFEF0)|0x2,TRTIB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B904,B9F4,10,T5-translate,(w&0xFEF0)|0x4,TRIRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B905,B9F5,10,T5-translate,(w&0xFEF0)|0x4,TRIRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B906,B9F6,10,T5-translate,(w&0xFEF0)|0x6,TRTIRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B907,B9F7,10,T5-translate,(w&0xFEF0)|0x6,TRTIRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B908,B9F8,10,T5-translate,(w&0xFEF0)|0x8,TRDB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B909,B9F9,10,T5-translate,(w&0xFEF0)|0x8,TRDB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B90A,B9FA,10,T5-translate,(w&0xFEF0)|0xA,TRTDB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B90B,B9FB,10,T5-translate,(w&0xFEF0)|0xA,TRTDB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B90C,B9FC,10,T5-translate,(w&0xFEF0)|0xC,TRDRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B90D,B9FD,10,T5-translate,(w&0xFEF0)|0xC,TRDRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B90E,B9FE,10,T5-translate,(w&0xFEF0)|0xE,TRTDRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+B90F,B9FF,10,T5-translate,(w&0xFEF0)|0xE,TRTDRB,2,2,low,no,BA-style transfer (LDI/LDD),only even low nibbles and byte (B8) defined; bit0 and word bit assumed ignored,trap
+BA03,BAF3,10,T6-block,(w&0xFFF0)|0x1,LDIB/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BA05,BAF5,10,T6-block,(w&0xFFF0)|0x1,LDIB/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BA07,BAF7,10,T6-block,(w&0xFFF0)|0x1,LDIB/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BA0B,BAFB,10,T6-block,(w&0xFFF0)|0x9,LDDB/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BA0D,BAFD,10,T6-block,(w&0xFFF0)|0x9,LDDB/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BA0F,BAFF,10,T6-block,(w&0xFFF0)|0x9,LDDB/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BB03,BBF3,10,T6-block,(w&0xFFF0)|0x1,LDI/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BB05,BBF5,10,T6-block,(w&0xFFF0)|0x1,LDI/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BB07,BBF7,10,T6-block,(w&0xFFF0)|0x1,LDI/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BB0B,BBFB,10,T6-block,(w&0xFFF0)|0x9,LDD/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BB0D,BBFD,10,T6-block,(w&0xFFF0)|0x9,LDD/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BB0F,BBFF,10,T6-block,(w&0xFFF0)|0x9,LDD/R,2,2,low,no,w&0xFFFE (compare form),"odd low nibble defined only at 1 (LDI) and 9 (LDD), repeat in the second word; bits 2:1 assumed ignored",trap
+BF00,BFFF,1,rowB-reserved,w-0x100,RLDB,1,1,low,no,w-2 (LDK),"beside RLDB (BE); word form absent; MAME runs it as a reserved no-op stub, not followed",trap

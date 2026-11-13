@@ -932,8 +932,8 @@ module z8000_mc_index_gen
           8'h08: form = 9'd288;
           8'h09: form = 9'd289;
           8'h0A: form = 9'd290;
-          8'h1D, 8'h2D, 8'h3D, 8'h4D, 8'h5D, 8'h6D, 8'h7D, 8'h8D, 8'h9D, 8'hAD, 8'hBD, 8'hCD,
-          8'hDD, 8'hED, 8'hFD: form = 9'd291;
+          8'h0D, 8'h1D, 8'h2D, 8'h3D, 8'h4D, 8'h5D, 8'h6D, 8'h7D, 8'h8D, 8'h9D, 8'hAD, 8'hBD,
+          8'hCD, 8'hDD, 8'hED, 8'hFD: form = 9'd291;
           default: form = 9'd0;
         endcase
       end
@@ -1038,13 +1038,7 @@ module z8000_mc_index_gen
       8'h99: form = 9'd336;
       8'h9A: form = 9'd337;
       8'h9B: form = 9'd338;
-      8'h9C: begin
-        unique case (w0[7:0])
-          8'h08, 8'h18, 8'h28, 8'h38, 8'h48, 8'h58, 8'h68, 8'h78, 8'h88, 8'h98, 8'hA8, 8'hB8,
-          8'hC8, 8'hD8, 8'hE8, 8'hF8: form = 9'd339;
-          default: form = 9'd0;
-        endcase
-      end
+      8'h9C: form = 9'd339;
       8'h9E: form = 9'd340;
       8'hA0: form = 9'd341;
       8'hA1: form = 9'd342;

@@ -429,3 +429,71 @@ Heninger (Zilog), filed 1984-08-27, granted 1987-03-03. PAT = its PDF page. It n
 - SC (explicit, FIG. 8 PAT p.9): every field and bit position as DB85 (9.3), OVRLP at 19:18.
 - Interface control 335: "preferably constructed of a programmable logic array" stepping the interface (col 14 PAT p.21). FIG. 9: word 1 bits 1:0 ID, word 2 bits 15:4 "EPU instruction", 3:0 data length; no operation field.
 - Timing (FIGS. 12-16 PAT p.12-14, Z80,000 bus): CPU-EPU transfers are one /AS with a /DS per word; not the Z8000's one 1110 cycle per word. FIG. 15 draws EPU store data from the clock fall in mid-T2, after a gap following the address, about a clock before /DS falls: neither the /AS rise nor the /DS fall (interpretation; Z80,000 only).
+
+## 10. Undefined opcodes on silicon
+
+The RTL traps every undefined first word but the two families in 10.4 (DECISIONS). The chip instead runs each such word as "some other correctly encoded instruction" or traps (CPU RefMan 1982 PDF p.283, printed 274, Note 3). There are 4236 such words in 827 decode-table ranges; `undefined_opcodes.csv` keeps all 4477 from before 10.4. Which instruction each runs is unknown; this section is the plan to measure it.
+
+### 10.1 Predictions
+
+`undefined_opcodes.csv` lists every undefined word by row: `lo`, `hi`, `step` (1, or 10 for one low nibble across the register field), `family`, `alias_rule` (expression in `w`), `alias_mnemonic`, `words_short`/`words_long` (length with a nonsegmented or short segmented address, and with a long one), `confidence` (`documented` and `field` where a manual or shipped code settles it), `privileged`, `alt_alias`, `rationale`, `decode` (what the RTL runs: the alias, or trap). Opcode-map sources: PDF p.283 (map), p.284-285 (Tables 1-7).
+
+Main readings, all guesses from the map's bit layout:
+
+| family | undefined | predicted alias | confidence |
+|---|---|---|---|
+| 3A/3B low nibble C-F | 128 | IN/SIN/OUT/SOUT DA (low nibble - 8): bit 3 is the block direction, which the direct forms lack | medium |
+| 7B upper nibble ≠ 0, low 0/8/9/A | 60 | IRET, MSET, MRES, MBIT: no register field | medium |
+| 0C/0D/4C/4D x3, x7 | | CP #imm, LD #imm (bit 0 marks an immediate word) | low |
+| 0C/0D/4C/4D, 8C/8D xA-xF | | low nibble & 9: CLR or the x9 form | low |
+| 8C x3/x5/x7 | | RESFLG/COMFLG/NOP (8D's flag group, byte bit ignored) | low |
+| 1C/5C/9C | | odd: LDM (bit 3 direction); even: TESTL | low |
+| B2 x5/x7/xD/xF | | B3's long shift; else the byte shift; 2 words either way | low |
+| B8 odd, B9 | | the even translate form | low |
+| BA/BB x3/x5/x7/xB/xD/xF | | LDI/LDD (low nibble & 9) | low |
+| B1 | | EXTSB/EXTS/EXTSL by bit 3 and bit 0 | low |
+| 36, 38/78, 7E, 9D, 9F, BF | 256 each | LDA @R, LDPS, SC, LDL RR,RR (fields swapped), RET cc, RLDB | low |
+
+Totals: 188 words medium, 4289 low; 877 predicted privileged (trap in normal mode whatever they alias to), 256 (7E) a possible system call.
+
+Not in the 842 ranges but in Note 3's scope: IR forms with R0 as the address register, reserved control registers of LDCTL (7D low nibble 0, 1, 8, 9), and the second-word sub-decoders' unused nibbles. The same harness covers them.
+
+### 10.2 Harness
+
+One test runs one candidate word `W`:
+
+```
+  load R0-R15 (pointers into scratch), FCW flags
+  W
+  +2:  JR L1      each landing records its offset, then
+  +4:  JR L2      dumps registers and flags
+  +6:  JR L3
+  +8:  JR L4
+  scratch: known pattern, before and after
+```
+
+- Registers: every register a distinct value; registers an alias may use as an address point into a scratch area, each at a different offset, so a write shows where it went. The stack holds the address of a landing, so a RET-like alias is caught.
+- Length: the landing reached gives the words consumed. The landing words double as operands (immediate, address, count); a second run with the operand words set to a scratch address separates "faulted on a bad address" from "trapped".
+- Result: the register and flag diff, the scratch diff, and the landing.
+- Traps: every PSA entry (privileged, system call, segment, extended instruction, NMI) points at a handler that stores the identifier, FCW and PC it was given. A trap's PC gives the length for a trapping alias.
+- Runaway: a timer interrupt ends any test that neither lands nor traps (repeat forms with large counts, a jump).
+- Clocks: a counter/timer gated across `W`, against a control of the same frame with a known instruction. Optional logic analyzer on ST3-ST0, /AS, /DS, R/W, B/W: the status sequence names the cycle kinds (memory, I/O, internal, refresh) directly.
+- Controls: run known instructions through the same frame first; each must give its documented length, diff and clocks.
+
+Two passes:
+
+1. Normal mode, all words. Words that trap privileged here are listed for pass 2.
+2. System mode, that list only, run from a standalone image with its own PSA. Aliases to I/O, MREQ, LDPS, IRET, HALT or DI/EI act on the machine; I/O ports point at absent or harmless addresses, and LDPS/IRET get a valid status block on the stack and at the operand.
+
+### 10.3 From results to rows
+
+Per word: the alias is the known instruction whose length, register/flag/memory diff, trap and clock count match. Rows of `undefined_opcodes.csv` then gain `observed_alias`, `observed_words`, `observed_clocks`, and `confidence` becomes `measured`; a row splits wherever words within it disagree. The decoder then maps each row to its alias's control word.
+
+### 10.4 Decoded so far
+
+Checked against MAME's Z8000 opcode table (`src/devices/cpu/z8000/z8000tbl.hxx`): 1825 of the 4477 words run there. Two families are followed, each by a decode bit left untested, not an added entry:
+
+- 9Cxy, TESTL RRx for every y (240 words): Olivetti M20 BASIC runs 9C20, 9C40, 9C80 in normal mode before a flag branch; MAME runs 9Cx0 as TESTL (z8000tbl.hxx:408).
+- 7B0D, MREQ R0: defined, not an alias; the RefMan's own MREQ example is `MREQ R0` (PDF p.147, printed 138); MAME z8000tbl.hxx:345.
+
+The other 1808 keep trapping: 3600 is BPT in MAME, the same privileged trap; 3601-36FF, 38xx, 78xx, 7Exx, 9Dxx, 9Fxx, B9x0 and BFxx run there as `rsvdNN` no-op stubs, placeholders rather than silicon readings. MAME rejects 2652: 224 of them (9Cxy, y not 0 or 8) now run as TESTL, the other 2428 trap. 4236 undefined words remain.

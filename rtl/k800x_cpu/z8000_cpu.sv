@@ -154,7 +154,8 @@ module z8000_cpu
   logic [4:0] exc_vec;
   ctrl_word_t ctrl_k;
   assign trap_epa = ctrl.valid && ctrl.exec == CLS_EPU && !fcw[13];
-  assign trap_if1 = (ctrl.valid && ctrl.priv && !fcw[14]) || trap_epa;
+  // An undefined word takes the privileged trap in either mode.
+  assign trap_if1 = !ctrl.valid || (ctrl.priv && !fcw[14]) || trap_epa;
   assign ctrl_k   = kill_nx ? '0 : ctrl;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) ctrl_q <= '0;

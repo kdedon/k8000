@@ -174,7 +174,7 @@ module z8000_sequencer
     SEQ_FETCH,      // request the first IF1
     SEQ_IF1,        // IF1 in flight, its word not yet in
     SEQ_PROG,       // the instruction's program runs
-    SEQ_STOP        // an undefined word, or HALT in normal mode
+    SEQ_STOP        // a decoded word execute does not run
   } seq_state_e;
 
   typedef enum logic [1:0] {
