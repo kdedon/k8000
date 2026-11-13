@@ -156,9 +156,10 @@ with IEI Low keeps /INT High, and a request arriving after an acknowledge's
 
 `tb_fpu_timing.sv` (Z8070, 1985 DB printed pp.531-558): reset and idle
 pins, the IF1 and word-2 snoop, transfer drive windows, the store wait,
-/BSY at the STOP samples in both overlap modes, the acknowledge (IEO,
-vector window, SV, NV, DLC), Interface Processor state recovery and the
-lost-word count.
+/BSY at the STOP samples in both overlap modes, queued operations, FRDIV,
+FRVSUB, FCPF and FCPFX, and /ABORT with CLK.I and CLK.D at the master clock, the
+acknowledge (IEO, vector window, SV, NV, DLC), Interface Processor state
+recovery and the lost-word count.
 
 ### Peripheral cycle accuracy
 

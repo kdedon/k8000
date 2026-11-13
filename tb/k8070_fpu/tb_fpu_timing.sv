@@ -43,6 +43,20 @@ module tb_fpu_timing;
     .id(id), .opt(opt)
   );
 
+  // Fast-clock probes: a promotion in the done clock seen, the Data
+  // Processor starts counted, /ABORT Low for the clock the promoted start
+  // waits in (ab_at 1) or is given in (ab_at 2).
+  int unsigned npwait, pw0;
+  int unsigned nstart, ns0;
+  int ab_at = 0;
+  always @(negedge clk) begin
+    if (ab_at == 1)      abort_n = !dut.u_ip.pwait_q;
+    else if (ab_at == 2) abort_n = !dut.u_ip.pstart_q;
+    #1;
+    if (dut.u_ip.pwait_q) npwait = npwait + 1;
+    if (dut.u_ip.dp_start) nstart = nstart + 1;
+  end
+
   int unsigned checks, fails;
   task automatic ck(input bit ok, input string name, input string cite, input string detail);
     checks = checks + 1;
@@ -57,8 +71,15 @@ module tb_fpu_timing;
 
   // One CLK.I period: rise, then fall; CLK.D tied to CLK.I. bsy_fall is
   // /BSY in the master clock of the fall, where the CPU samples STOP.
+  // fast: one master clock with every pulse High, as a board that clocks
+  // CLK.I and CLK.D at the master clock.
   logic bsy_fall;
+  bit   fast = 1'b0;
   task automatic clk_cycle();
+    if (fast) begin
+      clki_rise = 1'b1; clki_fall = 1'b1; clkd_rise = 1'b1; @(posedge clk); #1 bsy_fall = bsy_n;
+      return;
+    end
     clki_rise = 1'b1; clkd_rise = 1'b1; @(posedge clk);
     clki_rise = 1'b0; clkd_rise = 1'b0; @(posedge clk);
     clki_fall = 1'b1;                   @(posedge clk); #1 bsy_fall = bsy_n;
@@ -453,6 +474,136 @@ module tb_fpu_timing;
     #1;
     ck(dut.u_dp.f_mem[2] == FIVE, "the queued load wrote F2", "p.535 instruction 2 queued",
        $sformatf("F2 %020h", dut.u_dp.f_mem[2]));
+
+    // CLK.I and CLK.D every master clock: a queued instruction starts in
+    // its predecessor's done clock and its Data Processor reads in the next.
+    reset_with_sc(SC_INTERMEDIATE);
+    fast = 1'b1;
+    dut.u_dp.f_mem[1] = 80'h4000_8000_0000_0000_0000;  // 2.0
+    dut.u_dp.f_mem[2] = ONE;
+    bus_cycle(ST_IF1, 16'h8E14, 16'h8E14);              // FMUL F1,F1
+    bus_cycle(ST_PROG, 16'h41B0, 16'h41B0);
+    bus_cycle(ST_IF1, 16'h8E24, 16'h8E24);              // FADD F2,F1, queued
+    bus_cycle(ST_PROG, 16'h4180, 16'h4180);
+    repeat (200) clk_cycle();
+    ck(dut.u_dp.f_mem[2] == FIVE, "fast clocks: the queued FADD reads F2, then the F1 FMUL wrote",
+       "p.535 execution appears linear", $sformatf("F2 %020h", dut.u_dp.f_mem[2]));
+    reset_with_sc(SC_INTERMEDIATE);
+    dut.u_dp.f_mem[3] = 80'h0;
+    bus_cycle(ST_IF1, IF1_LD_F2_MEM, IF1_LD_F2_MEM);    // FLD F3, double 1.0
+    bus_cycle(ST_PROG, 16'h8303, 16'h8303);
+    bus_cycle(ST_EDATA, 16'h3FF0, 16'h3FF0);
+    repeat (3) bus_cycle(ST_EDATA, 16'h0000, 16'h0000);
+    bus_cycle(ST_IF1, IF1_LD_F2_MEM, IF1_LD_F2_MEM);    // FLD F4, double 3.0, queued
+    bus_cycle(ST_PROG, 16'h8403, 16'h8403);
+    bus_cycle(ST_EDATA, 16'h4008, 16'h4008);
+    repeat (3) bus_cycle(ST_EDATA, 16'h0000, 16'h0000);
+    bus_cycle(ST_IF1, 16'h8E34, 16'h8E34);              // FDIV F3,F4, queued
+    bus_cycle(ST_PROG, 16'h44A0, 16'h44A0);
+    repeat (200) clk_cycle();
+    ck(dut.u_dp.f_mem[3] == 80'h3FFD_AAAA_AAAA_AAAA_AAAB,
+       "fast clocks: the queued FDIV reads F3, then the F4 the queued load wrote",
+       "p.535 execution appears linear", $sformatf("F3 %020h", dut.u_dp.f_mem[3]));
+    reset_with_sc(SC_INTERMEDIATE);
+    dut.u_dp.f_mem[1] = 80'h4000_8000_0000_0000_0000;  // 2.0
+    dut.u_dp.f_mem[2] = ONE;
+    bus_cycle(ST_IF1, 16'h8E14, 16'h8E14);              // FMUL F1,F1
+    bus_cycle(ST_PROG, 16'h41B0, 16'h41B0);
+    bus_cycle(ST_IF1, IF1_LD_F2_MEM, IF1_LD_F2_MEM);    // FLD F2, single 5.0, queued
+    bus_cycle(ST_PROG, W2_FLD_F2_MEM, W2_FLD_F2_MEM);
+    bus_cycle(ST_EDATA, 16'h40A0, 16'h40A0);
+    pw0 = npwait;
+    bus_cycle(ST_EDATA, 16'h0000, 16'h0000);
+    repeat (200) clk_cycle();
+    ck(npwait != pw0 && dut.u_dp.f_mem[2] == FIVE && dut.u_dp.f_mem[1] == 80'h4001_8000_0000_0000_0000,
+       "fast clocks: a queued load started in the done clock writes F2",
+       "p.535 instruction 2 queued", $sformatf("promoted at done %0b, F2 %020h, F1 %020h", npwait != pw0,
+       dut.u_dp.f_mem[2], dut.u_dp.f_mem[1]));
+    reset_with_sc(SC_INTERMEDIATE);
+    dut.u_dp.f_mem[1] = 80'h4000_8000_0000_0000_0000;
+    pw0 = npwait;
+    bus_cycle(ST_IF1, 16'h8E14, 16'h8E14);              // FMUL F1,F1
+    bus_cycle(ST_PROG, 16'h41B0, 16'h41B0);
+    bus_cycle(ST_IF1, IF1_STORE, IF1_STORE);            // FST F1 double, queued
+    bus_cycle(ST_PROG, 16'h8103, 16'h8103);
+    for (int i = 0; i < 200 && dut.u_ip.state_q != 3'd4; i++) clk_cycle();
+    ck(npwait != pw0 && dut.u_ip.state_q == 3'd4 && dut.u_ip.img[79:16] == 64'h4010_0000_0000_0000,
+       "fast clocks: a queued store started in the done clock sources the F1 FMUL wrote",
+       "p.535 execution appears linear", $sformatf("promoted at done %0b, state %0d, words %016h",
+       npwait != pw0, dut.u_ip.state_q, dut.u_ip.img[79:16]));
+    for (int a = 1; a <= 2; a++) begin
+      reset_with_sc(SC_INTERMEDIATE);
+      dut.u_dp.f_mem[1] = 80'h4000_8000_0000_0000_0000;
+      dut.u_dp.f_mem[2] = ONE;
+      bus_cycle(ST_IF1, 16'h8E14, 16'h8E14);            // FMUL F1,F1
+      bus_cycle(ST_PROG, 16'h41B0, 16'h41B0);
+      bus_cycle(ST_IF1, 16'h8E24, 16'h8E24);            // FADD F2,F1, queued
+      bus_cycle(ST_PROG, 16'h4180, 16'h4180);
+      ns0 = nstart; pw0 = npwait; ab_at = a;
+      repeat (200) clk_cycle();
+      ab_at = 0; abort_n = 1'b1;
+      ck(npwait != pw0 && nstart == ns0 && dut.u_dp.f_mem[2] == ONE && dut.u_ip.state_q == 3'd0,
+         a == 1 ? "fast clocks: /ABORT in the read clock drops the queued FADD unstarted" :
+                  "fast clocks: /ABORT in the start clock drops the queued FADD unstarted",
+         "p.544 /ABORT causes an instruction abort", $sformatf("starts %0d, F2 %020h, state %0d", nstart - ns0, dut.u_dp.f_mem[2],
+         dut.u_ip.state_q));
+    end
+    // FRDIV and FRVSUB unpack the source first, then Fd.
+    for (int q = 0; q < 2; q++)
+      for (int m = 0; m < 2; m++) begin
+        reset_with_sc(SC_INTERMEDIATE);
+        dut.u_dp.f_mem[1] = 80'h4000_8000_0000_0000_0000;
+        dut.u_dp.f_mem[3] = ONE;
+        dut.u_dp.f_mem[4] = THREE;
+        pw0 = npwait;
+        if (q == 1) begin
+          bus_cycle(ST_IF1, 16'h8E14, 16'h8E14);        // FMUL F1,F1
+          bus_cycle(ST_PROG, 16'h41B0, 16'h41B0);
+        end
+        if (m == 0) begin
+          bus_cycle(ST_IF1, 16'h8E34, 16'h8E34);        // FRDIV / FRVSUB F3,F4
+          bus_cycle(ST_PROG, q ? 16'h0490 : 16'h04A0, q ? 16'h0490 : 16'h04A0);
+        end else begin
+          bus_cycle(ST_IF1, IF1_LD_F2_MEM, IF1_LD_F2_MEM);  // F3 by memory double 3.0
+          bus_cycle(ST_PROG, q ? 16'h0393 : 16'h03A3, q ? 16'h0393 : 16'h03A3);
+          bus_cycle(ST_EDATA, 16'h4008, 16'h4008);
+          repeat (3) bus_cycle(ST_EDATA, 16'h0000, 16'h0000);
+        end
+        repeat (200) clk_cycle();
+        ck((q == 0 || npwait != pw0) &&
+           dut.u_dp.f_mem[3] == (q ? 80'h4000_8000_0000_0000_0000 : THREE),
+           {"fast clocks: ", q ? "queued FRVSUB" : "direct FRDIV", " F3 by ",
+            m ? "memory" : "F4", " reads Fd for its second operand"},
+           "p.535 execution appears linear",
+           $sformatf("promoted at done %0b, F3 %020h", npwait != pw0, dut.u_dp.f_mem[3]));
+      end
+    // FCPF and FCPFX unpack Fd, then Fs, and send the compare flags.
+    for (int c = 0; c < 3; c++) begin
+      reset_with_sc(SC_INTERMEDIATE);
+      bus_cycle(ST_IF1, IF1_LD_F2_MEM, IF1_LD_F2_MEM);  // FLD F1, double 2.0
+      bus_cycle(ST_PROG, 16'h8103, 16'h8103);
+      bus_cycle(ST_EDATA, 16'h4000, 16'h4000);
+      repeat (3) bus_cycle(ST_EDATA, 16'h0000, 16'h0000);
+      bus_cycle(ST_IF1, IF1_LD_F2_MEM, IF1_LD_F2_MEM);  // FLD F2, double 0.75
+      bus_cycle(ST_PROG, 16'h8203, 16'h8203);
+      bus_cycle(ST_EDATA, 16'h3FE8, 16'h3FE8);
+      repeat (3) bus_cycle(ST_EDATA, 16'h0000, 16'h0000);
+      repeat (100) clk_cycle();
+      unique case (c)
+        0: begin bus_cycle(ST_IF1, 16'h8E10, 16'h8E10); bus_cycle(ST_PROG, 16'h4210, 16'h4210); end
+        1: begin bus_cycle(ST_IF1, 16'h8E20, 16'h8E20); bus_cycle(ST_PROG, 16'h4120, 16'h4120); end
+        default: begin bus_cycle(ST_IF1, 16'h8E10, 16'h8E10); bus_cycle(ST_PROG, 16'h4110, 16'h4110); end
+      endcase
+      for (int i = 0; i < 200 && dut.u_ip.state_q != 3'd4; i++) clk_cycle();
+      ck(dut.u_ip.state_q == 3'd4 && dut.u_ip.cmp_byte == (c == 0 ? 8'h28 : c == 1 ? 8'h88 : 8'h40),
+         c == 0 ? "fast clocks: FCPF F1,F2 (2.0 vs 0.75) sends 28" :
+         c == 1 ? "fast clocks: FCPFX F2,F1 (0.75 vs 2.0) sends 88" :
+                  "fast clocks: FCPF F1,F1 (2.0 vs 2.0) sends 40",
+         "p.535 execution appears linear", $sformatf("state %0d, flags %02h", dut.u_ip.state_q,
+         dut.u_ip.cmp_byte));
+    end
+    fast = 1'b0;
+    clki_rise = 1'b0; clki_fall = 1'b0; clkd_rise = 1'b0;
 
     $display("");
     $display("[5] acknowledge: the IEO rule, the vector drive window, NV");

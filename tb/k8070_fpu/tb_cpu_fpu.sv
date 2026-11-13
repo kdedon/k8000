@@ -1,9 +1,9 @@
 // tb_cpu_fpu -- a board with one z8000_cpu and one z8070_fpu on real pins.
 //
 // One master clock. The CPU's CLK pulses are also CLK.I, and CLK.D is tied
-// to CLK.I. /BSY drives STOP, and /WAIT through the board gate while the
-// cycle latched at /AS is an EPU data cycle (1010, 1011, 1110) up to its
-// /DS rise, when `bsy_wait` is set. /INT drives /VI. Memory sits outside:
+// to CLK.I, or with `clkd_fast` rises every master clock. /BSY drives STOP,
+// and /WAIT through the board gate while the cycle latched at /AS is an EPU
+// data cycle (1010, 1011, 1110) up to its /DS rise, when `bsy_wait` is set. /INT drives /VI. Memory sits outside:
 // it drives `mem_data` onto AD with `mem_drive`.
 
 `default_nettype none
@@ -23,6 +23,7 @@ module tb_cpu_fpu #(
   input  logic        mi_n,
   input  logic [1:0]  fpu_id,
   input  logic        bsy_wait,
+  input  logic        clkd_fast,
   input  logic [15:0] mem_data,
   input  logic        mem_drive,
 
@@ -109,7 +110,7 @@ module tb_cpu_fpu #(
     .clk      (clk),
     .clki_rise(clk_rise),
     .clki_fall(clk_fall),
-    .clkd_rise(clk_rise),
+    .clkd_rise(clk_rise | clkd_fast),
     .reset_n  (reset_n),
     .ad_in    (ad),
     .ad_out   (fpu_ad_out),

@@ -41,10 +41,11 @@ make build-fpu        # obj_dir/tb_fpu/tb_fpu
 make test-fpu         # replay every fpu vector, pass/fail + shortest failing
 make fpu ONLY=TestName [VCD=1] [CONTEXT=N] [MCLK=P]   # one vector, full context table
 make ladder-fpu       # every vector, shortest first, with status
-make test-fpu-timing  # the specification bench (62 checks; docs/TIMING_TESTS.md)
+make test-fpu-timing  # the specification bench (75 checks; docs/TIMING_TESTS.md)
 make test-fpu-dp [ONLY=add,cmp,...] [MCLK=P]   # the Data Processor alone, every dp record
 make test-cpu-fpu     # RTL CPU + FPU on one board, every system vector, Z8001 then Z8002
 make cpu-fpu ONLY=TestName[.Z8001.000] [VCD=1] [CONTEXT=N] [MCLK=P]   # one system vector
+make test-fpu-fastd   # every fpu and system vector with CLK.D rising every master clock (final state, memory, driven words)
 make gen-fpu          # maintainer only: the decode table, its digests, the microprogram ROM
 make vectors-fpu      # maintainer only: re-record fpu/ and dp/ with the vector generator
 make vectors-cpu-fpu  # maintainer only: re-record system/
@@ -184,12 +185,20 @@ template, word 1 nibble and operation code.
 
 ## What is covered
 
-* `make test-fpu`: 52 files, 51 PASS, 1 SKIP (TestSnapshotMidOperation.001:
+* `make test-fpu`: 54 files, 53 PASS, 1 SKIP (TestSnapshotMidOperation.001:
   a poke of internal state).
 * `make test-cpu-fpu`: 10 of 10 on the Z8001 and 10 of 10 on the Z8002.
+* `make test-fpu-fastd`, at `--mclk 1` and `1,2,1,3` each: fpu 51 PASS, 3
+  SKIP; system 16 PASS, 4 SKIP. Skipped: TestSnapshotMidOperation.001 (a poke
+  of internal state) and six files whose outcome depends on the Data
+  Processor's speed, each failing at `1,2,1,3`: TestLostStoreWord,
+  TestQueueAbortAtStart, TestFPUSystemInterrupt (2), TestFPUSystemStoreWithoutWait
+  (2). PC2 is not compared there (only an IF1 while busy loads it). At 5 or
+  more master clocks a level TestQueueAbort and TestSnapshotMidOperation.000
+  depend on the speed too.
 * `make test-fpu-enc`: 65536 IF1 words and 7 templates x 16 x 65536 word 2s
   (7168 digests).
-* `make test-fpu-timing`: 62 checks.
+* `make test-fpu-timing`: 75 checks.
 * `make test-fpu-dp`: 123,209 of 123,209 records over the 11 groups.
 
 ### Assumed

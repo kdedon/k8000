@@ -51,7 +51,7 @@ module z8070_fpu (
   input  logic [1:0]  opt         // OPT1-OPT0; 11 = Z8000
 );
 
-  logic        dp_busy, dp_start, dp_done, dp_opnd_src, dp_opnd_rd, dp_rup;
+  logic        dp_busy, dp_start, dp_done, dp_opnd_src, dp_opnd_rd, dp_opnd_nxt, dp_rup;
   logic [5:0]  dp_kind;
   logic [1:0]  dp_prec, dp_rm;
   logic [79:0] dp_opnd, f_rdata, f_wdata, dp_res;
@@ -92,6 +92,7 @@ module z8070_fpu (
     .dp_opnd   (dp_opnd),
     .dp_opnd_src(dp_opnd_src),
     .dp_opnd_rd(dp_opnd_rd),
+    .dp_opnd_nxt(dp_opnd_nxt),
     .dp_done   (dp_done),
     .dp_res    (dp_res),
     .dp_flags  (dp_flags),
@@ -120,6 +121,7 @@ module z8070_fpu (
     .opnd      (dp_opnd),
     .opnd_src  (dp_opnd_src),
     .opnd_rd   (dp_opnd_rd),
+    .opnd_nxt  (dp_opnd_nxt),
     .done      (dp_done),
     .res       (dp_res),
     .res_flags (dp_flags),

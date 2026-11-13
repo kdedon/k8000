@@ -37,7 +37,9 @@
 // Queue (spec p.535): one instruction, its word 2 and operand words taken
 // while the executing one runs. It starts on the first CLK.I rise with the
 // IP idle and the Data Processor done, in that master clock (PC1 takes
-// PC2); a Data Processor operation gets its start the next master clock.
+// PC2); a Data Processor operation gets its start the next master clock,
+// or the one after when it starts in the done clock: the F read is FOP1's
+// there, and the operand bus carries FOP1 the clock after.
 // An arithmetic trap flushes it, complete or in transfer (p.535, p.558).
 // /ABORT, a level, drops the executing and the queued instruction before
 // the cycle is seen; an operation already running finishes unseen.
@@ -125,6 +127,7 @@ module z8070_ip
   output logic [79:0] dp_opnd,
   input  logic        dp_opnd_src,
   input  logic        dp_opnd_rd,
+  input  logic        dp_opnd_nxt,
   input  logic        dp_done,    // one master clock: the result is ready
   input  logic [79:0] dp_res,
   input  logic [7:0]  dp_flags,
@@ -551,7 +554,8 @@ module z8070_ip
 
     // The queued instruction starts on a CLK.I rise once the executing one
     // is done, in that clock. A Data Processor operation gets its start the
-    // next master clock, before the next CLK.D rise.
+    // next master clock, or, taken in the done clock, the one after
+    // (pwait_q).
     if (clki_rise && pend_d == PQ_READY && state_d == IP_IDLE && (!dp_busy || dp_done)) begin
       promote = 1'b1;
       pend_d  = PQ_NONE;
@@ -593,10 +597,10 @@ module z8070_ip
     int_req_d = (int_req_q & ~ack_take) | raise;
   end
 
-  // Justification: (reg-a) the promoted start, the list op's clock, the
-  // executing operation's bus operand kept in RAM row 10 (requested, written,
-  // and readable).
-  logic pstart_q, list_go_q, stg_req_q, stg_q, stg2_q, stg_now;
+  // Justification: (reg-a) the promoted start and its read clock, the list
+  // op's clock, the executing operation's bus operand kept in RAM row 10
+  // (requested, written, and readable).
+  logic pstart_q, pwait_q, list_go_q, stg_req_q, stg_q, stg2_q, stg_now;
 
   always_ff @(posedge clk) begin
     if (!reset_n) begin
@@ -607,6 +611,7 @@ module z8070_ip
       pc1_q     <= 32'd0;
       pc2_q     <= 32'd0;
       pstart_q  <= 1'b0;
+      pwait_q   <= 1'b0;
       list_go_q <= 1'b0;
     end else begin
       state_q   <= state_d;
@@ -615,7 +620,8 @@ module z8070_ip
       int_req_q <= int_req_d;
       pc1_q     <= pc1_d;
       pc2_q     <= pc2_d;
-      pstart_q  <= pstart;
+      pstart_q  <= abort_n && ((pstart && !dp_busy) || pwait_q);
+      pwait_q   <= abort_n && pstart && dp_busy;
       list_go_q <= list_go;
     end
   end
@@ -664,7 +670,7 @@ module z8070_ip
     else          arm_q <= arm_d;
   end
 
-  assign dp_start = (ds_rise && busack_n && arm_q && abort_n) || pstart_q;
+  assign dp_start = (ds_rise && busack_n && arm_q && abort_n) || (pstart_q && abort_n);
 
   logic src_first;
 
@@ -946,11 +952,13 @@ module z8070_ip
 
   // F read address, a master clock ahead of its use. Running: the operand
   // word's register, else FOP1's (the input operand; row 10 once a queued
-  // instruction's words are due in the buffer) for the done clock. Before
+  // instruction's words are due in the buffer) for the done clock, but the
+  // second unpack's register from the first unpack on. Before
   // word 2: the first operand of the internal form, Fs for the operations
   // whose first microword (the ROM's first-word table) reads the source,
   // else Fd (outbound forms read Fd only); a queued one's from the clock
-  // that takes it, for a CLK.D rise with its start. FLDCTL of FOP1 or FOP2: its row. Taking operands: Fd.
+  // that takes it (in the done clock, the next), for a CLK.D rise with its
+  // start. FLDCTL of FOP1 or FOP2: its row. Taking operands: Fd.
   assign src_first = tpl_q == TPL_INTERNAL &&
                      (pl_mn_u == MN_FCLR || pl_mn_u == MN_FRVSUB || pl_mn_u == MN_FRDIV ||
                       pl_mn_u == MN_FPWR2 || pl_mn_u == MN_FSQR || pl_mn_u == MN_FINT ||
@@ -958,11 +966,11 @@ module z8070_ip
                       pl_mn_u == MN_FLDNF);
 
   always_comb begin
-    if (dp_busy)       f_raddr = !dp_opnd_rd ? (stg_q ? 4'd10 : {1'b0, (dir_q == DIR_OUT) ? ra_q : rb_q}) :
-                                 {1'b0, dp_opnd_src ? rb_q : ra_q};
+    if (dp_busy)       f_raddr = (dp_opnd_rd || dp_opnd_nxt) ? {1'b0, dp_opnd_src ? rb_q : ra_q} :
+                                 stg_q ? 4'd10 : {1'b0, (dir_q == DIR_OUT) ? ra_q : rb_q};
     else if (at_w2)    f_raddr = {1'b0, src_first ? pl_fs_u : pl_fd_u};
     else if (promote)  f_raddr = {1'b0, q_sf ? q_rb : q_ra};
-    else if (pstart_q) f_raddr = {1'b0, p_sf ? rb_q : ra_q};
+    else if (pstart_q || pwait_q) f_raddr = {1'b0, p_sf ? rb_q : ra_q};
     else if (state_q == IP_RESULT && mn_q == MN_FLDCTL)
                        f_raddr = {3'b100, sel_q == CTL_FOP2};
     else               f_raddr = {1'b0, ra_q};
@@ -975,7 +983,8 @@ module z8070_ip
   // The RAM's one write port after done: F[Fd] in the done clock, FOP1 the
   // next from the read register held through done, FOP2 in the first
   // clock after that the Data Processor does not read the operand bus (a
-  // queued operation may start the clock after done and read F[Fd]). Row
+  // queued operation may start one or two clocks after done and read
+  // F[Fd]). Row
   // 10 takes the bus operand in a free clock once a queued IF1 is seen.
   logic no_wb, fop;
 

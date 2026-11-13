@@ -31,7 +31,8 @@
 // opnd_src names (0 destination, 1 source) and is sampled by the two
 // unpack clocks (an integer to convert: its 64-bit two's complement on
 // opnd[63:0]). opnd_rd is High while the running word samples opnd, so
-// the caller can address a registered RAM a master clock ahead. For a
+// the caller can address a registered RAM a master clock ahead; opnd_nxt
+// is High between the two unpacks, opnd_src then naming the second. For a
 // conversion to an integer op_prec 1 selects 64 bits,
 // 0 32; the result is the integer sign-extended in res[63:0], res[79:64]
 // zero. BCD: the Fig 12 container on opnd or in res. done is High in the
@@ -70,6 +71,7 @@ module z8070_dp
   input  logic [79:0] opnd,
   output logic        opnd_src,
   output logic        opnd_rd,
+  output logic        opnd_nxt,
   output logic        done,
   output logic [79:0] res,
   output logic [7:0]  res_flags,  // INV FOV UN DZ INX DE NAN IX, bit 0 first
@@ -219,6 +221,17 @@ module z8070_dp
     else if (step && uw.fin)     run_q <= 1'b0;
     else if (start)              run_q <= 1'b1;
   end
+
+  // Justification: (reg-a) an A unpack ran and the B unpack is to come.
+  logic b_due_q;
+
+  always_ff @(posedge clk) begin
+    if (!reset_n)   b_due_q <= 1'b0;
+    else if (step)  b_due_q <= uw.act == DA_UNPA || (b_due_q && uw.act != DA_UNPB && !start);
+    else if (start) b_due_q <= 1'b0;
+  end
+
+  assign opnd_nxt = b_due_q;
 
   always_ff @(posedge clk) begin
     if (step)       upc_q <= upc_next;
@@ -401,13 +414,17 @@ module z8070_dp
   assign is_bcs    = kind == K_BCDS;
   assign int_res   = is_fint || (kind == K_ITOF) || (kind == K_BCDL);  // never tiny
 
+  logic opnd_b;   // the B unpack's operand
+
+  assign opnd_b = ~opnd_sw;
+
   always_comb begin
     opnd_rd = 1'b1;
     unique case (uw.act)
       DA_UNPA: opnd_src = opnd_sw | opnd_load | (kind == K_PWR2);
-      DA_UNPB: opnd_src = ~opnd_sw;
+      DA_UNPB: opnd_src = opnd_b;
       DA_ILD:  opnd_src = 1'b1;
-      default: begin opnd_src = 1'b0; opnd_rd = 1'b0; end
+      default: begin opnd_src = b_due_q & opnd_b; opnd_rd = 1'b0; end
     endcase
   end
 

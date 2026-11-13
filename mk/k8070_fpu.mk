@@ -139,3 +139,11 @@ test-cpu-fpu: $(OBJ)/tb_cpu_fpu_z8001/tb_cpu_fpu_z8001 $(OBJ)/tb_cpu_fpu_z8002/t
 cpu-fpu: $(OBJ)/tb_cpu_fpu_z8001/tb_cpu_fpu_z8001 $(OBJ)/tb_cpu_fpu_z8002/tb_cpu_fpu_z8002
 	@[ -n "$(ONLY)" ] || (echo "usage: make cpu-fpu ONLY=TestName[.Z8001.000] [VCD=1] [CONTEXT=N] [MCLK=P]"; exit 1)
 	@scripts/run_k8070_cpu_fpu_vectors.sh --one "$(ONLY)" $(if $(VCD),--vcd,) $(if $(CONTEXT),--context $(CONTEXT),) $(if $(MCLK),--mclk $(MCLK),)
+
+# ---- fast CLK.D pass ---------------------------------------------------------
+#   make test-fpu-fastd   every FPU and CPU+FPU vector with CLK.D rising every master clock
+CHIP_TEST += test-fpu-fastd
+.PHONY: test-fpu-fastd
+
+test-fpu-fastd: $(FPU_TB) $(OBJ)/tb_cpu_fpu_z8001/tb_cpu_fpu_z8001 $(OBJ)/tb_cpu_fpu_z8002/tb_cpu_fpu_z8002
+	@scripts/run_k8070_fastd.sh

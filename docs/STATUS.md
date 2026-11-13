@@ -27,10 +27,11 @@
 | SCC vectors | `make test-scc` | 177 of 177 |
 | SCC timing | `make test-scc-timing` | 15 of 15 |
 | SCC daisy-chain acknowledge | `make test-scc-iack` | 11 of 11 |
-| FPU vectors | `make test-fpu` | 51 pass, 1 skip (`X`), also at `--mclk 1`, `2`, `1,3`, `3,1,2` |
-| FPU timing | `make test-fpu-timing` | 62 of 62 (reset, snoop, drive windows, the store wait, /BSY at the STOP samples in both overlap modes, the acknowledge: IEO, vector window, SV, NV, DLC; Interface Processor state recovery and the lost-word count) |
+| FPU vectors | `make test-fpu` | 53 pass, 1 skip (`X`), also at `--mclk 1`, `2`, `1,3`, `3,1,2` |
+| FPU timing | `make test-fpu-timing` | 75 of 75 (reset, snoop, drive windows, the store wait, /BSY at the STOP samples in both overlap modes, queued operations, FRDIV, FRVSUB, FCPF and FCPFX, and /ABORT with CLK.I and CLK.D at the master clock, the acknowledge: IEO, vector window, SV, NV, DLC; Interface Processor state recovery and the lost-word count) |
 | FPU decode table | `make test-fpu-enc` | PASS, every IF1 word and every template x word 1 bits 7:4 x word 2 |
 | FPU Data Processor | `make test-fpu-dp` | add 61487 of 61487, load 11 of 11, sign 18 of 18, cmp 3087 of 3087, mul 24541 of 24541, div 32867 of 32867, sqrt 457 of 457, rem 345 of 345, fint 255 of 255, conv 77 of 77, bcd 64 of 64 (results, flags, reason, R bit, compare code, CLK.D count) |
+| FPU and CPU+FPU, CLK.D every master clock | `make test-fpu-fastd` | at `--mclk 1` and `1,2,1,3`: fpu 51 pass, 3 skip; system 16 pass, 4 skip (final state but PC2, memory, driven words; skips: one internal-state poke, six files with speed-dependent outcomes) |
 | CPU and FPU on one board | `make test-cpu-fpu` | Z8001 10 of 10, Z8002 10 of 10, also at `--mclk 1`, `2`, `3`, `4`, `1,3`, `3,1,2` (CPU pins, CPU inputs where sampled, FPU outputs, memory writes; final CPU, FPU and memory) |
 
 Every ladder in `docs/LADDER.md` is complete: datapath A1-A3, CPU rungs

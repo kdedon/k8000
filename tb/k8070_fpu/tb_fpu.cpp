@@ -2,7 +2,7 @@
 // file against the Verilated z8070_fpu.
 //
 //   tb_fpu <file.vec> [--context N] [--vcd out.vcd] [--quiet]
-//                     [--stop-first] [--no-final] [--mclk P]
+//                     [--stop-first] [--no-final] [--mclk P] [--fastd]
 //
 // The chip runs on the board master clock `clk`. CLK.I is two pulses,
 // clki_rise and clki_fall, and CLK.D one, clkd_rise: each High for the
@@ -19,6 +19,12 @@
 // master clocks, for the registers the RTL holds; the rest are listed as
 // unchecked on the RESULT line. A P record for a register
 // the RTL does not hold, or an X record, makes the vector a SKIP.
+//
+// --fastd: CLK.D rises every master clock, as on a board that clocks it
+// at the master clock. The Data Processor then runs ahead of the vector,
+// so pins are not compared; the word driven at the end of each /DS Low
+// window is, in order, with the final state but PC2 (an IF1 while busy
+// loads it, so it depends on the speed).
 //
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP, 4 usage or parse error.
 
@@ -97,7 +103,7 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     std::string vecPath, vcdPath;
     int context = 12;
-    bool quiet = false, stopFirst = false, checkFinal = true;
+    bool quiet = false, stopFirst = false, checkFinal = true, fastd = false;
     std::string mclkPat = getenv("K8000_MCLK") ? getenv("K8000_MCLK") : "1,2,1,3";
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -106,11 +112,12 @@ int main(int argc, char** argv) {
         else if (a == "--quiet") quiet = true;
         else if (a == "--stop-first") stopFirst = true;
         else if (a == "--no-final") checkFinal = false;
+        else if (a == "--fastd") fastd = true;
         else if (a == "--mclk" && i + 1 < argc) mclkPat = argv[++i];
         else if (a.size() > 1 && a[0] == '-' && a[1] == '-') { fprintf(stderr, "unknown option %s\n", a.c_str()); return 4; }
         else vecPath = a;
     }
-    if (vecPath.empty()) { fprintf(stderr, "usage: tb_fpu <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final] [--mclk P]\n"); return 4; }
+    if (vecPath.empty()) { fprintf(stderr, "usage: tb_fpu <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final] [--mclk P] [--fastd]\n"); return 4; }
 
     std::ifstream f(vecPath);
     if (!f) { printf("RESULT FAIL %s: cannot open\n", vecPath.c_str()); return 4; }
@@ -165,7 +172,11 @@ int main(int argc, char** argv) {
     // The RAM writes that follow a done (F, FOP2) land in the next two
     // master clocks; idle clocks move nothing else, so pokes and the final
     // compare wait for them.
-    auto settle = [&]() { for (int k = 0; k < 2; k++) mtick(); };
+    auto settle = [&]() { for (int k = 0; k < 2; k++) { top->clkd_rise = fastd; mtick(); } top->clkd_rise = 0; };
+    // --fastd: the word driven last in each /DS Low window, -1 for none.
+    std::vector<int> expWords, gotWords;
+    bool prevDsLow = false;
+    int expW = -1, gotW = -1;
 
     while (std::getline(f, line)) {
         if (line.empty() || line[0] == '#') continue;
@@ -205,12 +216,13 @@ int main(int argc, char** argv) {
             bool iRise = in.clki && !prevClki, iFall = !in.clki && prevClki;
             bool dRise = in.clkd && !prevClkd;
             prevClki = in.clki; prevClkd = in.clkd;
-            top->clki_rise = iRise; top->clki_fall = iFall; top->clkd_rise = dRise;
+            top->clki_rise = iRise; top->clki_fall = iFall; top->clkd_rise = dRise || fastd;
             top->eval();
             for (int k = mclkSeq[mclkIdx]; k > 0; k--) {
                 mtick();
-                top->clki_rise = 0; top->clki_fall = 0; top->clkd_rise = 0;
+                top->clki_rise = 0; top->clki_fall = 0; top->clkd_rise = fastd;
             }
+            top->clkd_rise = 0;
             mclkIdx = (mclkIdx + 1) % mclkSeq.size();
             top->eval();
             if (iRise) clock++;
@@ -222,6 +234,15 @@ int main(int argc, char** argv) {
             ok[3] = exp.ieo == got.ieo;
             ok[4] = !(exp.ad_drive && got.ad_drive) || exp.ad == got.ad;
             static const char* pinName[5] = {"ADDrive", "BSY_n", "INT_n", "IEO", "AD"};
+            if (fastd) {
+                bool dsLow = !in.ds_n;
+                if (dsLow && !prevDsLow) expW = gotW = -1;
+                if (dsLow && exp.ad_drive) expW = exp.ad;
+                if (dsLow && got.ad_drive) gotW = got.ad;
+                if (!dsLow && prevDsLow && (expW >= 0 || gotW >= 0)) { expWords.push_back(expW); gotWords.push_back(gotW); }
+                prevDsLow = dsLow;
+                for (int k = 0; k < 5; k++) ok[k] = true;
+            }
             std::string marks;
             for (int k = 0; k < 5; k++)
                 if (!ok[k]) { if (!marks.empty()) marks += ","; marks += pinName[k]; }
@@ -242,6 +263,7 @@ int main(int argc, char** argv) {
             if (!settled) { settle(); settled = true; }
             std::string what, h; ss >> what >> h;
             if (what == "TICKS") continue;
+            if (fastd && what == "PC2") continue;   // loaded only by an IF1 while busy
             if (!dut.has(what)) { unchecked += (unchecked.empty() ? "" : ",") + what; continue; }
             V80 e = V80::parse(h), g;
             dut.get(what, g);
@@ -266,6 +288,15 @@ int main(int argc, char** argv) {
     if (!skipWhy.empty()) { printf("RESULT SKIP %s:%s\n", vecPath.c_str(), skipWhy.c_str()); return 2; }
     if (!sawEnd && !(stopFirst && firstTick >= 0)) { printf("RESULT FAIL %s: truncated vector (no END)\n", vecPath.c_str()); return 4; }
 
+    if (fastd && checkFinal && sawEnd && expWords != gotWords) {
+        size_t i = 0;
+        while (i < expWords.size() && i < gotWords.size() && expWords[i] == gotWords[i]) i++;
+        char b[160];
+        snprintf(b, sizeof b, "  final driven words: %zu expected, %zu seen, first difference at %zu (exp %04X got %04X)\n",
+                 expWords.size(), gotWords.size(), i,
+                 i < expWords.size() ? expWords[i] & 0xFFFF : 0, i < gotWords.size() ? gotWords[i] & 0xFFFF : 0);
+        finalFails++; finalMsg += b;
+    }
     std::string unc = unchecked.empty() ? "" : " unchecked=" + unchecked;
     if (firstTick < 0 && finalFails == 0) {
         printf("RESULT PASS %s ticks=%ld clocks=%ld%s\n", vecPath.c_str(), tick, clock, unc.c_str());
