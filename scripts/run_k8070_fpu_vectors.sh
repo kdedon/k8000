@@ -58,3 +58,4 @@ else
   grep ' FAIL ' "$RES/fpu_ladder.txt" | head -15 | awk '{printf "  %6d ticks  %s  %s %s %s\n", $1, $3, $5, $6, $7}'
   echo "   (make fpu ONLY=<TestName> for the full divergence context)"
 fi
+[ "$fail" -eq 0 ]

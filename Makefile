@@ -215,13 +215,13 @@ test: test-decode test-decode-table test-mc-table test-alu test-regfile test-ser
 test-timing: test-cpu-timing test-cpu-cycles $(CHIP_TIMING_TEST)
 
 test-decode: $(OBJ)/tb_decode/tb_decode
-	@$(OBJ)/tb_decode/tb_decode +vec=vectors/k800x_cpu/decode/decode.vec | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_decode/tb_decode +vec=vectors/k800x_cpu/decode/decode.vec
 
 test-decode-table: $(OBJ)/tb_decode_table/tb_decode_table
-	@$(OBJ)/tb_decode_table/tb_decode_table +table=rtl/k800x_cpu/z8000_decode_table.txt | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_decode_table/tb_decode_table +table=rtl/k800x_cpu/z8000_decode_table.txt
 
 test-mc-table: $(OBJ)/tb_mc_table/tb_mc_table
-	@$(OBJ)/tb_mc_table/tb_mc_table +table=rtl/k800x_cpu/z8000_mc_table.txt | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_mc_table/tb_mc_table +table=rtl/k800x_cpu/z8000_mc_table.txt
 
 test-alu: $(OBJ)/tb_alu/tb_alu
 	@mkdir -p $(RESULTS); : > $(RESULTS)/alu.txt
@@ -232,13 +232,13 @@ test-alu: $(OBJ)/tb_alu/tb_alu
 	  END {printf "   alu: %d records checked (%d long, as two word passes), %d out-of-contract skipped\n", c, t, s}' $(RESULTS)/alu.txt
 
 test-regfile: $(OBJ)/tb_regfile/tb_regfile
-	@$(OBJ)/tb_regfile/tb_regfile | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_regfile/tb_regfile
 
 test-serial: $(OBJ)/tb_serial/tb_serial
-	@$(OBJ)/tb_serial/tb_serial +vec=vectors/k800x_cpu/serial/random.vec | grep -v '\$$finish' | tail -25
+	@scripts/run_sv_bench.sh -t 25 $(OBJ)/tb_serial/tb_serial +vec=vectors/k800x_cpu/serial/random.vec
 
 test-refresh: $(OBJ)/tb_refresh/tb_refresh
-	@$(OBJ)/tb_refresh/tb_refresh | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_refresh/tb_refresh
 
 test-cpu: $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004
 	@scripts/run_k800x_cpu_vectors.sh
@@ -247,19 +247,19 @@ test-cpu-combined: $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z
 	@scripts/run_k800x_cpu_vectors.sh --combined
 
 test-cpu-timing: $(OBJ)/tb_cpu_timing/tb_cpu_timing
-	@$(OBJ)/tb_cpu_timing/tb_cpu_timing | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_cpu_timing/tb_cpu_timing
 
 test-cpu-cycles: $(OBJ)/tb_cpu_cycles/tb_cpu_cycles
-	@$(OBJ)/tb_cpu_cycles/tb_cpu_cycles +vec=vectors/k800x_cpu/cycles/cycles.vec | grep -v '\$$finish' | tail -50
+	@scripts/run_sv_bench.sh -t 50 $(OBJ)/tb_cpu_cycles/tb_cpu_cycles +vec=vectors/k800x_cpu/cycles/cycles.vec
 
 test-seq-words: $(OBJ)/tb_seq_words/tb_seq_words
-	@$(OBJ)/tb_seq_words/tb_seq_words | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_seq_words/tb_seq_words
 
 test-seq-paths: $(OBJ)/tb_seq_paths/tb_seq_paths
-	@$(OBJ)/tb_seq_paths/tb_seq_paths | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_seq_paths/tb_seq_paths
 
 test-cond: $(OBJ)/tb_cond/tb_cond
-	@$(OBJ)/tb_cond/tb_cond | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_cond/tb_cond
 
 ladder:
 	@scripts/run_k800x_cpu_vectors.sh --ladder

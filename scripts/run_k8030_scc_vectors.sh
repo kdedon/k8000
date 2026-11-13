@@ -57,3 +57,4 @@ else
   grep ' FAIL ' "$RES/scc_ladder.txt" | head -15 | awk '{printf "  %6d ticks  %s  ", $1, $3; for (i = 4; i <= NF; i++) printf "%s ", $i; printf "\n"}'
   echo "   (make scc ONLY=<TestName> for the full divergence context)"
 fi
+[ "$fail" -eq 0 ]

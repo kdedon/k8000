@@ -65,7 +65,7 @@ $(OBJ)/tb_mmu_timing/tb_mmu_timing: $(MMU_SRCS) tb/k8010_mmu/tb_mmu_timing.sv
 	  $(MMU_SRCS) tb/k8010_mmu/tb_mmu_timing.sv -o tb_mmu_timing >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-mmu-timing: $(OBJ)/tb_mmu_timing/tb_mmu_timing
-	@$(OBJ)/tb_mmu_timing/tb_mmu_timing | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_mmu_timing/tb_mmu_timing
 
 # ---- CPU + MMU on one CLK net (SystemVerilog) -------------------------------
 # tb/k8010_mmu/tb_cpu_mmu_clk.sv: z8000_cpu and z8010_mmu share the CLK pulse;
@@ -83,4 +83,4 @@ $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk: $(CPU_SRCS) $(MMU_SRCS) tb/k8010_mmu/tb_cp
 	  $(CPU_SRCS) $(MMU_SRCS) tb/k8010_mmu/tb_cpu_mmu_clk.sv -o tb_cpu_mmu_clk >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-cpu-mmu-clk: $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk
-	@$(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk

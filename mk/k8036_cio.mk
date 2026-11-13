@@ -61,7 +61,7 @@ $(OBJ)/tb_cio_timing/tb_cio_timing: $(CIO_SRCS) tb/k8036_cio/tb_cio_timing.sv
 	  $(CIO_SRCS) tb/k8036_cio/tb_cio_timing.sv -o tb_cio_timing >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-cio-timing: $(OBJ)/tb_cio_timing/tb_cio_timing
-	@$(OBJ)/tb_cio_timing/tb_cio_timing | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_cio_timing/tb_cio_timing
 
 # Daisy-chain acknowledge bench: two chips, the first's IEO into the second's IEI.
 $(OBJ)/tb_cio_iack/tb_cio_iack: $(CIO_SRCS) tb/k8036_cio/tb_cio_iack.sv
@@ -70,4 +70,4 @@ $(OBJ)/tb_cio_iack/tb_cio_iack: $(CIO_SRCS) tb/k8036_cio/tb_cio_iack.sv
 	  $(CIO_SRCS) tb/k8036_cio/tb_cio_iack.sv -o tb_cio_iack >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-cio-iack: $(OBJ)/tb_cio_iack/tb_cio_iack
-	@$(OBJ)/tb_cio_iack/tb_cio_iack | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_cio_iack/tb_cio_iack

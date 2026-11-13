@@ -82,7 +82,7 @@ $(OBJ)/tb_fpu_enc/tb_fpu_enc: $(FPU_ENC) rtl/k8070_fpu/z8070_dec.sv tb/k8070_fpu
 	  $(FPU_ENC) rtl/k8070_fpu/z8070_dec.sv tb/k8070_fpu/tb_fpu_enc.sv -o tb_fpu_enc >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-fpu-enc: $(OBJ)/tb_fpu_enc/tb_fpu_enc
-	@$(OBJ)/tb_fpu_enc/tb_fpu_enc | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_fpu_enc/tb_fpu_enc
 
 # ---- spec TIMING bench (SystemVerilog) -------------------------------------
 $(OBJ)/tb_fpu_timing/tb_fpu_timing: $(FPU_SRCS) tb/k8070_fpu/tb_fpu_timing.sv
@@ -91,7 +91,7 @@ $(OBJ)/tb_fpu_timing/tb_fpu_timing: $(FPU_SRCS) tb/k8070_fpu/tb_fpu_timing.sv
 	  $(FPU_SRCS) tb/k8070_fpu/tb_fpu_timing.sv -o tb_fpu_timing >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-fpu-timing: $(OBJ)/tb_fpu_timing/tb_fpu_timing
-	@$(OBJ)/tb_fpu_timing/tb_fpu_timing | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_fpu_timing/tb_fpu_timing
 
 # ---- Data Processor bench (C++) --------------------------------------------
 $(FPU_DP_TB): $(FPU_DP_SRCS) tb/k8070_fpu/tb_fpu_dp.cpp
@@ -100,10 +100,8 @@ $(FPU_DP_TB): $(FPU_DP_SRCS) tb/k8070_fpu/tb_fpu_dp.cpp
 	  --Mdir $(dir $@) -CFLAGS '-std=c++14 -O2' \
 	  --top-module z8070_dp $(FPU_DP_SRCS) $(CURDIR)/tb/k8070_fpu/tb_fpu_dp.cpp -o tb_fpu_dp >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
-# With ONLY the exit status is the rung's; without, the whole ladder prints
-# and the run does not stop `make test`.
 test-fpu-dp: $(FPU_DP_TB)
-	@$(FPU_DP_TB) $(if $(ONLY),--only $(ONLY),) $(if $(MCLK),--mclk $(MCLK),) vectors/k8070_fpu/dp/*.vec $(if $(ONLY),,|| true)
+	@$(FPU_DP_TB) $(if $(ONLY),--only $(ONLY),) $(if $(MCLK),--mclk $(MCLK),) vectors/k8070_fpu/dp/*.vec
 
 # ---- CPU + FPU system bench (C++) ------------------------------------------
 #   make vectors-cpu-fpu  [MAINTAINER, needs $(Z8000)] record vectors/k8070_fpu/system from the model's system FPU tests

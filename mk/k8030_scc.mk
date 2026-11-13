@@ -63,7 +63,7 @@ $(OBJ)/tb_scc_timing/tb_scc_timing: $(SCC_SRCS) tb/k8030_scc/tb_scc_timing.sv
 	  $(SCC_SRCS) tb/k8030_scc/tb_scc_timing.sv -o tb_scc_timing >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-scc-timing: $(OBJ)/tb_scc_timing/tb_scc_timing
-	@$(OBJ)/tb_scc_timing/tb_scc_timing | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_scc_timing/tb_scc_timing
 
 # Daisy-chain acknowledge bench: two chips, the first's IEO into the second's IEI.
 $(OBJ)/tb_scc_iack/tb_scc_iack: $(SCC_SRCS) tb/k8030_scc/tb_scc_iack.sv
@@ -72,4 +72,4 @@ $(OBJ)/tb_scc_iack/tb_scc_iack: $(SCC_SRCS) tb/k8030_scc/tb_scc_iack.sv
 	  $(SCC_SRCS) tb/k8030_scc/tb_scc_iack.sv -o tb_scc_iack >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
 test-scc-iack: $(OBJ)/tb_scc_iack/tb_scc_iack
-	@$(OBJ)/tb_scc_iack/tb_scc_iack | grep -v '\$$finish'
+	@scripts/run_sv_bench.sh $(OBJ)/tb_scc_iack/tb_scc_iack
