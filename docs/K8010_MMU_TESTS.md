@@ -20,7 +20,6 @@ make mmu ONLY=TestBasicTranslation [VCD=1] [CONTEXT=20]   # one vector, divergen
 make ladder-mmu        # every vector shortest-first with PASS/FAIL/SKIP
 make test-mmu-timing   # datasheet strobe bench (22 checks; docs/TIMING_TESTS.md)
 make test-cpu-mmu-clk  # CPU and MMU on one CLK net, PA valid at the CPU's next CLK rise
-make vectors-mmu       # maintainer only: re-record the vectors with the vector generator
 ```
 
 The top-level `lint`, `build` and `test` include these.
@@ -37,7 +36,7 @@ P DESC 05 0100 FF 80             poke: Desc[5] = {Base, Limit, Attr}
 P MODE C8                        poke: Mode Register
 T 72 0000 00 0 6 000000 0000 00  one pin sample
 ...
-F MODE C8 / F SAR / F DSC / F VTR / F VSN / F VOFF / F VOVF / F ISN / F IOFF / F BCSR / F TRAP
+F MODE C8 / F SAR / F DSC / F VTR / F VSN / F VOFF / F VOVF (not compared) / F ISN / F IOFF / F BCSR / F TRAP
 F DESC 00 0000 00 00 (x64)       final descriptor store
 F TICKS 6                        informational
 END
@@ -144,7 +143,7 @@ silent; the reading taken is stated.
 | 12 | /DS rise and the next /AS fall in one sample | AC #16 TdDS(AS) min 30 ns | SPEC | the /DS-rise clear does not erase the new /AS-fall latch. Visible in TestSegTrapAcknowledgeID |
 | 13 | DMASYNC during CPU cycles | p.571 "It must always be High during CPU cycles"; p.566 DMA needs >= 2 Low clocks | SPEC | no vector drives DMASYNC Low outside a DMA cycle |
 | 14 | DMASYNC protocol | p.566: >= 2 clocks Low, then High before a CLK rise -> translate; "During CPU cycles, DMASYNC should always be High"; p.565 "After two clock cycles of DMASYNC High, the MMU assumes that the CPU has control of the bus"; p.564 TRNS names no DMA exemption | SPEC | DMA follows TRNS (clear: {SN, offset} unchecked); the cycle ends at its /DS rise or after two DMASYNC-High samples past the address sample, which releases /SUP; A23:8 stay driven to the /DS rise. TestDMASYNC_*. OPEN: DMASYNC High through a DMA cycle longer than two clocks |
-| 15 | reset state | p.570: reset clears Mode, VTR and DSC; MSEN = 1 if /CS Low; "All other registers are undefined"; AD/PA 3-stated; /SUP, /SEGT not driven; MSEN = 0 -> no response to addresses, commands still work | SPEC + OPEN | the F records of TestReset, TestPassThroughMSENonlyAfterCSLowReset and TestCmd_AccessWithMSENClear hold zeros for the undefined registers (SAR, descriptors, status): this implementation's reset value, not a silicon claim. Reset also clears the DMA, command and acknowledge latches |
+| 15 | reset state | p.570: reset clears Mode, VTR and DSC; MSEN = 1 if /CS Low; "All other registers are undefined"; AD/PA 3-stated; /SUP, /SEGT not driven; MSEN = 0 -> no response to addresses, commands still work | SPEC + OPEN | the F records of TestReset, TestPassThroughMSENonlyAfterCSLowReset and TestCmd_AccessWithMSENClear hold zeros for the undefined SAR and status registers and the pre-reset contents for descriptors: this implementation's choice, not a silicon claim. Reset also clears the DMA, command and acknowledge latches |
 | 16 | MSEN = 0 / TRNS = 0 | p.564: MSEN clear -> address lines 3-stated; TRNS clear -> {0, SN[6:0], offset} without checks; URS/MST gating still applies | SPEC | TestPassThroughMSENonlyAfterCSLowReset, TestCmd_AccessWithMSENClear |
 | 17 | /SUP on violations | p.571 "asserted during the current bus cycle when any access violation except write warning occurs"; p.564 write warning "no Suppress signal"; FATL: "Suppress signals are generated on this and subsequent CPU violations" | SPEC | TestWriteWarningNoSuppress, TestMMU_FATL_* |
 | 18 | VTR layout and flag rules | Fig.8 p.564 (FATL SWW PWW EXCV CPUIV SLV SYSV RDV); p.564-565 | SPEC | layout, capture once, FATL/SWW rules and inhibits |

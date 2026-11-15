@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
     std::string finalMsg;
     bool sawEnd = false;
 
-    // Pokes are applied to the model, then settled with an eval() at the
+    // Pokes are applied to the DUT, then settled with an eval() at the
     // current clock level (the vector sets state between two records).
     auto poke = [&](std::istringstream& ss, const std::string& what) -> bool {
         std::string h1, h2, h3, h4;
@@ -279,12 +279,11 @@ int main(int argc, char** argv) {
                 else if (what == "VTR") g = dut.viol_type();
                 else if (what == "VSN") g = dut.viol_sn();
                 else if (what == "VOFF") { e >>= 8; g = dut.viol_off(); }
-                else if (what == "VOVF") g = dut.viol_overflow();
                 else if (what == "ISN") g = dut.isn();
                 else if (what == "IOFF") g = dut.ioffset();
                 else if (what == "BCSR") g = dut.bcsr();
                 else if (what == "TRAP") g = dut.trap_pending();
-                else known = false;   // TICKS is informational
+                else known = false;   // TICKS and VOVF are not chip state
                 if (known && e != g) { char b[96]; snprintf(b, sizeof b, "%s exp=%llX got=%llX", what.c_str(), (unsigned long long)e, (unsigned long long)g); fail(b); }
             }
         } else if (tag == "END") {

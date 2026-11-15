@@ -220,7 +220,7 @@ module tb_mmu_timing;
     $display("[3] back-to-back cycles: the /DS rise shares a sample with the next /AS fall");
     // Product Spec Fig 19 (Z8001/2, 1988 DB p.157): the CPU releases /DS after
     // the T3 falling edge and drops /AS for the next transaction at the very
-    // next edge.  A rising-edge-sampled model sees both in one sample; the
+    // next edge.  A rising-edge-sampled design sees both in one sample; the
     // address just latched belongs to the NEW cycle and must survive the old
     // cycle's teardown (AC #16 TdDS(AS) min 30 ns).
     sio_write(CMD_SAR,   8'h06);
