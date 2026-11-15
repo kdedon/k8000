@@ -1240,13 +1240,15 @@ module z8070_ip
   // FLDCTL of FOP1 or FOP2 waits three CLK.I rises from done (that of
   // done included) for their write-back and a read after it.
   // Justification: (reg-a) CLK.I rises left.
-  logic [1:0] fset_q;
+  logic [1:0] fset_q, fset_d;
   logic       fop_wait;
 
+  assign fset_d = fop ? (clki_rise ? 2'd2 : 2'd3) :
+                  (clki_rise && fset_q != 2'd0) ? fset_q - 2'd1 : fset_q;
+
   always_ff @(posedge clk) begin
-    if (!reset_n)                      fset_q <= 2'd0;
-    else if (fop)                      fset_q <= clki_rise ? 2'd2 : 2'd3;
-    else if (clki_rise && fset_q != 0) fset_q <= fset_q - 2'd1;
+    if (!reset_n) fset_q <= 2'd0;
+    else          fset_q <= fset_d;
   end
 
   assign fop_wait = state_q == IP_RESULT && mn_q == MN_FLDCTL && fset_q != 2'd0 &&
@@ -1286,22 +1288,40 @@ module z8070_ip
   end
 
   // ---- pins ------------------------------------------------------------
-  logic        dp_wait, store_wait, bsy_dp, inter, rp_bsy, drive, vec_drive;
+  logic        dp_wait, store_wait, bsy_dp, inter, rp_bsy, bsy_d, bsy_q, drive, vec_drive;
+  logic [3:0]  sel_d;
+  mn_e         mn_d;
+  dir_e        dir_d, p_dir_d;
+  logic        p_inv_d;
   logic [7:0]  vec;
   logic [15:0] out_word;
   logic [79:0] img;
 
-  assign dp_wait    = state_q == IP_DPWAIT;
-  assign store_wait = (dp_wait && dir_q == DIR_OUT) || (pend_q == PQ_READY && p_dir == DIR_OUT && !p_inv) ||
-                      fop_wait;
-  assign inter      = sc_q[SC_OVRLP +: 2] == OVRLP_INTERMEDIATE;
-  assign bsy_dp     = inter ? pend_q == PQ_READY : dp_wait;
+  // /BSY is a flop: its terms are taken on the registers' next values.
+  assign sel_d      = (launch || p_load || h_load) ? pl_sel : sel_q;
+  assign mn_d       = launch ? pl_mn : promote ? q_mn : mn_q;
+  assign dir_d      = launch ? pl_dir : promote ? q_dir : dir_q;
+  assign p_dir_d    = (p_load || h_load) ? pl_dir : p_dir;
+  assign p_inv_d    = (p_load || h_load) ? !plan_ok : p_inv;
+
+  assign dp_wait    = state_d == IP_DPWAIT;
+  assign store_wait = (dp_wait && dir_d == DIR_OUT) || (pend_d == PQ_READY && p_dir_d == DIR_OUT && !p_inv_d) ||
+                      (state_d == IP_RESULT && mn_d == MN_FLDCTL && fset_d != 2'd0 &&
+                       (sel_d == CTL_FOP1 || sel_d == CTL_FOP2));
+  assign inter      = sc_d[SC_OVRLP +: 2] == OVRLP_INTERMEDIATE;
+  assign bsy_dp     = inter ? pend_d == PQ_READY : dp_wait;
   // A kept word 2 of the executing instruction: /BSY as once it is taken.
-  assign rp_bsy     = rp_q && plan_ok && at_w2 &&
-                      ((pl_dir == DIR_OUT && pl_mn != MN_FLDCTL && pl_mn != MN_FLDCTLB) ||
-                       (!inter && pl_dir == DIR_NONE && !is_list) ||
-                       (pl_mn == MN_FLDCTL && pl_dir == DIR_OUT && fset_q != 2'd0 &&
-                        (pl_sel == CTL_FOP1 || pl_sel == CTL_FOP2)));
+  assign rp_bsy     = rp_d && plan_ok_u && state_d == IP_WORD2 &&
+                      ((pl_dir_u == DIR_OUT && pl_mn_u != MN_FLDCTL && pl_mn_u != MN_FLDCTLB) ||
+                       (!inter && pl_dir_u == DIR_NONE && !is_list_u) ||
+                       (pl_mn_u == MN_FLDCTL && pl_dir_u == DIR_OUT && fset_d != 2'd0 &&
+                        (pl_sel_u == CTL_FOP1 || pl_sel_u == CTL_FOP2)));
+  assign bsy_d      = reset_n & (bsy_dp | store_wait | rp_bsy);
+
+  always_ff @(posedge clk) begin
+    bsy_q <= bsy_d;
+  end
+
   assign drive      = state_q == IP_RESULT && busack_n && !fop_wait &&
                       ((cyc_mem && cyc_write_q && cyc_open_q) ||
                        (cyc_epu && !cyc_write_q && !ds_n));
@@ -1339,7 +1359,7 @@ module z8070_ip
   always_comb begin
     ad_drive = reset_n & (drive | vec_drive);
     ad_out   = drive ? out_word : {8'h00, vec};
-    bsy_n    = ~(reset_n & (bsy_dp | store_wait | rp_bsy));
+    bsy_n    = ~bsy_q;
     int_n    = ~(reset_n & int_req);
     ieo      = iei & (~reset_n | ~(sc_q[SC_IUS] | sc_q[SC_DLC] | in_ack));
   end
