@@ -203,7 +203,7 @@ module tb_cio_timing;
     $display("[4] back-to-back cycles (the /DS rise shares a sample with the next /AS fall)");
     // Product Spec Fig 19 (1988 DB p.157): the CPU releases /DS after the T3
     // falling edge and drops /AS for the next transaction at the next edge, so
-    // a rising-edge-sampled model sees both in ONE sample.  The chip's
+    // a rising-edge-sampled design sees both in ONE sample.  The chip's
     // end-of-cycle teardown must be applied BEFORE its /AS-fall latch or the
     // second access is dropped and the CIO stays in power-on
     // reset.
@@ -289,10 +289,24 @@ module tb_cio_timing;
        "p.692 rows 22-25: every /INT delay is quoted in AS cycles, so /INT is an /AS-clocked latch, not a combinational encoder output",
        $sformatf("int_n=%0b with IP+IE+MIE set", int_n));
 
+    // A status write whose /DS falls in the sample of the matching /AS rise.
+    pa_in = 8'h00; as_pulse(); as_pulse();
+    bus_write(REG_PA_CS, 8'hA0);     // clear IP
+    pa_in = 8'h3C; as_pulse();       // the match enters the first stage
+    pa_in = 8'h00;                   // matches once, at the next /AS rise
+    as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b0; ad_in = adr(REG_PA_CS); @(posedge clk);
+    as_n = 1'b1; ds_n = 1'b0; ad_in = 8'h00;                                    @(posedge clk);
+    ds_n = 1'b1;                                                                @(posedge clk);
+    cs0_n = 1'b1; cs1 = 1'b0;                                                   @(posedge clk);
+    bus_read(REG_PA_CS, rd, drove);
+    ck((rd & 8'h20) != 8'h00, "a null status write in the matching /AS rise keeps the new IP",
+       "INFERRED: the /AS rise clocks the match; the write's null command leaves IP",
+       $sformatf("Port A CS = %02h, IP must be set", rd));
+
     $display("");
     $display("[7] one access per /AS: a further /DS without /AS is ignored (INFERRED)");
     // A DMA master with no /AS strobes /DS after the CPU's last cycle; the
-    // data book does not say what the chip does.  Model: the select is
+    // data book does not say what the chip does.  Assumed: the select is
     // spent at the first /DS rise.
     #1;
     as_n = 1'b0; intack_n = 1'b0; ad_in = 8'h00;                            step();

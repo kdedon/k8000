@@ -25,9 +25,8 @@ make build-cio        # obj_dir/tb_cio/tb_cio
 make test-cio         # replay every vector, pass/fail + shortest failing
 make cio ONLY=TestName [VCD=1] [CONTEXT=N] [FCLK=N]   # one vector, full context
 make ladder-cio       # every vector, shortest first, with status
-make test-cio-timing  # datasheet strobe bench (18 checks; docs/TIMING_TESTS.md)
+make test-cio-timing  # datasheet strobe bench (19 checks; docs/TIMING_TESTS.md)
 make test-cio-iack    # two chips on one daisy chain, acknowledge (10 checks)
-make vectors-cio      # maintainer only: re-record the vectors with the vector generator
 ```
 
 ### Vector format (`K8000VEC 1 cio`)
@@ -59,7 +58,7 @@ T <in_bits:2hex> <AD_in:2hex> <PA_in:2hex> <PB_in:2hex> <PC_in:1hex>
   compared (the Port C pins are).
 
 Where a test set the chip up through register accesses rather than pins,
-the generator writes each as Z-Bus cycles: an access is three records (/AS
+each is written as Z-Bus cycles: an access is three records (/AS
 fall with address and selects; /AS rise and /DS fall with data; /DS rise),
 an acknowledge three (with IEI High), a PCLK step two (one falling edge,
 port pins as the test set them). Every record is checked against a chip

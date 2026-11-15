@@ -13,12 +13,9 @@
 // consecutive master clocks). Counter/timer inputs on port lines are
 // ordinary level-sampled port data.
 //
-// Implemented so far: strobe capture, cycle ownership, the hardware
-// reset, the register file with its reset gating and command/status
-// semantics, the port output registers and enables, and the /AS-clocked
-// port inputs with their 1's catchers, the three counter/timers, pattern
-// match, the interrupt sources with the daisy chain and acknowledge, and
-// the handshakes.
+// Port inputs (PA, PB, PC) are sampled on the master clock: the board
+// synchronises any that come from outside the clk domain. Not built: the
+// bidirectional port mode and Port Link Control (MCCR D3 is stored only).
 
 `default_nettype none
 
@@ -68,6 +65,9 @@ module z8036_cio (
   localparam logic [5:0] REG_CT1TC = 6'h16;   // time constants, MSB then LSB
   localparam logic [5:0] REG_CT1MD = 6'h1C;
   localparam logic [5:0] REG_CVEC  = 6'h1F;
+  // Registers read from elsewhere hold no storage: port data (the output
+  // registers and the pins), current counts and the current vector.
+  localparam logic [NREGS-1:0] REG_STORED = ~(48'h8000_0000 | 48'h003F_0000 | 48'h0000_E000);
   localparam logic [5:0] REG_PAMOD = 6'h20;
   localparam logic [5:0] REG_PAPOL = 6'h22;
   localparam logic [5:0] REG_PADIR = 6'h23;
@@ -313,7 +313,12 @@ module z8036_cio (
 
   localparam hs_t HS_RST = '{ore: 1'b1, rd: 1'b1, pack: 1'b1, lv: 1'b1, default: '0};
 
+  // pmf and ip are reloaded from the status register every clock: not stored.
+  localparam int HS_W = $bits(hs_t) - 2;
+  logic [HS_W-1:0] hs_q [0:1];
   hs_t        hs [0:1], hs_as [0:1], hs_fin [0:1];
+  assign hs[0] = hs_t'({hs_q[0], 2'b00});
+  assign hs[1] = hs_t'({hs_q[1], 2'b00});
   logic [3:0] hs_drive, hs_mask, hs_drive_nx, hs_mask_nx;
   logic [1:0] hs_ipset, hs_isin, hs_tw, hs_pl;
   // Pulsed handshake: C/T3 sits in the port's ACKIN or DAV path.
@@ -572,12 +577,13 @@ module z8036_cio (
   // ---- counter/timers --------------------------------------------------------
   // A register write this sample, and the registers as they stand after it:
   // the counters act on the new values in the same sample.
-  logic bus_wr, reg_wr, ct_wr, ct_off;
+  logic bus_wr, reg_wr, ct_wr, ct_off, sw_reset;
   assign bus_wr = ds_fall && as_intack_n && cs1 && owned && !r_w;
   assign reg_wr = bus_wr && !in_reset;
   assign ct_wr  = reg_wr && ct_reg;
+  assign sw_reset = reg_wr && cyc_reg == REG_MICR && ad_in[MICR_RST];
   // Reset holds the counters cleared until the Reset bit is written 0.
-  assign ct_off = hw_reset || (reg_wr && cyc_reg == REG_MICR && ad_in[MICR_RST])
+  assign ct_off = hw_reset || sw_reset
                   || (in_reset && !(bus_wr && cyc_reg == REG_MICR && !ad_in[MICR_RST]));
 
   function automatic logic [7:0] reg_post(input logic [5:0] a, input logic [7:0] cur,
@@ -607,6 +613,8 @@ module z8036_cio (
 
   // Port command/status write. In OR-priority mode IP holds while the
   // pattern still matches; clearing it with an error held sets IP and ERR.
+  // PMF, and an IP raised by an /AS rise in this sample, survive the write
+  // unless it clears IP.
   logic [7:0] port_cs_wr;
   logic       port_clr_ip;
   always_comb begin
@@ -618,6 +626,8 @@ module z8036_cio (
     end else if (port_clr_ip && pm_perr[cyc_reg[0]]) begin
       {port_cs_wr[CS_IP], port_cs_wr[CS_ERR]} = 2'b11;
     end
+    if (!port_clr_ip && (pm_ip_set[cyc_reg[0]] || hs_ipset[cyc_reg[0]])) port_cs_wr[CS_IP] = 1'b1;
+    port_cs_wr[1] = hs_on[cyc_reg[0]] ? hs_fin[cyc_reg[0]].pmf : pm_pmf_nx[cyc_reg[0]];
   end
 
   // Clearing IP while an end-of-count error is held sets IP and ERR again.
@@ -653,7 +663,7 @@ module z8036_cio (
   ct_t        ct_nx [0:2];
   logic [15:0] ct_latch_nx [0:2];
   logic [2:0] ct_perr_nx, ct_ip_set, ct_en, ip_v, err_v, gcb_v;
-  logic       ct_pre_nx, ct_out1_nx, clocked, tc_hit;
+  logic       ct_pre_nx, ct_out1_nx, ct_out0_pre, ece, cfall, crise, tick, reload, gate, out0, tc_hit;
   always_comb begin
     for (int i = 0; i < 3; i++) begin
       ct_nx[i]       = ct[i];
@@ -665,10 +675,9 @@ module z8036_cio (
     ct_en      = {mccr_p[MCCR_PCE], mccr_p[MCCR_CT2E], mccr_p[MCCR_CT1E]};
     ct_perr_nx = ct_perr;
     ct_ip_set  = '0;
-    ct_pre_nx  = ct_pre;
+    ct_pre_nx  = pclk_fall ? !ct_pre : ct_pre;   // timer mode counts on every other PCLK fall
     ct_out1_nx = ct_out1_q;
-    clocked    = 1'b0;
-    tc_hit     = 1'b0;
+    {ece, cfall, crise, tick, reload, gate, out0, tc_hit} = '0;
 
     // Command/status write: the error is consumed, the first RCC set
     // freezes the count, TCB triggers.
@@ -679,63 +688,43 @@ module z8036_cio (
         ct_nx[ct_idx] = ct_trig(ct_nx[ct_idx], md_p[ct_idx], ct_en[ct_idx], tc_p[ct_idx]);
     end
 
-    // Counter mode: trigger and gate are sampled as the count input falls;
-    // the count steps, reloads and ends the pulse as it rises.
+    // One step per counter. Counter mode: trigger and gate are sampled as
+    // the count input falls; the count steps, reloads and ends the pulse as
+    // it rises. Timer mode: trigger and reload on each PCLK fall, the rest
+    // on every other one, or on C/T 1's output falling when linked.
+    ct_out0_pre = ct_nx[0].out;
     for (int i = 0; i < 3; i++) begin
-      if (md_p[i][CTM_ECE] && ct_clk_q[i] && !ct_clk_in[i]
-          && !ct_trig_q[i] && ct_trig_in[i] && md_p[i][CTM_ETE])
+      ece   = md_p[i][CTM_ECE];
+      cfall = ct_clk_q[i] && !ct_clk_in[i];
+      crise = !ct_clk_q[i] && ct_clk_in[i];
+      if ((ece ? cfall : pclk_fall) && !ct_trig_q[i] && ct_trig_in[i] && md_p[i][CTM_ETE])
         ct_nx[i] = ct_trig(ct_nx[i], md_p[i], ct_en[i], tc_p[i]);
-      if (md_p[i][CTM_ECE] && !ct_clk_q[i] && ct_clk_in[i]) begin
-        if (ct_nx[i].pclr) begin ct_nx[i].out = 1'b0; ct_nx[i].pclr = 1'b0; end
+      // C/T 2 sees C/T 1's output as its count-input step left it; the PCLK
+      // step sees C/T 1's PCLK step too. It is inverted on the way.
+      out0   = ece ? ct_out0_pre : ct_nx[0].out;
+      reload = ece ? crise : pclk_fall;
+      tick   = ece ? crise
+             : pclk_fall && (i == 1 && mccr_p[1:0] == 2'd3 ? ct_out1_q && !ct_nx[0].out : ct_pre_nx);
+      gate   = ece ? ct_gate_q[i] : ct_gate_in[i];
+      if (tick && ct_nx[i].pclr) begin ct_nx[i].out = 1'b0; ct_nx[i].pclr = 1'b0; end
+      if (reload) begin
         if (ct_nx[i].tcp) ct_nx[i].cnt = tc_p[i];
         ct_nx[i].tcp = 1'b0;
-        if (ct_nx[i].run && gcb_v[i] && (!md_p[i][CTM_EGE] || ct_gate_q[i])
-            && !(i == 1 && mccr_p[1:0] == 2'd1 && ct_nx[0].out)) begin
-          tc_hit       = ct_nx[i].cnt == 16'd1;
-          ct_nx[i].cnt = ct_nx[i].cnt - 16'd1;
-          if (tc_hit) begin
-            ct_nx[i] = ct_end(ct_nx[i], md_p[i]);
-            if (!ip_v[i]) begin ip_v[i] = 1'b1; ct_ip_set[i] = 1'b1; end
-            else if (!err_v[i]) ct_perr_nx[i] = 1'b1;
-          end
+      end
+      if (tick && ct_nx[i].run && gcb_v[i] && (!md_p[i][CTM_EGE] || gate)
+          && !(i == 1 && mccr_p[1:0] == 2'd1 && out0)) begin
+        tc_hit       = ct_nx[i].cnt == 16'd1;
+        ct_nx[i].cnt = ct_nx[i].cnt - 16'd1;
+        if (tc_hit) begin
+          ct_nx[i] = ct_end(ct_nx[i], md_p[i]);
+          if (!ip_v[i]) begin ip_v[i] = 1'b1; ct_ip_set[i] = 1'b1; end
+          else if (!err_v[i]) ct_perr_nx[i] = 1'b1;
         end
       end
+      if (i == 0 && ece) ct_out0_pre = ct_nx[0].out;
     end
 
     if (pclk_fall) begin
-      for (int i = 0; i < 3; i++)
-        if (!md_p[i][CTM_ECE] && !ct_trig_q[i] && ct_trig_in[i] && md_p[i][CTM_ETE])
-          ct_nx[i] = ct_trig(ct_nx[i], md_p[i], ct_en[i], tc_p[i]);
-
-      // Timer mode counts on every other PCLK fall.
-      ct_pre_nx = !ct_pre;
-      for (int i = 0; i < 3; i++) begin
-        clocked = ct_pre_nx;
-        if (i == 1 && mccr_p[1:0] == 2'd3) clocked = ct_out1_q && !ct_nx[0].out;
-        if (!md_p[i][CTM_ECE] && clocked && ct_nx[i].pclr) begin
-          ct_nx[i].out  = 1'b0;
-          ct_nx[i].pclr = 1'b0;
-        end
-        if (!md_p[i][CTM_ECE]) begin
-          if (ct_nx[i].tcp) ct_nx[i].cnt = tc_p[i];
-          ct_nx[i].tcp = 1'b0;
-        end
-        // C/T 1's output is inverted on the way to C/T 2.
-        if (ct_nx[i].run && !md_p[i][CTM_ECE]
-            && gcb_v[i]
-            && (!md_p[i][CTM_EGE] || ct_gate_in[i])
-            && !(i == 1 && mccr_p[1:0] == 2'd1 && ct_nx[0].out)
-            && clocked) begin
-          tc_hit       = ct_nx[i].cnt == 16'd1;
-          ct_nx[i].cnt = ct_nx[i].cnt - 16'd1;
-          if (tc_hit) begin
-            ct_nx[i] = ct_end(ct_nx[i], md_p[i]);
-            if (!ip_v[i]) begin ip_v[i] = 1'b1; ct_ip_set[i] = 1'b1; end
-            else if (!err_v[i]) ct_perr_nx[i] = 1'b1;
-          end
-        end
-      end
-
       if (mccr_p[1:0] == 2'd2 && ct_out1_q && !ct_nx[0].out)
         ct_nx[1] = ct_trig(ct_nx[1], md_p[1], ct_en[1], tc_p[1]);
       ct_out1_nx = ct_nx[0].out;
@@ -848,58 +837,77 @@ module z8036_cio (
   end
 
   always_ff @(posedge clk) begin
-    begin
-      ds_q <= ds_n;
-      as_q <= as_n;
+    // Strobe and count-input edges, the counters, the bus latch and a held
+    // handshake access run through both resets.
+    ds_q <= ds_n;
+    as_q <= as_n;
+    ct_clk_q <= ct_clk_in;
+    for (int i = 0; i < 3; i++)
+      if (md_p[i][CTM_ECE] ? ct_clk_q[i] && !ct_clk_in[i] : pclk_fall)
+        ct_trig_q[i] <= ct_trig_in[i];
+    for (int i = 0; i < 3; i++)
+      if (ct_clk_q[i] && !ct_clk_in[i]) ct_gate_q[i] <= ct_gate_in[i];
+    if (ct_off) begin
+      for (int i = 0; i < 3; i++) begin ct[i] <= '0; ct_latch[i] <= '0; end
+      {ct_perr, ct_pre, ct_out1_q} <= '0;
+    end else begin
+      for (int i = 0; i < 3; i++) begin ct[i] <= ct_nx[i]; ct_latch[i] <= ct_latch_nx[i]; end
+      {ct_perr, ct_pre, ct_out1_q} <= {ct_perr_nx, ct_pre_nx, ct_out1_nx};
+    end
+    for (int p = 0; p < 2; p++) lpm_latch[p] <= lpm_latch_nx[p];
+    wait_stall <= wait_nx;
 
-      // The pin edge detectors run through reset.
-      ct_clk_q <= ct_clk_in;
-      for (int i = 0; i < 3; i++)
-        if (md_p[i][CTM_ECE] ? ct_clk_q[i] && !ct_clk_in[i] : pclk_fall)
-          ct_trig_q[i] <= ct_trig_in[i];
-      for (int i = 0; i < 3; i++)
-        if (ct_clk_q[i] && !ct_clk_in[i]) ct_gate_q[i] <= ct_gate_in[i];
-      if (ct_off) begin
-        for (int i = 0; i < 3; i++) begin ct[i] <= '0; ct_latch[i] <= '0; end
-        {ct_perr, ct_pre, ct_out1_q} <= '0;
-      end else begin
-        for (int i = 0; i < 3; i++) begin ct[i] <= ct_nx[i]; ct_latch[i] <= ct_latch_nx[i]; end
-        {ct_perr, ct_pre, ct_out1_q} <= {ct_perr_nx, ct_pre_nx, ct_out1_nx};
-      end
+    // The /DS rise floats AD before the /AS latch starts the next cycle:
+    // back to back they land in the same sample. A further /DS with no
+    // new /AS is ignored.
+    if (ds_rise) ad_drive_q <= 1'b0;
+    ds_spent <= as_n && (ds_spent || ds_rise);
+    if (!as_n) begin
+      as_ad       <= ad_in;
+      as_intack_n <= intack_n;
+      ad_drive_q  <= 1'b0;
+    end
+    if (hw_reset)  owned <= 1'b0;
+    else if (!as_n) owned <= ds_n && !cs0_n && intack_n;
 
-      // /AS is the clock for the port inputs: no /AS, no sampling.
+    // A held handshake access completes once its port is ready.
+    if (hs_rel) begin
+      if (r_w) ad_q <= rd_data;
+      else if (cyc_reg == REG_PAD && hs_wr_ok[0])
+        out_a <= ad_in;
+      else if (cyc_reg == REG_PBD && hs_wr_ok[1])
+        out_b <= ad_in;
+    end
+
+    if (hw_reset || sw_reset) begin
+      for (int p = 0; p < 2; p++) begin pm_s1[p] <= '0; pm_s2[p] <= '0; pm_bits[p] <= '0; pm_frz[p] <= 1'b0; end
+      {lpm_valid, pm_perr, int_latch} <= '0;
+      for (int p = 0; p < 2; p++) hs_q[p] <= HS_RST[$bits(hs_t)-1:2];
+      {hs_drive, hs_mask} <= '0;
+      for (int i = 0; i < NREGS; i++) regs[i] <= 8'h00;
+      regs[REG_MICR][MICR_RST] <= 1'b1;
+      {smp_a, smp_b, smp_c}       <= '0;
+      {catch_a, catch_b, catch_c} <= '0;
+    end else begin
+      // Port inputs: sampled at /AS rises, and on PCLK while /WAIT holds a handshake.
       {smp_a, smp_b, smp_c}       <= {smp_a_nx, smp_b_nx, smp_c_nx};
       {catch_a, catch_b, catch_c} <= {catch_a_nx, catch_b_nx, catch_c_nx};
 
       // Pattern logic and the /INT request latch, on the /AS clock.
       for (int p = 0; p < 2; p++) begin
-        pm_bits[p]   <= pm_bits_nx[p];
+        pm_bits[p] <= pm_bits_nx[p];
         if (!regs[REG_PACS + 6'(p)][CS_IP]) pm_frz[p] <= 1'b0;
-        lpm_latch[p] <= lpm_latch_nx[p];
         regs[REG_PACS + 6'(p)][1] <= hs_on[p] ? hs_fin[p].pmf : pm_pmf_nx[p];
         if (pm_ip_set[p]) regs[REG_PACS + 6'(p)][CS_IP] <= 1'b1;
         if (hs_on[p] && !in_reset) regs[REG_PACS + 6'(p)][CS_IP] <= hs_fin[p].ip;
-        hs[p] <= hs_fin[p];
+        hs_q[p] <= hs_fin[p][$bits(hs_t)-1:2];
       end
       {lpm_valid, pm_perr} <= {lpm_valid_nx, pm_perr_nx};
-      {hs_drive, hs_mask, wait_stall} <= {hs_drive_nx, hs_mask_nx, wait_nx};
+      {hs_drive, hs_mask}  <= {hs_drive_nx, hs_mask_nx};
       if (as_rise) begin
         pm_s1[0] <= in_a;  pm_s2[0] <= pm_s1[0];
         pm_s1[1] <= in_b;  pm_s2[1] <= pm_s1[1];
         if (!in_reset) int_latch <= int_latch_now;  // Low IEI blocks the request
-      end
-
-      // The /DS rise floats AD before the /AS latch starts the next cycle:
-      // back to back they land in the same sample. A further /DS with no
-      // new /AS is ignored.
-      if (ds_rise) ad_drive_q <= 1'b0;
-      ds_spent <= as_n && (ds_spent || ds_rise);
-
-      if (!as_n) begin
-        as_ad       <= ad_in;
-        as_intack_n <= intack_n;
-        owned       <= ds_n && !cs0_n && intack_n;
-        ad_drive_q  <= 1'b0;
       end
 
       // Interrupt acknowledge: the highest eligible source goes under
@@ -919,18 +927,6 @@ module z8036_cio (
         end
       end
 
-      // A held handshake access completes once its port is ready.
-      if (hs_rel) begin
-        if (r_w) ad_q <= rd_data;
-        else if (cyc_reg == REG_PAD && hs_wr_ok[0]) begin
-          regs[REG_PAD]  <= ad_in;
-          out_a         <= ad_in;
-        end else if (cyc_reg == REG_PBD && hs_wr_ok[1]) begin
-          regs[REG_PBD]  <= ad_in;
-          out_b         <= ad_in;
-        end
-      end
-
       // CS1 gates only this access.
       if (ds_fall && as_intack_n && cs1 && owned) begin
         if (r_w) begin
@@ -938,62 +934,40 @@ module z8036_cio (
           ad_drive_q <= 1'b1;
           // Reading a current-count LSB clears that counter's RCC.
           if (!in_reset && cc_lsb) regs[REG_CT1CS + 6'(ct_idx)][CT_RCC] <= 1'b0;
-        end else begin
-          if (in_reset) begin
-            if (cyc_reg == REG_MICR) regs[REG_MICR] <= {7'b0, ad_in[MICR_RST]};
-          end else if (cyc_reg == REG_MICR && ad_in[MICR_RST]) begin
-            for (int p = 0; p < 2; p++) begin pm_s1[p] <= '0; pm_s2[p] <= '0; pm_bits[p] <= '0; pm_frz[p] <= 1'b0; end
-            {lpm_valid, pm_perr, int_latch} <= '0;
-            for (int p = 0; p < 2; p++) hs[p] <= HS_RST;
-            {hs_drive, hs_mask} <= '0;
-            for (int i = 0; i < NREGS; i++) regs[i] <= 8'h00;
-            regs[REG_MICR][MICR_RST] <= 1'b1;
-            {smp_a, smp_b, smp_c}       <= '0;
-            {catch_a, catch_b, catch_c} <= '0;
-          end else if (cyc_reg == REG_PACS || cyc_reg == REG_PBCS) begin
-            regs[cyc_reg] <= {port_cs_wr[7:1], ad_in[CS_IOE]};
-            if (port_clr_ip) begin
-              lpm_valid[cyc_reg[0]] <= 1'b0;
-              pm_perr[cyc_reg[0]]   <= 1'b0;
-            end
-          end else if (ct_reg) begin
-            // ERR and CIP read only, TCB write only, RCC set only.
-            regs[cyc_reg] <= ct_cs_wr;
-          end else if (cyc_reg == REG_PAD && hs_wr_ok[0]) begin
-            regs[cyc_reg] <= ad_in;
-            out_a         <= ad_in;
-            catch_a       <= catch_a_nx & ~(~ad_in & regs[REG_PASIO]);
-          end else if (cyc_reg == REG_PBD && hs_wr_ok[1]) begin
-            regs[cyc_reg] <= ad_in;
-            out_b         <= ad_in;
-            catch_b       <= catch_b_nx & ~(~ad_in & regs[REG_PBSIO]);
-          end else if (cyc_reg == REG_PCD) begin
-            // D7:D4 write-protect D3:D0.
-            regs[cyc_reg] <= {4'h0, (out_c & ad_in[7:4]) | (ad_in[3:0] & ~ad_in[7:4])};
-            out_c         <= (out_c & ad_in[7:4]) | (ad_in[3:0] & ~ad_in[7:4]);
-            catch_c       <= catch_c_nx & ~(~ad_in[3:0] & regs[REG_PCSIO][3:0] & ~ad_in[7:4]);
-          end else if (32'(cyc_reg) < NREGS && cyc_reg != REG_PAD && cyc_reg != REG_PBD) begin
-            // A refused handshake write leaves the data register alone.
-            regs[cyc_reg] <= ad_in;
+        end else if (in_reset) begin
+          if (cyc_reg == REG_MICR) regs[REG_MICR] <= {7'b0, ad_in[MICR_RST]};
+        end else if (cyc_reg == REG_PACS || cyc_reg == REG_PBCS) begin
+          regs[cyc_reg] <= {port_cs_wr[7:1], ad_in[CS_IOE]};
+          if (port_clr_ip) begin
+            lpm_valid[cyc_reg[0]] <= 1'b0;
+            pm_perr[cyc_reg[0]]   <= 1'b0;
           end
+        end else if (ct_reg) begin
+          // ERR and CIP read only, TCB write only, RCC set only.
+          regs[cyc_reg] <= ct_cs_wr;
+        end else if (cyc_reg == REG_PAD) begin
+          // A refused handshake write leaves the data register alone.
+          if (hs_wr_ok[0]) begin
+            out_a   <= ad_in;
+            catch_a <= catch_a_nx & ~(~ad_in & regs[REG_PASIO]);
+          end
+        end else if (cyc_reg == REG_PBD) begin
+          if (hs_wr_ok[1]) begin
+            out_b   <= ad_in;
+            catch_b <= catch_b_nx & ~(~ad_in & regs[REG_PBSIO]);
+          end
+        end else if (cyc_reg == REG_PCD) begin
+          // D7:D4 write-protect D3:D0.
+          out_c   <= (out_c & ad_in[7:4]) | (ad_in[3:0] & ~ad_in[7:4]);
+          catch_c <= catch_c_nx & ~(~ad_in[3:0] & regs[REG_PCSIO][3:0] & ~ad_in[7:4]);
+        end else if (32'(cyc_reg) < NREGS && REG_STORED[cyc_reg]) begin
+          regs[cyc_reg] <= ad_in;
         end
       end
 
       // End of count sets IP after any write to the same register.
       for (int i = 0; i < 3; i++)
         if (!ct_off && ct_ip_set[i]) regs[REG_CT1CS + 6'(i)][CS_IP] <= 1'b1;
-
-      if (hw_reset) begin
-        owned <= 1'b0;
-        for (int p = 0; p < 2; p++) begin pm_s1[p] <= '0; pm_s2[p] <= '0; pm_bits[p] <= '0; pm_frz[p] <= 1'b0; end
-        {lpm_valid, pm_perr, int_latch} <= '0;
-        for (int p = 0; p < 2; p++) hs[p] <= HS_RST;
-        {hs_drive, hs_mask} <= '0;
-        for (int i = 0; i < NREGS; i++) regs[i] <= 8'h00;
-        regs[REG_MICR][MICR_RST] <= 1'b1;
-        {smp_a, smp_b, smp_c}       <= '0;
-        {catch_a, catch_b, catch_c} <= '0;
-      end
     end
   end
 
