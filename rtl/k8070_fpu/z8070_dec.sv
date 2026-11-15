@@ -16,11 +16,10 @@ module z8070_dec
   import z8070_enc_pkg::*;
 (
   input  logic [15:8] if1_op,      // IF1 first byte
-  input  logic [3:0]  if1_dir_id,  // IF1 direction and ID
+  input  logic [3:2]  if1_dir,     // IF1 direction
   output logic        if1_epa,     // first byte is an extended instruction's
   output logic        if1_ok,      // and it has a template
   output tpl_e        if1_tpl,
-  output logic [1:0]  if1_id,
 
   input  tpl_e        tpl,
   input  logic [7:4]  w1,
@@ -39,7 +38,6 @@ module z8070_dec
 
   // ---- IF1 -------------------------------------------------------------
   always_comb begin
-    if1_id  = if1_dir_id[1:0];
     if1_epa = 1'b0;
     if1_ok  = 1'b0;
     if1_tpl = TPL_MEM_FROM_EPU;
@@ -48,16 +46,16 @@ module z8070_dec
       8'h0F, 8'h4F: begin
         if1_epa = 1'b1;
         if1_ok  = 1'b1;
-        if1_tpl = if1_dir_id[3] ? TPL_MEM_FROM_EPU : TPL_EPU_FROM_MEM;
+        if1_tpl = if1_dir[3] ? TPL_MEM_FROM_EPU : TPL_EPU_FROM_MEM;
       end
       8'h8F: begin
         if1_epa = 1'b1;
         if1_ok  = 1'b1;
-        if1_tpl = if1_dir_id[3] ? TPL_EPU_FROM_CPU : TPL_CPU_FROM_EPU;
+        if1_tpl = if1_dir[3] ? TPL_EPU_FROM_CPU : TPL_CPU_FROM_EPU;
       end
       8'h8E: begin
         if1_epa = 1'b1;
-        unique case (if1_dir_id[3:2])
+        unique case (if1_dir)
           2'b00: begin if1_ok = 1'b1; if1_tpl = TPL_FCW_FROM_EPU; end
           2'b10: begin if1_ok = 1'b1; if1_tpl = TPL_EPU_FROM_FCW; end
           2'b01: begin if1_ok = 1'b1; if1_tpl = TPL_INTERNAL;     end

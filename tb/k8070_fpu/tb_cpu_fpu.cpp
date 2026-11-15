@@ -4,7 +4,7 @@
 //
 //   tb_cpu_fpu_<variant> <file.vec> [--context N] [--vcd out.vcd] [--quiet]
 //                                   [--stop-first] [--no-final] [--mclk P]
-//                                   [--fastd]
+//                                   [--fastd | --slowd N]
 //
 // Only the board inputs (/RESET, /BUSREQ, /NMI, /NVI, SEGT, /ABORT, /MI)
 // come from the records; everything between the chips and the memory is
@@ -17,6 +17,8 @@
 // vector and the CPU with it, so no pin is compared: the board runs on to
 // the HALT and 400 CLK periods more, and the final state but PC2 (loaded
 // only by an IF1 while busy), the memory writes and AD clashes are.
+// --slowd N: CLK.D rises at every Nth CLK rise; compared as --fastd, with
+// 400 x N CLK periods after the HALT.
 //
 // Compared: the CPU's outputs at every C record (the CPU bench's rules);
 // the CPU's inputs where it samples them (STOP and /WAIT at a CLK fall,
@@ -133,6 +135,7 @@ int main(int argc, char** argv) {
     std::string vecPath, vcdPath;
     int context = 12;
     bool quiet = false, stopFirst = false, checkFinal = true, fastd = false;
+    int slowd = 0;
     std::string mclkPat = getenv("K8000_MCLK") ? getenv("K8000_MCLK") : "1,2,1,3";
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -142,11 +145,17 @@ int main(int argc, char** argv) {
         else if (a == "--stop-first") stopFirst = true;
         else if (a == "--no-final") checkFinal = false;
         else if (a == "--fastd") fastd = true;
+        else if (a == "--slowd" && i + 1 < argc) slowd = atoi(argv[++i]);
         else if (a == "--mclk" && i + 1 < argc) mclkPat = argv[++i];
         else if (a.size() > 1 && a[0] == '-' && a[1] == '-') { fprintf(stderr, "unknown option %s\n", a.c_str()); return 4; }
         else vecPath = a;
     }
-    if (vecPath.empty()) { fprintf(stderr, "usage: tb_cpu_fpu <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final] [--mclk P] [--fastd]\n"); return 4; }
+    if (vecPath.empty()) { fprintf(stderr, "usage: tb_cpu_fpu <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final] [--mclk P] [--fastd | --slowd N]\n"); return 4; }
+    if (slowd < 0 || (slowd && fastd)) { fprintf(stderr, "--slowd: N >= 1, not with --fastd\n"); return 4; }
+    // No pin compared off CLK.D = CLK.I.
+    const bool freeD = fastd || slowd > 0;
+    long dRises = 0;
+    auto clkdEn = [&]() { return !slowd || dRises++ % slowd == 0; };
 
     std::ifstream f(vecPath);
     if (!f) { printf("RESULT FAIL %s: cannot open\n", vecPath.c_str()); return 4; }
@@ -239,7 +248,7 @@ int main(int argc, char** argv) {
     // Quiescent start, as the CPU bench: board inputs idle, one CLK edge.
     top->clk = 0; top->clk_rise = 1; top->clk_fall = 0; top->reset_n = 1;
     top->busreq_n = 1; top->nmi_n = 1; top->nvi_n = 1; top->segt_n = 1; top->abort_n = 1; top->mi_n = 1;
-    top->fpu_id = 0; top->bsy_wait = 1; top->mem_data = 0; top->mem_drive = 0; top->clkd_fast = fastd;
+    top->fpu_id = 0; top->bsy_wait = 1; top->mem_data = 0; top->mem_drive = 0; top->clkd_fast = fastd; top->clkd_en = clkdEn();
     mtick(false);
     top->clk_rise = 0;
     mtick(false);
@@ -280,6 +289,7 @@ int main(int argc, char** argv) {
         for (int c = 0; c < n; c++) {
             lvl = !lvl;
             top->clk_rise = lvl; top->clk_fall = !lvl;
+            if (lvl) top->clkd_en = clkdEn();
             for (int k = mclkSeq[mclkIdx]; k > 0; k--) { mtick(false); top->clk_rise = 0; top->clk_fall = 0; }
             mclkIdx = (mclkIdx + 1) % mclkSeq.size();
         }
@@ -288,10 +298,10 @@ int main(int argc, char** argv) {
     auto settle = [&]() {
         if (settled) return;
         settled = true;
-        if (fastd) {
+        if (freeD) {
             uint64_t h = 0;
-            for (int c = 0; c < 20000 && !(dut.cpuGet("HALTED", h) && h); c++) idleClk(1);
-            idleClk(400);
+            for (int c = 0; c < 20000 * (slowd ? slowd : 1) && !(dut.cpuGet("HALTED", h) && h); c++) idleClk(1);
+            idleClk(400 * (slowd ? slowd : 1));
             if (clashes) { char b[64]; snprintf(b, sizeof b, "AD clash in %ld master clocks after the vector", clashes); finalFail(b); clashes = 0; }
         }
         for (int k = 0; k < 2; k++) mtick(false);
@@ -351,6 +361,7 @@ int main(int argc, char** argv) {
             bool rising = in.clk && !prevClk, falling = !in.clk && prevClk;
             prevClk = in.clk;
             top->clk_rise = rising; top->clk_fall = falling;
+            if (rising) top->clkd_en = clkdEn();
             seen = in;
             for (int k = mclkSeq[mclkIdx]; k > 0; k--) {
                 mtick(k == mclkSeq[mclkIdx]);
@@ -386,7 +397,7 @@ int main(int argc, char** argv) {
                 if (falling && havePrev && !prevExp.ds_n && exp.ds_n && prevExp.r_w && !prevExp.ad_drive && lastRise.valid)
                     cmp(lastRise.ad == lastRise.in.ad, "AD_in(T3)");
             }
-            if (fastd) marks.clear();
+            if (freeD) marks.clear();
             if (clashes) { cmp(false, "AD clash"); clashes = 0; }
             if (rising) lastRise = {true, in, exp, seenAD};
             prevExp = exp; havePrev = true;
@@ -408,7 +419,7 @@ int main(int argc, char** argv) {
             cmp(exp.int_n == got.int_n, "INT_n");
             cmp(exp.ieo == got.ieo, "IEO");
             if (exp.ad_drive && got.ad_drive) cmp(exp.ad == got.ad, "FPU AD");
-            if (fastd) marks.clear();
+            if (freeD) marks.clear();
             addRow(eRow(tick, exp, got, marks.empty() ? "" : "<-- " + marks), !marks.empty(), marks);
             if (stopFirst && firstTick >= 0) break;
         } else if (tag == "F") {
@@ -433,7 +444,7 @@ int main(int argc, char** argv) {
             } else if (chip == "E") {
                 std::string h; ss >> h; V80 e = V80::parse(h), g;
                 // PC2 loads only when an IF1 comes while busy: a speed-dependent capture.
-                if (fastd && what == "PC2") continue;
+                if (freeD && what == "PC2") continue;
                 if (dut.fpuGet(what, g) && e != g) finalFail("FPU " + what + " exp=" + e.str() + " got=" + g.str());
             } else if (chip == "M") {
                 std::string h; ss >> h;

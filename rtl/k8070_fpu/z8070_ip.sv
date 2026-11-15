@@ -11,13 +11,22 @@
 // bus while /AS is Low and holds at its rise, when status, R/W and N/S are
 // latched. AD is taken on the CLK.I fall while /DS is Low; the cycle is
 // acted on at the /DS rise:
-//   1101 (IF1) with an extended-instruction first byte: no template is an
-//     Invalid opcode; another EPU's ID is an Invalid EPU ID if its SC.EPUIDS
-//     bit is set, else ignored; this EPU's ID, idle, keeps word 1 and the
-//     address (PC1) and waits for word 2; busy, queues it (PC2) unless an
-//     instruction is queued already.
+//   1101 (IF1) with an extended-instruction first byte: another EPU's ID
+//     is an Invalid EPU ID if its SC.EPUIDS bit is set, else ignored (p.534:
+//     only the addressed EPU executes); this EPU's ID: no template is an
+//     Invalid opcode; idle, it keeps word 1 and the
+//     address (PC1) and waits for word 2; busy, queues it (PC2); with the
+//     queued instruction complete, holds it (p.535: the CPU completes the
+//     fetch STOP finds Low before it).
 //   1100 while waiting: the next one is word 2, decoded through the table;
-//     no row, or a word count the operand cannot have, is an Invalid opcode.
+//     no row, or a word count the operand cannot have, is an Invalid opcode,
+//     raised when the instruction would run (assumed: in program order, so
+//     PC1 holds its address). A queued one is taken at its /DS rise. The
+//     executing one's start fields are registered from the decode, so it
+//     is taken there only if they followed the decode the clock before;
+//     else it is kept and taken the clock after they do (/BSY meanwhile as
+//     once taken). A held
+//     IF1's word 2 (STOP first Low before word 2) is kept with it.
 //   1010, 1011 (memory) and 1110 (CPU) data cycles move the operand words,
 //     one per cycle, first word first.
 //   Every other cycle, refresh (0001) among them, passes unseen.
@@ -31,7 +40,7 @@
 //     once and source it; every other form starts the Data Processor and
 //     sources the words of its held result.
 //   none: the flag, trap and mode list instructions change FFLAGS or USER
-//     at the word 2 /DS rise; the rest start the Data Processor.
+//     when word 2 is taken; the rest start the Data Processor.
 // The last word, or the Data Processor's done, returns the IP to idle.
 //
 // Queue (spec p.535): one instruction, its word 2 and operand words taken
@@ -40,21 +49,28 @@
 // PC2); a Data Processor operation gets its start the next master clock,
 // or the one after when it starts in the done clock: the F read is FOP1's
 // there, and the operand bus carries FOP1 the clock after.
-// An arithmetic trap flushes it, complete or in transfer (p.535, p.558).
-// /ABORT, a level, drops the executing and the queued instruction before
+// A held IF1 takes its place when it starts: as the executing instruction
+// if the queued one completes at once, else queued, with its word 2 if
+// kept. The executing operation and a queued one have their own start
+// fields, so either may be decoded while the other waits to start; a
+// list op or FLDCTL promoted counts for the next start in the same clock.
+// An arithmetic trap flushes it, complete or in transfer, with a held IF1
+// (p.535, p.558).
+// /ABORT, a level, drops the executing, queued and held instruction before
 // the cycle is seen; an operation already running finishes unseen.
 //
-// Data Processor hand-over, with no added clock: start in the /DS rise's
-// master clock (a CLK.D rise in it is the first clock); at done, F[Fd]
+// Data Processor hand-over, with no added clock: start in the master clock
+// word 2 or the last operand word is taken (a CLK.D rise in it is the
+// first clock), never within two of done; at done, F[Fd]
 // takes the result (not for the compares or outbound forms but FREMSTEP),
 // FFLAGS folds the flags (not for FLDNF), FOP1/FOP2 take the input operand
 // and default result when a flag is set, and an enabled trap requests
 // (SC.IR 00). The RAM's one write port takes F[Fd] in the done clock,
 // FOP1 the next (the read register holds the operand through done) and
-// FOP2 once the Data Processor is not reading. The operand bus is F
+// FOP2 after it from the result latch. The operand bus is F
 // through the RAM's registered read port, addressed a master clock ahead,
-// or the bus operand (row 10 keeps it once a queued instruction's words
-// are due in the buffer). Single
+// or the bus operand (from row 10 once a queued IF1 is taken: its words
+// may refill the buffer before the unpack at a slow CLK.D). Single
 // and double operands and results move field by field: a subnormal goes
 // in unnormalized (the Data Processor's unpack normalizes it) and comes
 // out in its denormalized form.
@@ -74,19 +90,20 @@
 // board takes /BSY to /WAIT as well).
 //
 // Interrupt request: an Invalid opcode, Invalid EPU ID or Privilege
-// violation sets SC.IR and SC.IP and requests; /INT is Low while
-// requesting and SC.MIE is 1.
+// violation sets SC.IR and SC.IP; /INT is Low while SC.IP and SC.MIE are 1
+// (IP, p.534: a pending interrupt).
 //
 // Acknowledge (spec p.534 SC, p.542 IEO): a cycle with the status SC.INTACK
-// selects (0X 0101, 10 0110, 11 0111). While requesting with IEI High, the
-// vector (SC 7:0, shifted left by SV) is driven on AD7-0 while /DS is Low
-// unless NV is set; the /DS rise sets IUS and clears IP and the request.
-// IEO is High only if IEI is High, no Z8070 interrupt is under service and,
-// from the /AS rise to the /DS rise of an acknowledge, none is requested;
-// DLC holds it Low.
+// selects (0X 0101, 10 0110, 11 0111). It is this EPU's if it requests with
+// IEI High at the /DS fall (p.556: when RD falls), decided there and held
+// to the /DS rise: the vector (SC 7:0, shifted left by SV) is driven on
+// AD7-0 while /DS is Low unless NV is set; the /DS rise sets IUS and clears
+// IP and the request. IEO is High only if IEI is High, no Z8070 interrupt
+// is under service and, from the /AS rise to the /DS rise of an
+// acknowledge, it is not this EPU's; DLC holds it Low.
 //
-// Harness contract: the replay bench reads and pokes sc_q, user_q,
-// fflags_q, pc1_q and pc2_q by name.
+// Harness contract: the replay bench reads and pokes sc_q, user_q (USER
+// 15:0), fflags_q, pc1_q and pc2_q ({SN6-0, address}) by name.
 
 `default_nettype none
 
@@ -121,7 +138,7 @@ module z8070_ip
 
   input  logic        dp_busy,
   output logic        dp_start,   // one master clock: hand the plan over
-  output logic [5:0]  dp_kind,
+  output logic [5:0]  dp_kind,    // the next operation, from the clock before its start
   output logic [1:0]  dp_prec,
   output logic [1:0]  dp_rm,
   output logic [79:0] dp_opnd,
@@ -211,10 +228,10 @@ module z8070_ip
 
   // Justification: (reg-a) architectural registers.
   logic [31:0] sc_q, sc_d;
-  logic [31:0] user_q, user_d;
+  logic [15:0] user_q, user_d;   // USER 31:16 read 0
   logic [31:0] fflags_q, fflags_d;
-  logic [31:0] pc1_q;
-  logic [31:0] pc2_q;
+  logic [22:0] pc1_q;            // {SN6-0, address}
+  logic [22:0] pc2_q;
 
   // ---- strobes ---------------------------------------------------------
   // Justification: (reg-a) last strobe levels, for the edges.
@@ -265,17 +282,25 @@ module z8070_ip
   assign cyc_in  = (cyc_mem & ~cyc_write_q) | (cyc_epu & cyc_write_q);
   assign cyc_out = (cyc_mem & cyc_write_q) | (cyc_epu & ~cyc_write_q);
 
-  // The acknowledge this EPU answers, and whether the cycle is one.
+  // The acknowledge this EPU answers, and whether the cycle is one: live
+  // to the /DS fall, then as decided there.
   logic [3:0] ack_st;
-  // Justification: (reg-a) the interrupt request, until acknowledged.
-  logic       int_req_q, int_req_d;
   logic       int_req, ack_hit, in_ack, ack_take;
 
+  // Justification: (reg-a) the decision, held while /DS is Low.
+  logic ack_q;
+
   assign ack_st   = sc_q[SC_INTACK + 1] ? {3'b011, sc_q[SC_INTACK]} : 4'b0101;
-  assign int_req  = int_req_q & sc_q[SC_MIE];
-  assign ack_hit  = int_req & iei & (cyc_st_q == ack_st);
-  assign in_ack   = ack_hit & cyc_open_q;
-  assign ack_take = ack_hit & ds_rise & busack_n;
+  assign int_req  = sc_q[SC_IP] & sc_q[SC_MIE];
+  assign ack_hit  = int_req & iei & cyc_open_q & (cyc_st_q == ack_st);
+
+  always_ff @(posedge clk) begin
+    if (!reset_n)          ack_q <= 1'b0;
+    else if (!ds_n && ds_q) ack_q <= ack_hit;
+  end
+
+  assign in_ack   = ds_q ? ack_hit : ack_q & cyc_open_q;
+  assign ack_take = ack_q & ds_rise & busack_n;
 
   // Justification: (reg-a) the data word, taken on the CLK.I fall in /DS.
   logic [15:0] ds_data_q, ds_data_d;
@@ -293,6 +318,11 @@ module z8070_ip
   // one clock after the data was taken. Both, and the start's registered
   // kind, prec and rm, rely on the CLK.I fall in /DS coming at least one
   // master clock before the /DS rise.
+  // Justification: (reg-a) a word 2 kept until the start registers have
+  // followed its decode, and whether one is kept.
+  logic [15:0] hold_w2_q;
+  logic        rp_q;
+
   // Justification: (reg-a) the instruction's word 1 fields and template,
   // from IF1 to word 2.
   logic [7:4] w1_q, w1_d;
@@ -301,7 +331,7 @@ module z8070_ip
   // Justification: (reg-b) the decode of the data latch.
   logic        if1_epa, if1_ok, plan_ok, if1_epa_u, if1_ok_u, plan_ok_u;
   tpl_e        if1_tpl, if1_tpl_u;
-  logic [1:0]  if1_id, if1_id_u;
+  logic [1:0]  if1_id;
   mn_e         pl_mn, pl_mn_u;
   logic [2:0]  pl_fd, pl_fs, pl_fd_u, pl_fs_u;
   fmt_e        pl_fmt, pl_fmt_u;
@@ -310,17 +340,17 @@ module z8070_ip
   logic [7:0]  pl_list, pl_list_u;
   dir_e        pl_dir, pl_dir_u;
   logic [3:0]  pl_words, pl_words_u;
+  logic [15:0] dec_w2;
 
   z8070_dec u_dec (
     .if1_op     (ds_data_d[15:8]),
-    .if1_dir_id (ds_data_d[3:0]),
+    .if1_dir (ds_data_d[3:2]),
     .if1_epa (if1_epa_u),
     .if1_ok  (if1_ok_u),
     .if1_tpl (if1_tpl_u),
-    .if1_id  (if1_id_u),
     .tpl     (tpl_q),
     .w1      (w1_q),
-    .w2      (ds_data_d),
+    .w2      (dec_w2),
     .plan_ok (plan_ok_u),
     .mn      (pl_mn_u),
     .fd      (pl_fd_u),
@@ -333,10 +363,23 @@ module z8070_ip
     .words   (pl_words_u)
   );
 
+  // A kept word 2 is decoded from its copy: the data latch may already
+  // hold the next cycle's word.
+  assign dec_w2 = rp_q ? hold_w2_q : ds_data_d;
+
+  // A flag, trap or mode list instruction.
+  logic is_list, is_list_u;
+
+  assign is_list_u = (pl_mn_u == MN_FSETFLG) || (pl_mn_u == MN_FRESFLG) ||
+                     (pl_mn_u == MN_FSETTRAP) || (pl_mn_u == MN_FRESTRAP) ||
+                     (pl_mn_u == MN_FSETMODE);
+
+  assign if1_id = ds_data_q[1:0];
+
   always_ff @(posedge clk) begin
-    {if1_epa, if1_ok, if1_tpl, if1_id} <= {if1_epa_u, if1_ok_u, if1_tpl_u, if1_id_u};
+    {if1_epa, if1_ok, if1_tpl} <= {if1_epa_u, if1_ok_u, if1_tpl_u};
     {plan_ok, pl_mn, pl_fd, pl_fs, pl_fmt} <= {plan_ok_u, pl_mn_u, pl_fd_u, pl_fs_u, pl_fmt_u};
-    {pl_sel, pl_list, pl_dir, pl_words} <= {pl_sel_u, pl_list_u, pl_dir_u, pl_words_u};
+    {pl_sel, pl_list, pl_dir, pl_words, is_list} <= {pl_sel_u, pl_list_u, pl_dir_u, pl_words_u, is_list_u};
   end
 
   // Justification: (reg-a) the plan fields the transfer and the Data
@@ -366,8 +409,8 @@ module z8070_ip
   // overlap; in No Overlap only an IF1 the CPU fetched before /BSY held
   // it). Its operand words use the transfer buffer, its template and word
   // 1 tpl_q and w1_q, its select, word count and list byte sel_q, words_q
-  // and list_q, and its operation the start registers: the executing
-  // instruction is a Data Processor operation that no longer needs them.
+  // and list_q, which the executing instruction no longer needs; its plan
+  // and start fields have their own registers (p_*).
   typedef enum logic [1:0] {
     PQ_NONE  = 2'd0,
     PQ_W2    = 2'd1,   // IF1 queued: the next 1100 is its word 2
@@ -380,7 +423,7 @@ module z8070_ip
   ip_e        state_q, state_d;
   pq_e        pend_q, pend_d;
   logic [2:0] cnt_q, cnt_d;
-  logic [31:0] pc1_d, pc2_d;
+  logic [22:0] pc1_d, pc2_d;
 
   // /ABORT acts before the cycle, as a level: the instruction and the
   // queued one are dropped; a running operation finishes unseen.
@@ -390,14 +433,48 @@ module z8070_ip
   assign cur = abort_n ? state_q : IP_IDLE;
   assign pnd = abort_n ? pend_q : PQ_NONE;
 
+  // Justification: (reg-a) a held IF1 (its template and word 1 in tpl_q
+  // and w1_q) and its address; a kept word 2 whose decode the start
+  // registers took last clock; whether they followed the decode last
+  // clock; the Data Processor's done last clock.
+  logic        hold_q, hold_d, rp_d, rp_rdy_q, op_ld_q, done_q;
+  logic [22:0] hold_pc_q, hold_pc_d;
+  logic        hld, w2_bus, w2_now, w2_keep, rp_go, w2_ev, w2_run;
+  logic        op_ld;       // the start registers follow the decode
+
+  // A queued word 2 is taken at its /DS rise, and the executing one's that
+  // does not start the Data Processor (armw_q). One that does is taken
+  // there when the start registers followed its decode the clock before
+  // and the start comes two clocks after done; else it is kept and taken
+  // the clock after they do. A held IF1's word 2 is kept: queued or run
+  // when the IF1 is. An invalid one raises when its instruction would
+  // run: the executing one's at once, a queued or held one's at its
+  // promotion (assumed).
+  logic armw_q;
+
+  assign hld     = abort_n & hold_q;
+  assign w2_bus  = ds_rise && busack_n && cyc_st_q == ST_PROG && !rp_q &&
+                   (cur == IP_WORD2 || pnd == PQ_W2 || hld);
+  assign w2_now  = w2_bus && (pnd == PQ_W2 ||
+                   (plan_ok && cur == IP_WORD2 && (!armw_q || (op_ld_q && !done_q))));
+  assign w2_keep = w2_bus && !w2_now && (plan_ok || hld);
+  assign rp_go   = rp_q && rp_rdy_q && !ds_rise && !done_q && cur == IP_WORD2;
+  assign w2_ev   = w2_now || rp_go;
+  assign w2_run  = w2_ev && cur == IP_WORD2;
+
   // Justification: (reg-a) the queued instruction's plan fields the
   // executing one still uses, and whether its first read is Fs.
   mn_e        p_mn;
   dir_e       p_dir;
   fmt_e       p_fmt;
   logic [2:0] p_ra, p_rb;
-  logic       p_sf, p_lst;
+  logic       p_sf, p_lst, p_fcw;
+  logic       p_inv;       // its word 2 is invalid
+  logic       p_dp;        // it starts the Data Processor
   logic       p_ns;        // N/S of its last transfer
+  logic [5:0] p_kind;      // its start fields
+  logic [1:0] p_prec, p_rm;
+  logic       p_out;
 
   // The same as of this master clock: its word 2, or its last operand
   // word, may come in the clock that promotes it.
@@ -405,15 +482,18 @@ module z8070_ip
   dir_e       q_dir;
   fmt_e       q_fmt;
   logic [2:0] q_ra, q_rb;
-  logic       q_sf, q_lst, q_ns;
+  logic       q_sf, q_lst, q_ns, q_fcw, q_dp, q_inv;
 
   // Events of this master clock, for the register and buffer blocks.
   logic       launch;      // word 2 decoded with a plan
   logic       p_load;      // the queued instruction's word 2 decoded
+  logic       h_load;      // a held IF1 queued with its word 2
   logic       promote;     // the queued instruction starts
   logic       pstart;      // and it is a Data Processor operation
-  logic       list_go;     // flag, trap or mode list, applied next clock
+  logic       list_go;     // flag, trap or mode list, applied now
   logic       capture;     // an operand word into the buffer
+  logic       cap_keep;    // a queued one kept until row 10 holds the bus operand
+  logic       q_defer;
   logic       fcw_in;      // EPU<-FCW form complete
   logic       ctl_wr;      // FLDCTL inbound complete
   logic       stg_set;     // keep the executing operation's bus operand
@@ -422,13 +502,9 @@ module z8070_ip
 
   logic [3:0] epuids;
   logic       last_in;
-  logic       is_list;
 
   assign epuids  = sc_q[SC_EPUIDS +: 4];
   assign last_in = (cnt_q + 3'd1) == words_q;
-  assign is_list = (pl_mn == MN_FSETFLG) || (pl_mn == MN_FRESFLG) ||
-                   (pl_mn == MN_FSETTRAP) || (pl_mn == MN_FRESTRAP) ||
-                   (pl_mn == MN_FSETMODE);
 
   always_comb begin
     state_d  = cur;
@@ -438,12 +514,17 @@ module z8070_ip
     tpl_d    = tpl_q;
     pc1_d    = pc1_q;
     pc2_d    = pc2_q;
+    hold_d   = hld;
+    hold_pc_d = hold_pc_q;
+    rp_d     = (rp_q & abort_n & ~rp_go) | w2_keep;
     launch   = 1'b0;
     p_load   = 1'b0;
+    h_load   = 1'b0;
     promote  = 1'b0;
     pstart   = 1'b0;
     list_go  = 1'b0;
     capture  = 1'b0;
+    cap_keep = 1'b0;
     fcw_in   = 1'b0;
     ctl_wr   = 1'b0;
     stg_set  = 1'b0;
@@ -453,59 +534,36 @@ module z8070_ip
     if (ds_rise && busack_n) begin
       unique case (cyc_st_q)
         ST_IF1: if (if1_epa) begin
-          if (!if1_ok) begin
-            raise = 1'b1;
-          end else if (if1_id != sc_q[SC_ID +: 2]) begin
+          if (if1_id != sc_q[SC_ID +: 2]) begin
             if (epuids[if1_id]) begin
               raise  = 1'b1;
               reason = IR_INVALID_EPUID;
             end
+          end else if (!if1_ok) begin
+            raise = 1'b1;
           end else if (cur == IP_IDLE && !dp_busy && pnd == PQ_NONE) begin
             w1_d     = ds_data_q[7:4];
             tpl_d    = if1_tpl;
-            pc1_d    = {1'b0, cyc_addr_q[22:16], 8'h00, cyc_addr_q[15:0]};
+            pc1_d    = cyc_addr_q;
             state_d  = IP_WORD2;
           end else if (pnd == PQ_NONE) begin
             w1_d     = ds_data_q[7:4];
             tpl_d    = if1_tpl;
-            pc2_d    = {1'b0, cyc_addr_q[22:16], 8'h00, cyc_addr_q[15:0]};
+            pc2_d    = cyc_addr_q;
             pend_d   = PQ_W2;
-            // The executing operation's unpack (opnd_rd) is over by this
-            // /DS rise; its operand is kept for FOP1 only.
+            // The executing operation's bus operand moves to row 10
+            // before the queued words reach the buffer.
             stg_set  = cur == IP_DPWAIT && dir_q == DIR_IN;
+          end else if (pnd == PQ_READY && !hld) begin
+            w1_d      = ds_data_q[7:4];
+            tpl_d     = if1_tpl;
+            hold_pc_d = cyc_addr_q;
+            hold_d    = 1'b1;
           end
         end
-        ST_PROG: if (cur == IP_WORD2) begin
-          if (!plan_ok) begin
-            state_d = IP_IDLE;
-            raise   = 1'b1;
-          end else begin
-            launch = 1'b1;
-            cnt_d  = 3'd0;
-            unique case (pl_dir)
-              DIR_IN:  state_d = IP_OPERAND;
-              DIR_OUT: if (pl_mn == MN_FLDCTL || pl_mn == MN_FLDCTLB) begin
-                state_d = IP_RESULT;
-              end else begin
-                state_d  = IP_DPWAIT;
-              end
-              default: if (is_list) begin
-                list_go = 1'b1;
-                state_d = IP_IDLE;
-              end else begin
-                state_d  = IP_DPWAIT;
-              end
-            endcase
-          end
-        end else if (pnd == PQ_W2) begin
-          if (!plan_ok) begin
-            pend_d = PQ_NONE;
-            raise  = 1'b1;
-          end else begin
-            p_load = 1'b1;
-            cnt_d  = 3'd0;
-            pend_d = (pl_dir == DIR_IN) ? PQ_CAPT : PQ_READY;
-          end
+        ST_PROG: if (w2_bus && !plan_ok && cur == IP_WORD2) begin
+          raise   = 1'b1;
+          state_d = IP_IDLE;
         end
         default: begin
           if (cyc_in && cur == IP_OPERAND) begin
@@ -527,7 +585,8 @@ module z8070_ip
               end
             end
           end else if (cyc_in && pnd == PQ_CAPT) begin
-            capture = 1'b1;
+            capture  = !q_defer;
+            cap_keep = q_defer;
             cnt_d   = cnt_q + 3'd1;
             if (last_in) pend_d = PQ_READY;
           end else if (cyc_out && (cur == IP_RESULT ||
@@ -542,6 +601,31 @@ module z8070_ip
       endcase
     end
 
+    if (w2_ev) begin
+      if (w2_run) begin
+        launch = 1'b1;
+        cnt_d  = 3'd0;
+        unique case (pl_dir)
+          DIR_IN:  state_d = IP_OPERAND;
+          DIR_OUT: if (pl_mn == MN_FLDCTL || pl_mn == MN_FLDCTLB) begin
+            state_d = IP_RESULT;
+          end else begin
+            state_d  = IP_DPWAIT;
+          end
+          default: if (is_list) begin
+            list_go = 1'b1;
+            state_d = IP_IDLE;
+          end else begin
+            state_d  = IP_DPWAIT;
+          end
+        endcase
+      end else if (pnd == PQ_W2) begin
+        p_load = 1'b1;
+        cnt_d  = 3'd0;   // now the queued instruction's word count
+        pend_d = (plan_ok && pl_dir == DIR_IN) ? PQ_CAPT : PQ_READY;
+      end
+    end
+
     if (fold) begin
       if (dir_q == DIR_OUT && cnt_d < words_q) state_d = IP_RESULT;
       else                                     state_d = IP_IDLE;
@@ -549,6 +633,8 @@ module z8070_ip
         raise  = 1'b1;
         reason = IR_ARITH;
         pend_d = PQ_NONE;   // the exception flushes the queued instruction
+        hold_d = 1'b0;
+        rp_d   = 1'b0;
       end
     end
 
@@ -561,8 +647,11 @@ module z8070_ip
       pend_d  = PQ_NONE;
       pc1_d   = pc2_q;
       cnt_d   = 3'd0;
-      unique case (q_dir)
-        DIR_IN: if (tpl_q == TPL_EPU_FROM_FCW) begin
+      if (q_inv) begin
+        raise  = 1'b1;
+        reason = IR_INVALID_OP;
+      end else unique case (q_dir)
+        DIR_IN: if (q_fcw) begin
           fcw_in = 1'b1;
         end else if (q_mn == MN_FLDCTL) begin
           ctl_wr = 1'b1;
@@ -587,48 +676,94 @@ module z8070_ip
           pstart  = 1'b1;
         end
       endcase
+      // A held IF1 runs if the promoted one completed, else is queued,
+      // with its word 2 if it came; it or its word 2 may come in this
+      // clock. Run, its word 2 is taken now unless it starts the Data
+      // Processor or is a list op, whose list would meet the promoted one's.
+      if (hold_d) begin
+        hold_d = 1'b0;
+        if (state_d == IP_IDLE) begin
+          pc1_d = hold_pc_d;
+          if (rp_d && !plan_ok) begin
+            raise  = 1'b1;
+            reason = IR_INVALID_OP;
+            rp_d   = 1'b0;
+          end else if (rp_d && (pl_dir == DIR_IN || pl_mn == MN_FLDCTL || pl_mn == MN_FLDCTLB)) begin
+            launch  = 1'b1;
+            rp_d    = 1'b0;
+            state_d = (pl_dir == DIR_IN) ? IP_OPERAND : IP_RESULT;
+          end else begin
+            state_d = IP_WORD2;
+          end
+        end else begin
+          pc2_d   = hold_pc_d;
+          stg_set = pstart && q_dir == DIR_IN;
+          if (rp_d) begin
+            h_load = 1'b1;
+            rp_d   = 1'b0;
+            pend_d = (plan_ok && pl_dir == DIR_IN) ? PQ_CAPT : PQ_READY;
+          end else begin
+            pend_d = PQ_W2;
+          end
+        end
+      end
     end
-
-    // An unused state code returns to idle.
-    if (state_q != IP_IDLE && state_q != IP_WORD2 && state_q != IP_OPERAND &&
-        state_q != IP_DPWAIT && state_q != IP_RESULT)
-      state_d = IP_IDLE;
-
-    int_req_d = (int_req_q & ~ack_take) | raise;
   end
 
-  // Justification: (reg-a) the promoted start and its read clock, the list
-  // op's clock, the executing operation's bus operand kept in RAM row 10
-  // (requested, written, and readable).
-  logic pstart_q, pwait_q, list_go_q, stg_req_q, stg_q, stg2_q, stg_now;
+  // Justification: (reg-a) the promoted start and its read clock, the
+  // executing operation's bus operand kept in RAM row 10 (requested,
+  // written, and readable).
+  logic pstart_q, pwait_q, stg_req_q, stg_q, stg2_q, stg_now;
+  // Justification: (reg-a) the promoted operation's first read is Fs: a
+  // held IF1 queued with it takes p_sf.
+  logic sf_q;
 
   always_ff @(posedge clk) begin
     if (!reset_n) begin
       state_q   <= IP_IDLE;
       pend_q    <= PQ_NONE;
       cnt_q     <= 3'd0;
-      int_req_q <= 1'b0;
-      pc1_q     <= 32'd0;
-      pc2_q     <= 32'd0;
+      pc1_q     <= 23'd0;
+      pc2_q     <= 23'd0;
       pstart_q  <= 1'b0;
       pwait_q   <= 1'b0;
-      list_go_q <= 1'b0;
+      hold_q    <= 1'b0;
+      rp_q      <= 1'b0;
+      rp_rdy_q  <= 1'b0;
+      op_ld_q   <= 1'b0;
+      done_q    <= 1'b0;
     end else begin
       state_q   <= state_d;
       pend_q    <= pend_d;
       cnt_q     <= cnt_d;
-      int_req_q <= int_req_d;
       pc1_q     <= pc1_d;
       pc2_q     <= pc2_d;
       pstart_q  <= abort_n && ((pstart && !dp_busy) || pwait_q);
       pwait_q   <= abort_n && pstart && dp_busy;
-      list_go_q <= list_go;
+      hold_q    <= hold_d;
+      rp_q      <= rp_d;
+      rp_rdy_q  <= rp_d && op_ld;
+      op_ld_q   <= op_ld;
+      done_q    <= dp_done;
     end
   end
 
   always_ff @(posedge clk) begin
+    hold_pc_q <= hold_pc_d;
+  end
+
+  always_ff @(posedge clk) begin
+    if (w2_keep) hold_w2_q <= ds_data_q;
+  end
+
+  always_ff @(posedge clk) begin
+    if (promote) sf_q <= q_sf;
+  end
+
+  // A held IF1 queued in the done clock keeps the new operation's request.
+  always_ff @(posedge clk) begin
     if (!reset_n || !abort_n || fold) begin
-      stg_req_q <= 1'b0;
+      stg_req_q <= reset_n && promote && stg_set;
       stg_q     <= 1'b0;
       stg2_q    <= 1'b0;
     end else begin
@@ -644,33 +779,28 @@ module z8070_ip
     tpl_q <= tpl_d;
   end
 
-  // A /DS rise starts the Data Processor where the sequencer goes to
-  // DPWAIT: decided a clock ahead from the decode's next value, so the
-  // start is the strobe edge and a flop.
+  // The Data Processor starts where the sequencer goes to DPWAIT: at a
+  // word 2 taken, at the last operand word's /DS rise, a clock or two
+  // after a promotion. Whether the decode starts it at word 2, and
+  // whether the cycle's /DS rise ends the operand, are decided a clock
+  // ahead, so the start is an event and a flop.
   // Justification: (reg-b) the start off the decode and sequencer paths.
-  logic arm_q, arm_d, is_list_u;
-
-  assign is_list_u = (pl_mn_u == MN_FSETFLG) || (pl_mn_u == MN_FRESFLG) ||
-                     (pl_mn_u == MN_FSETTRAP) || (pl_mn_u == MN_FRESTRAP) ||
-                     (pl_mn_u == MN_FSETMODE);
-
-  always_comb begin
-    unique case (cyc_st_q)
-      ST_IF1:  arm_d = 1'b0;
-      ST_PROG: arm_d = cur == IP_WORD2 && plan_ok_u &&
-                       ((pl_dir_u == DIR_OUT && pl_mn_u != MN_FLDCTL && pl_mn_u != MN_FLDCTLB) ||
-                        (pl_dir_u == DIR_NONE && !is_list_u));
-      default: arm_d = cyc_in && cur == IP_OPERAND && last_in &&
-                       tpl_q != TPL_EPU_FROM_FCW && mn_q != MN_FLDCTL;
-    endcase
-  end
+  logic armi_q;
 
   always_ff @(posedge clk) begin
-    if (!reset_n) arm_q <= 1'b0;
-    else          arm_q <= arm_d;
+    if (!reset_n) begin
+      armw_q <= 1'b0;
+      armi_q <= 1'b0;
+    end else begin
+      armw_q <= plan_ok_u &&
+                ((pl_dir_u == DIR_OUT && pl_mn_u != MN_FLDCTL && pl_mn_u != MN_FLDCTLB) ||
+                 (pl_dir_u == DIR_NONE && !is_list_u));
+      armi_q <= cyc_in && cur == IP_OPERAND && last_in &&
+                tpl_q != TPL_EPU_FROM_FCW && mn_q != MN_FLDCTL;
+    end
   end
 
-  assign dp_start = (ds_rise && busack_n && arm_q && abort_n) || (pstart_q && abort_n);
+  assign dp_start = abort_n && ((w2_run && armw_q) || (ds_rise && busack_n && armi_q) || pstart_q);
 
   logic src_first;
 
@@ -682,60 +812,98 @@ module z8070_ip
     end
   end
 
+  // A queued word 2 takes them over: an executing instruction with words
+  // to send moves them before the CPU fetches another.
   always_ff @(posedge clk) begin
-    if (launch || p_load) begin
+    if (launch || p_load || h_load) begin
       sel_q   <= pl_sel;
       words_q <= pl_words[2:0];
       list_q  <= pl_list;
     end
   end
 
+  logic pl_dp;
+
+  assign pl_dp = (pl_dir == DIR_IN  && tpl_q != TPL_EPU_FROM_FCW && pl_mn != MN_FLDCTL) ||
+                 (pl_dir == DIR_OUT && pl_mn != MN_FLDCTL && pl_mn != MN_FLDCTLB) ||
+                 (pl_dir == DIR_NONE && !is_list);
+
   always_ff @(posedge clk) begin
-    if (p_load) {p_mn, p_dir, p_fmt, p_ra, p_rb, p_sf, p_lst} <=
-                {pl_mn, pl_dir, pl_fmt, pl_ra, pl_rb, src_first, is_list};
+    if (p_load || h_load) begin
+      {p_mn, p_dir, p_fmt, p_ra, p_rb, p_sf, p_lst, p_fcw, p_dp, p_inv} <=
+        {pl_mn, pl_dir, pl_fmt, pl_ra, pl_rb, src_first, is_list, tpl_q == TPL_EPU_FROM_FCW, pl_dp && plan_ok, !plan_ok};
+      {p_kind, p_prec, p_rm, p_out} <= {kind_u, prec_u, rm_u, out_u};
+    end
   end
 
   always_ff @(posedge clk) begin
-    if (pend_d == PQ_READY && pend_q != PQ_READY) p_ns <= cyc_ns_q;
+    if ((pend_d == PQ_READY && pend_q != PQ_READY) || h_load) p_ns <= cyc_ns_q;
   end
 
-  assign {q_mn, q_dir, q_fmt, q_ra, q_rb, q_sf, q_lst} = p_load ?
-           {pl_mn, pl_dir, pl_fmt, pl_ra, pl_rb, src_first, is_list} :
-           {p_mn, p_dir, p_fmt, p_ra, p_rb, p_sf, p_lst};
+  assign {q_mn, q_dir, q_fmt, q_ra, q_rb, q_sf, q_lst, q_fcw, q_dp, q_inv} = p_load ?
+           {pl_mn, pl_dir, pl_fmt, pl_ra, pl_rb, src_first, is_list, tpl_q == TPL_EPU_FROM_FCW, pl_dp && plan_ok, !plan_ok} :
+           {p_mn, p_dir, p_fmt, p_ra, p_rb, p_sf, p_lst, p_fcw, p_dp, p_inv};
   assign q_ns = (pend_q == PQ_READY) ? p_ns : cyc_ns_q;
 
   // ---- control registers -----------------------------------------------
   // List masks from word 1 and word 2: sticky flags, the compare byte in
-  // FCW order (bits 7:2), trap enables.
-  logic        list_set;
+  // FCW order (bits 7:2), trap enables. The list instruction is the one
+  // taken this clock: the promoted one, else from the decode at word 2.
+  logic        list_set, l_dec;
+  mn_e         l_mn;
+  logic [3:0]  l_sel;
+  logic [7:0]  l_list;
   logic [31:0] list_mask;
   logic [31:0] ctl_word;   // FLDCTL inbound, {first word, last word}
 
-  assign list_set = (mn_q == MN_FSETFLG) || (mn_q == MN_FSETTRAP);
+  assign l_dec    = !promote || p_load;
+  assign l_mn     = promote ? q_mn : pl_mn;
+  assign l_sel    = l_dec ? pl_sel : sel_q;
+  assign l_list   = l_dec ? pl_list : list_q;
+  assign list_set = (l_mn == MN_FSETFLG) || (l_mn == MN_FSETTRAP);
   assign ctl_word = {buf_d[0], buf_d[1]};
 
   always_comb begin
-    unique case (sel_q)
-      LIST_TRAP:    list_mask = {24'd0, list_q} << US_TRAP;
-      LIST_COMPARE: list_mask = {26'd0, list_q[7:2]} << FF_CMP;
-      default:      list_mask = {24'd0, list_q};
+    unique case (l_sel)
+      LIST_TRAP:    list_mask = {24'd0, l_list} << US_TRAP;
+      LIST_COMPARE: list_mask = {26'd0, l_list[7:2]} << FF_CMP;
+      default:      list_mask = {24'd0, l_list};
     endcase
   end
+
+  // Compares and remainders write the compare flags, all zero included.
+  logic cmp_op;
+
+  assign cmp_op = mn_q == MN_FCP || mn_q == MN_FCPF || mn_q == MN_FCPX || mn_q == MN_FCPFX ||
+                  mn_q == MN_FCPZ || mn_q == MN_FCPZFX || mn_q == MN_FCPZNF || mn_q == MN_FCPZXNF ||
+                  mn_q == MN_FREMSNF || mn_q == MN_FREMSTEP;
 
   always_comb begin
     sc_d     = sc_q;
     user_d   = user_q;
     fflags_d = fflags_q;
 
-    if (launch || promote) sc_d[SC_U] = 1'b1;
+    if (promote && !q_inv) sc_d[SC_U] = 1'b1;
 
-    if (list_go_q) begin
-      if (mn_q == MN_FSETMODE) begin
-        user_d[1:0] = (user_q[1:0] & ~sel_q[1:0]) | list_q[1:0];
-      end else if (sel_q == LIST_TRAP) begin
-        user_d = list_set ? (user_q | list_mask) : (user_q & ~list_mask);
+    // The Data Processor's result first: an instruction it promotes comes
+    // after it. Bus work never comes in a done clock.
+    if (apply) begin
+      fflags_d[15:8] = dp_flags;
+      fflags_d[7:0]  = fflags_d[7:0] | dp_flags;
+      if (cmp_op)      fflags_d[FF_CMP +: 6] = dp_cmp;
+      fflags_d[FF_R] = dp_rup;
+      if (dp_flags[FL_INV]) fflags_d[FF_RSN +: 3] = dp_reason;
+      if (|dp_flags)   fflags_d[FF_FOPE +: 4] = {fop1_bus ? bus_x[78:77] : f_rdata[78:77],
+                                             dp_res[78:77]};
+    end
+
+    if (list_go) begin
+      if (l_mn == MN_FSETMODE) begin
+        user_d[1:0] = (user_d[1:0] & ~l_sel[1:0]) | l_list[1:0];
+      end else if (l_sel == LIST_TRAP) begin
+        user_d = list_set ? (user_d | list_mask[15:0]) : (user_d & ~list_mask[15:0]);
       end else begin
-        fflags_d = list_set ? (fflags_q | list_mask) : (fflags_q & ~list_mask);
+        fflags_d = list_set ? (fflags_d | list_mask) : (fflags_d & ~list_mask);
       end
     end
 
@@ -745,21 +913,13 @@ module z8070_ip
       unique case (sel_q)
         CTL_SC:     if (!(promote ? q_ns : cyc_ns_q)) sc_d = ctl_word;
         CTL_FFLAGS: fflags_d = ctl_word;
-        CTL_USER:   user_d[15:0] = buf_d[0];
+        CTL_USER:   user_d = buf_d[0];
         default: ;  // PC1, PC2, FOP1, FOP2 are read only
       endcase
     end
 
-    // The Data Processor's result, after this clock's bus work.
-    if (apply) begin
-      fflags_d[15:8] = dp_flags;
-      fflags_d[7:0]  = fflags_d[7:0] | dp_flags;
-      if (|dp_cmp)     fflags_d[FF_CMP +: 6] = dp_cmp;
-      fflags_d[FF_R] = dp_rup;
-      if (dp_flags[FL_INV]) fflags_d[FF_RSN +: 3] = dp_reason;
-      if (|dp_flags)   fflags_d[FF_FOPE +: 4] = {fop1_bus ? bus_x[78:77] : f_rdata[78:77],
-                                             dp_res[78:77]};
-    end
+    // After the write: a held IF1 launched with a promoted FLDCTL SC is later.
+    if (launch) sc_d[SC_U] = 1'b1;
 
     if (ack_take) begin
       sc_d[SC_IP]  = 1'b0;
@@ -775,7 +935,7 @@ module z8070_ip
   always_ff @(posedge clk) begin
     if (!reset_n) begin
       sc_q     <= {4'h0, id, 26'd0};
-      user_q   <= 32'd0;
+      user_q   <= 16'd0;
       fflags_q <= 32'd0;
     end else begin
       sc_q     <= sc_d;
@@ -817,8 +977,37 @@ module z8070_ip
     end
   end
 
+  // A queued instruction's word that comes before the running operation's
+  // bus operand is readable in row 10 waits in capk_q.
+  // Justification: (reg-a) the kept word, its place, whether one is kept.
+  logic [15:0] capk_q;
+  logic [2:0]  capk_n_q;
+  logic        capk_v_q;
+
+  assign q_defer = stg_req_q || (stg_q && !stg2_q);
+
+  always_ff @(posedge clk) begin
+    if (cap_keep) {capk_q, capk_n_q} <= {ds_data_q, cnt_q};
+  end
+
+  always_ff @(posedge clk) begin
+    if (!reset_n)      capk_v_q <= 1'b0;
+    else if (cap_keep) capk_v_q <= 1'b1;
+    else if (!q_defer) capk_v_q <= 1'b0;
+  end
+
   always_comb begin
     buf_d = buf_q;
+    if (capk_v_q && !q_defer) begin
+      unique case (capk_n_q)
+        3'd0:    buf_d[0] = capk_q;
+        3'd1:    buf_d[1] = capk_q;
+        3'd2:    buf_d[2] = capk_q;
+        3'd3:    buf_d[3] = capk_q;
+        3'd4:    buf_d[4] = capk_q;
+        default: ;
+      endcase
+    end
     if (capture) begin
       unique case (cnt_q)
         3'd0:    buf_d[0] = ds_data_q;
@@ -851,8 +1040,9 @@ module z8070_ip
   assign c_dir = at_w2 ? pl_dir : dir_q;
 
   // Operation code (the Data Processor's kind), precision and rounding of
-  // the decode's next value, registered through word 2 and held from its
-  // /DS rise: a start sees them from flops.
+  // the decode's next value, taken through word 2 and held from its /DS
+  // rise. The Data Processor gets the next value and latches it while idle,
+  // so a start sees them from flops.
   logic [5:0] kind_u;
   logic [1:0] prec_u, rm_u;
   logic       out_u;       // a single or double store
@@ -895,14 +1085,30 @@ module z8070_ip
     else                          prec_u = (pl_rnd_u == 2'b01) ? 2'd0 : (pl_rnd_u == 2'b11) ? 2'd1 : 2'd2;
   end
 
-  assign rm_u  = (pl_mn_u == MN_FLDTL || pl_mn_u == MN_FLDTQ) ? 2'b01 : user_q[1:0];
+  // USER as this clock leaves it: a list op or FLDCTL just taken counts.
+  assign rm_u  = (pl_mn_u == MN_FLDTL || pl_mn_u == MN_FLDTQ) ? 2'b01 : user_d[1:0];
   assign out_u = (pl_mn_u == MN_FLD || pl_mn_u == MN_FLDNF) && pl_dir_u == DIR_OUT &&
                  (pl_fmt_u == FMT_SINGLE || pl_fmt_u == FMT_DOUBLE);
 
-  // Justification: (reg-b) the start's operation off the decode path.
+  // Justification: (reg-a) the executing operation's, held to its start.
+  logic [5:0] kind_q;
+  logic [1:0] prec_q, rm_q;
+  logic       out_q;
+
+  // The start fields: the executing operation's from its word 2 to its
+  // start (taking operand words, or promoted), else a queued operation's,
+  // else the decode.
+  logic exec_own, q_own;
+
+  assign exec_own = state_q == IP_OPERAND || pstart_q || pwait_q;
+  assign q_own    = (pend_q == PQ_CAPT || pend_q == PQ_READY) && p_dp;
+  assign op_ld    = !exec_own && !q_own;
+  assign {dp_kind, dp_prec, dp_rm, dp_out} = exec_own ? {kind_q, prec_q, rm_q, out_q} :
+                                             q_own    ? {p_kind, p_prec, p_rm, p_out} :
+                                                        {kind_u, prec_u, rm_u, out_u};
+
   always_ff @(posedge clk) begin
-    if ((at_w2 && !launch) || (pend_q == PQ_W2 && !p_load))
-      {dp_kind, dp_prec, dp_rm, dp_out} <= {kind_u, prec_u, rm_u, out_u};
+    {kind_q, prec_q, rm_q, out_q} <= {dp_kind, dp_prec, dp_rm, dp_out};
   end
 
   // The bus operand, from the buffer as this clock's capture leaves it.
@@ -913,11 +1119,18 @@ module z8070_ip
   assign bs = {buf_d[0], buf_d[1]};
   assign bd = {buf_d[0], buf_d[1], buf_d[2], buf_d[3]};
 
-  // One rebias adder for both formats.
-  logic [14:0] b_sum;
+  // One rebias adder for both formats and both ways: the bus operand's
+  // exponent up, the result's down for a store.
+  logic [14:0] b_sum, rb_x, rb_k;
 
-  assign b_sum = (fmt_q == FMT_SINGLE) ? {7'd0, bs[30:23]} + 15'd16256 :
-                                         {4'd0, bd[62:52]} + 15'd15360;
+  always_comb begin
+    if (dir_q == DIR_OUT) rb_x = dp_res[78:64];
+    else                  rb_x = (fmt_q == FMT_SINGLE) ? {7'd0, bs[30:23]} : {4'd0, bd[62:52]};
+    rb_k = (fmt_q == FMT_SINGLE) ? 15'd16256 : 15'd15360;
+    if (dir_q == DIR_OUT) rb_k = -rb_k;
+  end
+
+  assign b_sum = rb_x + rb_k;
 
   always_comb begin
     if (&bs[30:23])       bs_e = 15'h7FFF;
@@ -942,37 +1155,51 @@ module z8070_ip
   // compares with zero compare the bus operand. Outside operand words it
   // carries FOP1's operand, the source (the destination outbound), and for
   // the RAM's write port the result or FOP1.
-  logic src_bus, dst_bus, op_bus, wb_now, fop_q, fop1_bus_q, fop2_pend_q, fop2_now, f_rd;
+  logic src_bus, dst_bus, rd_bus, op_bus, wb_now, fop_q, fop1_bus_q, fop2_pend_q, fop2_now;
 
   assign src_bus = c_dir == DIR_IN;
   assign dst_bus = src_bus && (c_mn == MN_FCPZNF || c_mn == MN_FCPZXNF);
-  assign op_bus  = fop_q ? fop1_bus_q : (wb_now || fop2_now) ? 1'b0 :
-                   (dp_busy && !dp_opnd_rd) ? src_bus : dp_opnd_src ? src_bus : dst_bus;
-  assign dp_opnd = op_bus ? bus_x : (wb_now || fop2_now) ? dp_res : f_rdata;
+  assign rd_bus  = dp_opnd_src ? src_bus : dst_bus;   // the unpack reads the bus operand
+  assign op_bus  = fop_q ? fop1_bus_q : wb_now ? 1'b0 :
+                   (dp_busy && !dp_opnd_rd) ? src_bus : rd_bus && !stg2_q;
+  assign dp_opnd = op_bus ? bus_x : wb_now ? dp_res : f_rdata;
 
   // F read address, a master clock ahead of its use. Running: the operand
-  // word's register, else FOP1's (the input operand; row 10 once a queued
-  // instruction's words are due in the buffer) for the done clock, but the
-  // second unpack's register from the first unpack on. Before
+  // word's register, else FOP1's (the input operand) for the done clock,
+  // but the second unpack's register from the first unpack on; row 10 for
+  // the bus operand once a queued instruction's words are due in the
+  // buffer (from the start clock of one promoted with a held IF1). Before
   // word 2: the first operand of the internal form, Fs for the operations
-  // whose first microword (the ROM's first-word table) reads the source,
+  // whose first microword reads the source,
   // else Fd (outbound forms read Fd only); a queued one's from the clock
   // that takes it (in the done clock, the next), for a CLK.D rise with its
-  // start. FLDCTL of FOP1 or FOP2: its row. Taking operands: Fd.
+  // start; a held one run at its promotion likewise. FLDCTL of FOP1 or
+  // FOP2: its row, from its promotion. Taking operands: Fd.
   assign src_first = tpl_q == TPL_INTERNAL &&
                      (pl_mn_u == MN_FCLR || pl_mn_u == MN_FRVSUB || pl_mn_u == MN_FRDIV ||
                       pl_mn_u == MN_FPWR2 || pl_mn_u == MN_FSQR || pl_mn_u == MN_FINT ||
                       pl_mn_u == MN_FABS || pl_mn_u == MN_FNEG || pl_mn_u == MN_FLD ||
                       pl_mn_u == MN_FLDNF);
 
+  // A promoted FLDCTL of FOP1 or FOP2, or a held one run with it, drives
+  // its first word at once.
+  logic q_fopout, h_fopout;
+
+  assign q_fopout = q_mn == MN_FLDCTL && q_dir == DIR_OUT && (l_sel == CTL_FOP1 || l_sel == CTL_FOP2);
+  assign h_fopout = hld && (rp_q || w2_keep) && plan_ok && !q_dp && pl_mn == MN_FLDCTL && pl_dir == DIR_OUT &&
+                    (pl_sel == CTL_FOP1 || pl_sel == CTL_FOP2);
+
   always_comb begin
-    if (dp_busy)       f_raddr = (dp_opnd_rd || dp_opnd_nxt) ? {1'b0, dp_opnd_src ? rb_q : ra_q} :
+    if (promote && q_fopout)      f_raddr = {3'b100, l_sel == CTL_FOP2};
+    else if (promote && h_fopout) f_raddr = {3'b100, pl_sel == CTL_FOP2};
+    else if (dp_busy)  f_raddr = (dp_opnd_rd || dp_opnd_nxt) ?
+                                   ((rd_bus && stg_q) ? 4'd10 : {1'b0, dp_opnd_src ? rb_q : ra_q}) :
                                  stg_q ? 4'd10 : {1'b0, (dir_q == DIR_OUT) ? ra_q : rb_q};
-    else if (at_w2)    f_raddr = {1'b0, src_first ? pl_fs_u : pl_fd_u};
-    else if (promote)  f_raddr = {1'b0, q_sf ? q_rb : q_ra};
-    else if (pstart_q || pwait_q) f_raddr = {1'b0, p_sf ? rb_q : ra_q};
+    else if (promote && q_dp) f_raddr = {1'b0, q_sf ? q_rb : q_ra};
+    else if (pstart_q || pwait_q) f_raddr = (rd_bus && stg_q) ? 4'd10 : {1'b0, sf_q ? rb_q : ra_q};
     else if (state_q == IP_RESULT && mn_q == MN_FLDCTL)
                        f_raddr = {3'b100, sel_q == CTL_FOP2};
+    else if (at_w2 || hld) f_raddr = {1'b0, src_first ? pl_fs_u : pl_fd_u};
     else               f_raddr = {1'b0, ra_q};
   end
 
@@ -981,21 +1208,19 @@ module z8070_ip
   assign trap  = apply && |(dp_flags & user_q[US_TRAP +: 8]);
 
   // The RAM's one write port after done: F[Fd] in the done clock, FOP1 the
-  // next from the read register held through done, FOP2 in the first
-  // clock after that the Data Processor does not read the operand bus (a
-  // queued operation may start one or two clocks after done and read
-  // F[Fd]). Row
-  // 10 takes the bus operand in a free clock once a queued IF1 is seen.
+  // next from the read register held through done, FOP2 the clock after
+  // from the result latch, which holds it past a next operation's start.
+  // Row 10 takes the bus operand the clock after a queued IF1, ahead of
+  // FOP2, so before the queued words reach the buffer.
   logic no_wb, fop;
 
   assign no_wb    = mn_q == MN_FCP || mn_q == MN_FCPX || mn_q == MN_FCPZNF || mn_q == MN_FCPZXNF;
   assign fop      = apply && |dp_flags;
   assign fop1_bus = src_bus && !stg2_q;
   assign wb_now   = fold && ((dir_q != DIR_OUT && !no_wb) || mn_q == MN_FREMSTEP);
-  assign f_rd     = (dp_busy && dp_opnd_rd) || pstart_q;
-  assign fop2_now = fop2_pend_q && !f_rd && !wb_now && !fop_q;
-  assign stg_now  = stg_req_q && !f_rd && !fold && !fop_q && !fop2_pend_q;
-  assign f_re     = !fold;
+  assign fop2_now = fop2_pend_q && !wb_now && !fop_q && !stg_now;
+  assign stg_now  = stg_req_q && !fold && !fop_q;
+  assign f_re     = !(fold && fop);
 
   // Justification: (reg-a) the write-port steps after done.
   always_ff @(posedge clk) begin
@@ -1029,14 +1254,13 @@ module z8070_ip
 
   assign f_we    = wb_now || fop_q || fop2_now || stg_now;
   assign f_waddr = wb_now ? {1'b0, ra_q} : fop_q ? 4'd8 : fop2_now ? 4'd9 : 4'd10;
-  assign f_wdata = dp_opnd;
+  assign f_wdata = stg_now ? bus_x : fop2_now ? dp_res : dp_opnd;
 
   // Result words, field by field. Single and double: the integer bit
   // tells a normal from the denormalized form; a NaN whose payload
   // truncates to 0 keeps its quiet bit.
   logic        r_spec, r_nan;
   logic [14:0] r_e;
-  logic [10:0] r_dif;
   logic [7:0]  r_es;
   logic [10:0] r_ed;
   logic [22:0] r_fs;
@@ -1046,32 +1270,38 @@ module z8070_ip
   assign r_e    = dp_res[78:64];
   assign r_spec = &r_e;
   assign r_nan  = r_spec && |dp_res[62:0];
-  assign r_dif  = 11'(r_e - ((fmt_q == FMT_SINGLE) ? 15'd16256 : 15'd15360));
-  assign r_es   = r_spec ? 8'hFF : dp_res[63] ? r_dif[7:0] : 8'h00;
-  assign r_ed   = r_spec ? 11'h7FF : dp_res[63] ? r_dif[10:0] : 11'h000;
+  assign r_es   = r_spec ? 8'hFF : dp_res[63] ? b_sum[7:0] : 8'h00;
+  assign r_ed   = r_spec ? 11'h7FF : dp_res[63] ? b_sum[10:0] : 11'h000;
   assign r_fs   = {dp_res[62] | (r_nan & ~|dp_res[62:40]), dp_res[61:40]};
   assign r_fd   = {dp_res[62] | (r_nan & ~|dp_res[62:11]), dp_res[61:11]};
 
   always_comb begin
     unique case (sel_q)
       CTL_SC:     ctl_v = sc_q;
-      CTL_PC1:    ctl_v = pc1_q;
-      CTL_PC2:    ctl_v = pc2_q;
+      CTL_PC1:    ctl_v = {1'b0, pc1_q[22:16], 8'h00, pc1_q[15:0]};
+      CTL_PC2:    ctl_v = {1'b0, pc2_q[22:16], 8'h00, pc2_q[15:0]};
       CTL_FFLAGS: ctl_v = fflags_q;
-      default:    ctl_v = {user_q[15:0], 16'h0000};
+      default:    ctl_v = {user_q, 16'h0000};
     endcase
   end
 
   // ---- pins ------------------------------------------------------------
-  logic        dp_wait, store_wait, bsy_dp, drive, vec_drive;
+  logic        dp_wait, store_wait, bsy_dp, inter, rp_bsy, drive, vec_drive;
   logic [7:0]  vec;
   logic [15:0] out_word;
   logic [79:0] img;
 
   assign dp_wait    = state_q == IP_DPWAIT;
-  assign store_wait = (dp_wait && dir_q == DIR_OUT) || (pend_q == PQ_READY && p_dir == DIR_OUT) ||
+  assign store_wait = (dp_wait && dir_q == DIR_OUT) || (pend_q == PQ_READY && p_dir == DIR_OUT && !p_inv) ||
                       fop_wait;
-  assign bsy_dp     = (sc_q[SC_OVRLP +: 2] == OVRLP_INTERMEDIATE) ? pend_q == PQ_READY : dp_wait;
+  assign inter      = sc_q[SC_OVRLP +: 2] == OVRLP_INTERMEDIATE;
+  assign bsy_dp     = inter ? pend_q == PQ_READY : dp_wait;
+  // A kept word 2 of the executing instruction: /BSY as once it is taken.
+  assign rp_bsy     = rp_q && plan_ok && at_w2 &&
+                      ((pl_dir == DIR_OUT && pl_mn != MN_FLDCTL && pl_mn != MN_FLDCTLB) ||
+                       (!inter && pl_dir == DIR_NONE && !is_list) ||
+                       (pl_mn == MN_FLDCTL && pl_dir == DIR_OUT && fset_q != 2'd0 &&
+                        (pl_sel == CTL_FOP1 || pl_sel == CTL_FOP2)));
   assign drive      = state_q == IP_RESULT && busack_n && !fop_wait &&
                       ((cyc_mem && cyc_write_q && cyc_open_q) ||
                        (cyc_epu && !cyc_write_q && !ds_n));
@@ -1109,7 +1339,7 @@ module z8070_ip
   always_comb begin
     ad_drive = reset_n & (drive | vec_drive);
     ad_out   = drive ? out_word : {8'h00, vec};
-    bsy_n    = ~(reset_n & (bsy_dp | store_wait));
+    bsy_n    = ~(reset_n & (bsy_dp | store_wait | rp_bsy));
     int_n    = ~(reset_n & int_req);
     ieo      = iei & (~reset_n | ~(sc_q[SC_IUS] | sc_q[SC_DLC] | in_ack));
   end

@@ -1,5 +1,4 @@
-// Generated from rtl/k8070_fpu/z8070_dp_ucode.txt; do not hand-edit
-// (make gen-fpu).
+// Generated from z8070_dp_ucode.txt by make gen; do not hand-edit.
 //
 // z8070_dp_rom_pkg -- the Data Processor microprogram's types: 63 words,
 // 23 dispatch entries (the ROM itself is z8070_dp_rom). Routines (tag):

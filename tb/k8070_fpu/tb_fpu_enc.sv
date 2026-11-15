@@ -3,7 +3,7 @@
 // Replays vectors/k8070_fpu/enc/enc.vec: for each IF1 high byte, a digest of the template decode of all
 // 256 words; for each template x word-1 bits 7:4 x operation code, a digest
 // of the plan for all 1024 word 2s (rounding, register, n-1). Values are
-// packed as the generator packs them; an invalid plan packs to 0.
+// packed as the vector packs them; an invalid plan packs to 0.
 //
 // Run: make test-fpu-enc
 
@@ -16,6 +16,7 @@ module tb_fpu_enc;
   logic        if1_epa, if1_ok;
   tpl_e        if1_tpl;
   logic [1:0]  if1_id;
+  assign if1_id = if1[1:0];
   tpl_e        tpl = TPL_MEM_FROM_EPU;
   logic [7:4]  w1  = 4'h0;
   logic [15:0] w2  = 16'h0000;
@@ -30,7 +31,7 @@ module tb_fpu_enc;
   logic [3:0]  words;
 
   z8070_dec dut (
-    .if1_op(if1[15:8]), .if1_dir_id(if1[3:0]), .if1_epa(if1_epa), .if1_ok(if1_ok), .if1_tpl(if1_tpl), .if1_id(if1_id),
+    .if1_op(if1[15:8]), .if1_dir(if1[3:2]), .if1_epa(if1_epa), .if1_ok(if1_ok), .if1_tpl(if1_tpl),
     .tpl(tpl), .w1(w1), .w2(w2), .plan_ok(plan_ok), .mn(mn), .fd(fd), .fs(fs),
     .fmt(fmt), .rnd(rnd), .sel(sel), .list_byte(list_byte), .dir(dir), .words(words)
   );

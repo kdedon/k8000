@@ -3,7 +3,7 @@
 //
 //   u_cpu: u_regfile.r[16] fcw pc psap nspoff nspseg halted,
 //          u_execute.sp_we_q/sp_sel_q/sp_d_q, u_int.smp/smp_halt/halt_on
-//   u_fpu: u_ip sc_q user_q fflags_q pc1_q pc2_q, u_dp f_mem (F0-F7, FOP1 8,
+//   u_fpu: u_ip sc_q user_q (USER 15:0) fflags_q pc1_q pc2_q ({SN, address}), u_dp f_mem (F0-F7, FOP1 8,
 //          FOP2 9), dp_busy
 //
 // Rename one of these in the RTL and update this file in the same change.
@@ -17,6 +17,10 @@
 
 #define CPU_(n) tb_cpu_fpu__DOT__u_cpu__DOT__##n
 #define FPU_(n) tb_cpu_fpu__DOT__u_fpu__DOT__##n
+
+// PC1/PC2 hold {SN6-0, address}; the chip shows {0, SN6-0, 00, address}.
+static inline uint32_t pcShow(uint32_t p) { return (p >> 16 & 0x7F) << 24 | (p & 0xFFFF); }
+static inline uint32_t pcHold(uint32_t v) { return (v >> 24 & 0x7F) << 16 | (v & 0xFFFF); }
 
 // An 80-bit value: hi = bits 79:64, lo = bits 63:0.
 struct V80 {
@@ -84,14 +88,26 @@ struct BoardAccess {
     }
 
     // FPU.
-    uint32_t* reg32(const std::string& n) const {
+    // The 32-bit control registers as FLDCTL shows them.
+    bool get32(const std::string& n, uint32_t& v) const {
         auto* r = top->rootp;
-        if (n == "SC")     return &r->FPU_(u_ip__DOT__sc_q);
-        if (n == "USER")   return &r->FPU_(u_ip__DOT__user_q);
-        if (n == "FFLAGS") return &r->FPU_(u_ip__DOT__fflags_q);
-        if (n == "PC1")    return &r->FPU_(u_ip__DOT__pc1_q);
-        if (n == "PC2")    return &r->FPU_(u_ip__DOT__pc2_q);
-        return nullptr;
+        if (n == "SC")          v = r->FPU_(u_ip__DOT__sc_q);
+        else if (n == "USER")   v = r->FPU_(u_ip__DOT__user_q);
+        else if (n == "FFLAGS") v = r->FPU_(u_ip__DOT__fflags_q);
+        else if (n == "PC1")    v = pcShow(r->FPU_(u_ip__DOT__pc1_q));
+        else if (n == "PC2")    v = pcShow(r->FPU_(u_ip__DOT__pc2_q));
+        else return false;
+        return true;
+    }
+    bool set32(const std::string& n, uint32_t v) {
+        auto* r = top->rootp;
+        if (n == "SC")          r->FPU_(u_ip__DOT__sc_q) = v;
+        else if (n == "USER")   r->FPU_(u_ip__DOT__user_q) = v & 0xFFFF;
+        else if (n == "FFLAGS") r->FPU_(u_ip__DOT__fflags_q) = v;
+        else if (n == "PC1")    r->FPU_(u_ip__DOT__pc1_q) = pcHold(v);
+        else if (n == "PC2")    r->FPU_(u_ip__DOT__pc2_q) = pcHold(v);
+        else return false;
+        return true;
     }
     VlWide<3>* reg80(const std::string& n) const {
         auto* r = top->rootp;
@@ -108,7 +124,8 @@ struct BoardAccess {
             v.hi = (*p)[2] & 0xFFFF;
             return true;
         }
-        if (uint32_t* p = reg32(n)) { v.lo = *p; return true; }
+        uint32_t w;
+        if (get32(n, w)) { v.lo = w; return true; }
         return false;
     }
     bool fpuPoke(const std::string& n, const V80& v) {
@@ -118,7 +135,7 @@ struct BoardAccess {
             (*p)[2] = (uint32_t)(v.hi & 0xFFFF);
             return true;
         }
-        if (uint32_t* p = reg32(n)) { *p = (uint32_t)v.lo; return true; }
+        if (set32(n, (uint32_t)v.lo)) return true;
         return false;
     }
 };

@@ -1,9 +1,7 @@
-// Generated from rtl/k8070_fpu/z8070_dp_ucode.txt; do not hand-edit
-// (make gen-fpu).
+// Generated from z8070_dp_ucode.txt by make gen; do not hand-edit.
 //
 // z8070_dp_rom -- the Data Processor microprogram ROM in logic: the word
-// at addr, the first word and entry address of the operation being
-// started (so a start does not pass through the ROM), and the body
+// at addr, the entry address of the next operation, and the body
 // address of the latched operation. Words are numeric {act, seq, tgt,
 // fin}: Quartus 17.0.2 crashes extracting a ROM from enum-valued words.
 
@@ -14,9 +12,8 @@ module z8070_dp_rom
 (
   input  logic [UA_W-1:0] addr,
   input  logic [5:0]      kind,        // latched operation
-  input  logic [5:0]      start_kind,  // operation being started
+  input  logic [5:0]      next_kind,   // operation to start
   output logic [14:0]     uw,          // dp_uw_t
-  output logic [14:0]     uw_first,
   output logic [UA_W-1:0] entry,
   output logic [UA_W-1:0] body
 );
@@ -122,36 +119,7 @@ module z8070_dp_rom
   end
 
   always_comb begin
-    unique case (start_kind)
-      6'h00:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FADD   UNP_A    UNPA  NEXT  -
-      6'h01:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FSUB   UNP_A    UNPA  NEXT  -
-      6'h02:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FRVSUB UNP_A    UNPA  NEXT  -
-      6'h03:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FMUL   UNP_A    UNPA  NEXT  -
-      6'h04:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FDIV   UNP_A    UNPA  NEXT  -
-      6'h05:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FRDIV  UNP_A    UNPA  NEXT  -
-      6'h06:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FPWR2  UNP_A    UNPA  NEXT  -
-      6'h07:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // FSQR   UNP_B    UNPB  NEXT  -
-      6'h08:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FLD    UNP_A    UNPA  NEXT  -
-      6'h09:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // FABS   SGN_LD   UNPB  NEXT  -
-      6'h0A:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // FNEG   SGN_LD   UNPB  NEXT  -
-      6'h0B:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // FCLR   SGN_LD   UNPB  NEXT  -
-      6'h0C:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // FINT   UNP_B    UNPB  NEXT  -
-      6'h0D:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FCP    UNP_A    UNPA  NEXT  -
-      6'h0E:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FCPX   UNP_A    UNPA  NEXT  -
-      6'h0F:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FCPZ   UNP_A    UNPA  NEXT  -
-      6'h10:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FCPZX  UNP_A    UNPA  NEXT  -
-      6'h11:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FREM   REM_A    UNPA  NEXT  -
-      6'h12:   uw_first = {6'd0 , 2'd0, 6'd0 , 1'b0};  // FREMSTEP REM_A    UNPA  NEXT  -
-      6'h20:   uw_first = {6'd46, 2'd1, 6'd14, 1'b0};  // ITOF   I2F_LD   ILD   JMP   ADD_LZ
-      6'h21:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // FTOI   UNP_B    UNPB  NEXT  -
-      6'h22:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // BCDLD  BCL_LD   UNPB  NEXT  -
-      6'h23:   uw_first = {6'd2 , 2'd0, 6'd0 , 1'b0};  // BCDST  UNP_B    UNPB  NEXT  -
-      default: uw_first = {6'd16, 2'd0, 6'd0 , 1'b0};  // no routine: TAIL     PACK  NEXT  -
-    endcase
-  end
-
-  always_comb begin
-    unique case (start_kind)
+    unique case (next_kind)
       6'h00:   entry = UA_UNP_A;  // FADD
       6'h01:   entry = UA_UNP_A;  // FSUB
       6'h02:   entry = UA_UNP_A;  // FRVSUB

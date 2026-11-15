@@ -3,8 +3,8 @@
 //
 //   tb_fpu_dp [--only g1,g2,...] [--mclk P] [--show N] [--quiet] file.vec...
 //
-// Each record: the operation, precision and rounding mode on the start
-// pulse, the destination and source operands on the operand bus as the DP
+// Each record: the operation, precision and rounding mode from the master
+// clock before the start pulse, the destination and source operands on the operand bus as the DP
 // names them, then CLK.D rises until done. Integer to float: the integer
 // is the source operand's significand. Float to integer: op_prec is the
 // width (opts bit 0), a truncate (opts bit 1) passes rm 01, and the
@@ -123,6 +123,7 @@ struct Bench {
             t->op_prec = r.opts & 1;
             if (r.opts & 2) t->op_rm = 1;
         }
+        clock();   // the operation is named a clock ahead of its start
         unsigned rises = 0;
         if (!coincide) {
             t->start = 1; t->clkd_rise = 0;
@@ -208,6 +209,7 @@ int main(int argc, char** argv) {
         std::string line;
         unsigned ln = 0;
         bool header = false;
+        unsigned recs = 0;
         while (std::getline(in, line)) {
             ln++;
             if (ln == 1) {
@@ -219,6 +221,7 @@ int main(int argc, char** argv) {
                 continue;
             }
             if (line.empty() || line[0] != 'D') continue;
+            recs++;
             std::istringstream ss(line);
             std::string tag, kind, prec, rm, dst, src, iv, opts, res, flags, reason, rup, cmp, rint;
             unsigned cycles;
@@ -269,19 +272,25 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        if (!header) {
+        if (!header || recs == 0) {
             fprintf(stderr, "%s: empty file\n", path.c_str());
             return 4;
         }
     }
 
     bool allOk = true;
+    unsigned checked = 0;
     for (const char* g : kGroups) {
         unsigned p = pass[g], f = fail[g];
+        checked += p + f;
         if (p + f == 0) continue;
         if (f) allOk = false;
         if (!quiet || f)
             printf("RESULT %-5s %s %u/%u\n", g, f ? "FAIL" : "PASS", p, p + f);
+    }
+    if (checked == 0) {
+        printf("RESULT FAIL no records checked\n");
+        allOk = false;
     }
     delete b.t;
     return allOk ? 0 : 1;

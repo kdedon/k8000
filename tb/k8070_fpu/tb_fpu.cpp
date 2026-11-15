@@ -2,7 +2,7 @@
 // file against the Verilated z8070_fpu.
 //
 //   tb_fpu <file.vec> [--context N] [--vcd out.vcd] [--quiet]
-//                     [--stop-first] [--no-final] [--mclk P] [--fastd]
+//                     [--stop-first] [--no-final] [--mclk P] [--fastd | --slowd N]
 //
 // The chip runs on the board master clock `clk`. CLK.I is two pulses,
 // clki_rise and clki_fall, and CLK.D one, clkd_rise: each High for the
@@ -25,6 +25,14 @@
 // so pins are not compared; the word driven at the end of each /DS Low
 // window is, in order, with the final state but PC2 (an IF1 while busy
 // loads it, so it depends on the speed).
+//
+// --slowd N: CLK.D rises at every Nth CLK.I rise. Where the vector has
+// /BSY High and the RTL holds it Low, the bench adds CLK.I periods before
+// the next CLK.I rise, the last record's inputs held, until /BSY rises.
+// That freezes the bus wherever the record is, not where a CPU samples
+// STOP or /WAIT, and still delivers the cycles a stopped CPU would hold
+// back; the CPU+FPU bench's slow pass runs a real CPU. The vector ends
+// with 100 x N more. Compared as --fastd.
 //
 // Exit codes: 0 PASS, 1 FAIL, 2 SKIP, 4 usage or parse error.
 
@@ -104,6 +112,7 @@ int main(int argc, char** argv) {
     std::string vecPath, vcdPath;
     int context = 12;
     bool quiet = false, stopFirst = false, checkFinal = true, fastd = false;
+    int slowd = 0;
     std::string mclkPat = getenv("K8000_MCLK") ? getenv("K8000_MCLK") : "1,2,1,3";
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -113,11 +122,15 @@ int main(int argc, char** argv) {
         else if (a == "--stop-first") stopFirst = true;
         else if (a == "--no-final") checkFinal = false;
         else if (a == "--fastd") fastd = true;
+        else if (a == "--slowd" && i + 1 < argc) slowd = atoi(argv[++i]);
         else if (a == "--mclk" && i + 1 < argc) mclkPat = argv[++i];
         else if (a.size() > 1 && a[0] == '-' && a[1] == '-') { fprintf(stderr, "unknown option %s\n", a.c_str()); return 4; }
         else vecPath = a;
     }
-    if (vecPath.empty()) { fprintf(stderr, "usage: tb_fpu <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final] [--mclk P] [--fastd]\n"); return 4; }
+    if (vecPath.empty()) { fprintf(stderr, "usage: tb_fpu <file.vec> [--context N] [--vcd f] [--quiet] [--stop-first] [--no-final] [--mclk P] [--fastd | --slowd N]\n"); return 4; }
+    if (slowd < 0 || (slowd && fastd)) { fprintf(stderr, "--slowd: N >= 1, not with --fastd\n"); return 4; }
+    // Pins are not compared off the vector's CLK.D.
+    const bool freeD = fastd || slowd > 0;
 
     std::ifstream f(vecPath);
     if (!f) { printf("RESULT FAIL %s: cannot open\n", vecPath.c_str()); return 4; }
@@ -173,7 +186,24 @@ int main(int argc, char** argv) {
     // master clocks; idle clocks move nothing else, so pokes and the final
     // compare wait for them.
     auto settle = [&]() { for (int k = 0; k < 2; k++) { top->clkd_rise = fastd; mtick(); } top->clkd_rise = 0; };
-    // --fastd: the word driven last in each /DS Low window, -1 for none.
+    // --slowd: CLK.I rises counted for CLK.D; one CLK.I period from the
+    // present level back to it, inputs held.
+    long slowRises = 0;
+    auto slowRise = [&]() { return slowd > 0 && slowRises++ % slowd == 0; };
+    auto idlePeriod = [&]() {
+        for (int h = 0; h < 2; h++) {
+            bool lvl = prevClki == (h == 1);
+            top->clki_rise = lvl; top->clki_fall = !lvl; top->clkd_rise = lvl && slowRise();
+            for (int k = mclkSeq[mclkIdx]; k > 0; k--) {
+                mtick();
+                top->clki_rise = 0; top->clki_fall = 0; top->clkd_rise = 0;
+            }
+            mclkIdx = (mclkIdx + 1) % mclkSeq.size();
+        }
+        top->eval();
+    };
+    bool prevExpBsy = true;
+    // --fastd, --slowd: the word driven last in each /DS Low window, -1 for none.
     std::vector<int> expWords, gotWords;
     bool prevDsLow = false;
     int expW = -1, gotW = -1;
@@ -194,6 +224,7 @@ int main(int argc, char** argv) {
         } else if (tag == "P") {
             std::string what, h; ss >> what >> h;
             if (!skipWhy.empty()) continue;
+            for (int n = 0; slowd && n < 1000000 && prevExpBsy && !top->bsy_n; n++) idlePeriod();
             settle();
             if (!dut.set(what, V80::parse(h))) {
                 skipWhy = " poke of " + what + ", not held by the RTL yet";
@@ -209,14 +240,20 @@ int main(int argc, char** argv) {
                              strtoul(sST.c_str(), nullptr, 16), strtoul(sSN.c_str(), nullptr, 16));
             Out exp = decodeOut(strtoul(sOut.c_str(), nullptr, 16), strtoul(sOAD.c_str(), nullptr, 16));
             tick++;
+            if (slowd) {
+                // The CPU waits on /BSY, the last record's inputs held.
+                for (int n = 0; n < 1000000 && prevExpBsy && !top->bsy_n; n++) idlePeriod();
+                if (prevDsLow && top->ad_drive) gotW = top->ad_out;
+            }
+            bool iRise = in.clki && !prevClki, iFall = !in.clki && prevClki;
+            bool dRise = in.clkd && !prevClkd;
+            prevClki = in.clki; prevClkd = in.clkd;
             top->reset_n = in.reset_n; top->ad_in = in.ad; top->as_n = in.as_n; top->ds_n = in.ds_n;
             top->r_w = in.r_w; top->b_w = in.b_w; top->n_s = in.n_s; top->st = in.st; top->sn = in.sn;
             top->busack_n = in.busack_n; top->abort_n = in.abort_n; top->iei = in.iei;
             top->id = in.id; top->opt = in.opt;
-            bool iRise = in.clki && !prevClki, iFall = !in.clki && prevClki;
-            bool dRise = in.clkd && !prevClkd;
-            prevClki = in.clki; prevClkd = in.clkd;
-            top->clki_rise = iRise; top->clki_fall = iFall; top->clkd_rise = dRise || fastd;
+            top->clki_rise = iRise; top->clki_fall = iFall;
+            top->clkd_rise = slowd ? (iRise && slowRise()) : (dRise || fastd);
             top->eval();
             for (int k = mclkSeq[mclkIdx]; k > 0; k--) {
                 mtick();
@@ -234,7 +271,8 @@ int main(int argc, char** argv) {
             ok[3] = exp.ieo == got.ieo;
             ok[4] = !(exp.ad_drive && got.ad_drive) || exp.ad == got.ad;
             static const char* pinName[5] = {"ADDrive", "BSY_n", "INT_n", "IEO", "AD"};
-            if (fastd) {
+            prevExpBsy = exp.bsy_n;
+            if (freeD) {
                 bool dsLow = !in.ds_n;
                 if (dsLow && !prevDsLow) expW = gotW = -1;
                 if (dsLow && exp.ad_drive) expW = exp.ad;
@@ -260,10 +298,13 @@ int main(int argc, char** argv) {
             if (stopFirst && firstTick >= 0) break;
         } else if (tag == "F") {
             if (!checkFinal) continue;
-            if (!settled) { settle(); settled = true; }
+            if (!settled) {
+                for (int n = 0; n < 100 * slowd; n++) idlePeriod();
+                settle(); settled = true;
+            }
             std::string what, h; ss >> what >> h;
             if (what == "TICKS") continue;
-            if (fastd && what == "PC2") continue;   // loaded only by an IF1 while busy
+            if (freeD && what == "PC2") continue;   // loaded only by an IF1 while busy
             if (!dut.has(what)) { unchecked += (unchecked.empty() ? "" : ",") + what; continue; }
             V80 e = V80::parse(h), g;
             dut.get(what, g);
@@ -288,7 +329,7 @@ int main(int argc, char** argv) {
     if (!skipWhy.empty()) { printf("RESULT SKIP %s:%s\n", vecPath.c_str(), skipWhy.c_str()); return 2; }
     if (!sawEnd && !(stopFirst && firstTick >= 0)) { printf("RESULT FAIL %s: truncated vector (no END)\n", vecPath.c_str()); return 4; }
 
-    if (fastd && checkFinal && sawEnd && expWords != gotWords) {
+    if (freeD && checkFinal && sawEnd && expWords != gotWords) {
         size_t i = 0;
         while (i < expWords.size() && i < gotWords.size() && expWords[i] == gotWords[i]) i++;
         char b[160];

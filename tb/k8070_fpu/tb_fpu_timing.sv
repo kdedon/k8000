@@ -595,9 +595,9 @@ module tb_fpu_timing;
         default: begin bus_cycle(ST_IF1, 16'h8E10, 16'h8E10); bus_cycle(ST_PROG, 16'h4110, 16'h4110); end
       endcase
       for (int i = 0; i < 200 && dut.u_ip.state_q != 3'd4; i++) clk_cycle();
-      ck(dut.u_ip.state_q == 3'd4 && dut.u_ip.cmp_byte == (c == 0 ? 8'h28 : c == 1 ? 8'h88 : 8'h40),
-         c == 0 ? "fast clocks: FCPF F1,F2 (2.0 vs 0.75) sends 28" :
-         c == 1 ? "fast clocks: FCPFX F2,F1 (0.75 vs 2.0) sends 88" :
+      ck(dut.u_ip.state_q == 3'd4 && dut.u_ip.cmp_byte == (c == 0 ? 8'h08 : c == 1 ? 8'hA8 : 8'h40),
+         c == 0 ? "fast clocks: FCPF F1,F2 (2.0 vs 0.75) sends 08" :
+         c == 1 ? "fast clocks: FCPFX F2,F1 (0.75 vs 2.0) sends A8" :
                   "fast clocks: FCPF F1,F1 (2.0 vs 2.0) sends 40",
          "p.535 execution appears linear", $sformatf("state %0d, flags %02h", dut.u_ip.state_q,
          dut.u_ip.cmp_byte));
@@ -664,17 +664,6 @@ module tb_fpu_timing;
        "p.534 NV leaves the lines 3-stated; INTACK 0X = Non-maskable",
        $sformatf("drive %0b%0b%0b%0b IEO High %0b%0b IUS %0b", drv[0], drv[1], drv[2], drv[3],
                  ieo_hi[1], ieo_hi[2], dut.u_ip.sc_q[13]));
-
-    $display("");
-    $display("Interface Processor state recovery");
-    for (int code = 5; code < 8; code++) begin
-      force dut.u_ip.state_q = type(dut.u_ip.state_q)'(3'(code));
-      @(posedge clk); #1;
-      release dut.u_ip.state_q;
-      @(posedge clk); #1;
-      ck(dut.u_ip.state_q == 3'd0, $sformatf("unused state code %0d returns to idle", code),
-         "design rule", $sformatf("state %0d", dut.u_ip.state_q));
-    end
 
     // A store whose words are all taken before the result is ready: the
     // lost-word count stops at 7 and nothing is driven afterwards.

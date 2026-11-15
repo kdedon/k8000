@@ -5,7 +5,7 @@
 // update this file in the same change; nothing else in the harness knows
 // the hierarchy.
 //
-//   Interface Processor: sc_q user_q fflags_q pc1_q pc2_q
+//   Interface Processor: sc_q user_q (USER 15:0) fflags_q pc1_q pc2_q ({SN, address})
 //   Data Processor: f_mem (F0-F7 rows 0-7, FOP1 8, FOP2 9; 80 bits: {SE, significand})
 //   top: dp_busy
 //
@@ -44,18 +44,34 @@ struct V80 {
     }
 };
 
+// PC1/PC2 hold {SN6-0, address}; the chip shows {0, SN6-0, 00, address}.
+static inline uint32_t pcShow(uint32_t p) { return (p >> 16 & 0x7F) << 24 | (p & 0xFFFF); }
+static inline uint32_t pcHold(uint32_t v) { return (v >> 24 & 0x7F) << 16 | (v & 0xFFFF); }
+
 struct FpuAccess {
     Vz8070_fpu* top;
     explicit FpuAccess(Vz8070_fpu* t) : top(t) {}
 
-    uint32_t* reg32(const std::string& n) const {
+    // The 32-bit control registers as FLDCTL shows them.
+    bool get32(const std::string& n, uint32_t& v) const {
         auto* r = top->rootp;
-        if (n == "SC")     return &r->z8070_fpu__DOT__u_ip__DOT__sc_q;
-        if (n == "USER")   return &r->z8070_fpu__DOT__u_ip__DOT__user_q;
-        if (n == "FFLAGS") return &r->z8070_fpu__DOT__u_ip__DOT__fflags_q;
-        if (n == "PC1")    return &r->z8070_fpu__DOT__u_ip__DOT__pc1_q;
-        if (n == "PC2")    return &r->z8070_fpu__DOT__u_ip__DOT__pc2_q;
-        return nullptr;
+        if (n == "SC")          v = r->z8070_fpu__DOT__u_ip__DOT__sc_q;
+        else if (n == "USER")   v = r->z8070_fpu__DOT__u_ip__DOT__user_q;
+        else if (n == "FFLAGS") v = r->z8070_fpu__DOT__u_ip__DOT__fflags_q;
+        else if (n == "PC1")    v = pcShow(r->z8070_fpu__DOT__u_ip__DOT__pc1_q);
+        else if (n == "PC2")    v = pcShow(r->z8070_fpu__DOT__u_ip__DOT__pc2_q);
+        else return false;
+        return true;
+    }
+    bool set32(const std::string& n, uint32_t v) {
+        auto* r = top->rootp;
+        if (n == "SC")          r->z8070_fpu__DOT__u_ip__DOT__sc_q = v;
+        else if (n == "USER")   r->z8070_fpu__DOT__u_ip__DOT__user_q = v & 0xFFFF;
+        else if (n == "FFLAGS") r->z8070_fpu__DOT__u_ip__DOT__fflags_q = v;
+        else if (n == "PC1")    r->z8070_fpu__DOT__u_ip__DOT__pc1_q = pcHold(v);
+        else if (n == "PC2")    r->z8070_fpu__DOT__u_ip__DOT__pc2_q = pcHold(v);
+        else return false;
+        return true;
     }
 
     // F0-F7 index, or -1.
@@ -75,7 +91,8 @@ struct FpuAccess {
     }
 
     bool has(const std::string& n) const {
-        return reg32(n) != nullptr || reg80(n) != nullptr || n == "DPBUSY";
+        uint32_t v;
+        return get32(n, v) || reg80(n) != nullptr || n == "DPBUSY";
     }
 
     bool get(const std::string& n, V80& v) const {
@@ -88,9 +105,9 @@ struct FpuAccess {
             v.hi = w[2] & 0xFFFF;
             return true;
         }
-        uint32_t* p = reg32(n);
-        if (!p) return false;
-        v.lo = *p;
+        uint32_t w;
+        if (!get32(n, w)) return false;
+        v.lo = w;
         return true;
     }
 
@@ -102,9 +119,6 @@ struct FpuAccess {
             w[2] = (uint32_t)(v.hi & 0xFFFF);
             return true;
         }
-        uint32_t* p = reg32(n);
-        if (!p) return false;
-        *p = (uint32_t)v.lo;
-        return true;
+        return set32(n, (uint32_t)v.lo);
     }
 };

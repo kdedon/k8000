@@ -11,14 +11,6 @@
 // Two halves, as on the chip: the Interface Processor watches the bus,
 // moves data and holds the control registers; the Data Processor holds
 // F0-F7 and computes on CLK.D.
-//
-// Implemented so far: /RESET (control registers cleared but SC.ID, which
-// takes the ID pins), idle pins, the bus snoop and instruction decode, the
-// operand and result transfers, FLDCTL, FLDCTLB, the list instructions,
-// the Invalid opcode, Invalid EPU ID, Privilege and trap requests on /INT,
-// /BSY in both overlap modes and as the store wait, the Intermediate
-// queue with PC2, the exception flush and /ABORT, the F0-F7 file with
-// FOP1/FOP2, and every Data Processor operation started from the pins.
 
 `default_nettype none
 

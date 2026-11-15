@@ -10,7 +10,7 @@
 //
 // Arithmetic: a vertical microprogram (the generated ROM, z8070_dp_rom),
 // one word per CLK.D rise, over one datapath: a
-// 68-bit significand adder, a 17-bit exponent adder, one bidirectional
+// 69-bit significand adder, a 17-bit exponent adder, one bidirectional
 // 68-bit barrel shifter with sticky collect and one leading-zero counter,
 // shared by every routine. Exponents stay biased (16383) throughout; the
 // working significand S is {carry, 64 bits, guard, round, sticky}.
@@ -26,8 +26,11 @@
 // 10 acc + digit adder pass a digit. BCD store: the divide's SRT steps
 // make h / 10^19, then one 10 g adder pass a digit takes its integer part.
 //
-// Interface: start latches the operation; a CLK.D rise in the same master
-// clock is its first clock. The operand bus opnd carries the operand
+// Interface: op_kind, op_prec, op_rm and op_out name the next operation
+// from the master clock before its start; the idle Data Processor latches
+// them, and the entry address, every clock but start's, so the first word
+// comes from registers. A CLK.D rise in start's master clock is its first
+// clock. The operand bus opnd carries the operand
 // opnd_src names (0 destination, 1 source) and is sampled by the two
 // unpack clocks (an integer to convert: its 64-bit two's complement on
 // opnd[63:0]). opnd_rd is High while the running word samples opnd, so
@@ -38,16 +41,12 @@
 // zero. BCD: the Fig 12 container on opnd or in res. done is High in the
 // master clock of the last clock's CLK.D rise, from registered state; the
 // result latch was loaded the clock before and holds until the next
-// operation's last-but-one clock. start must not share a master clock
-// with done.
+// operation's last-but-one clock. start comes two master clocks or more
+// after done.
 //
-// Implemented so far: add, subtract, reverse subtract, load (round to a
-// precision), compare (four forms), FABS, FNEG, FCLR, multiply, FPWR2,
-// divide, reverse divide, remainder (both forms), square root, FINT,
-// integer to float and back, BCD load and store. Other operations run the
-// tail only and end in two clocks.
+// A kind with no routine runs the tail only and ends in two clocks.
 //
-// op_out (latched at start): a single or double store. The result keeps
+// op_out: a single or double store. The result keeps
 // the denormalized form of a tiny value (the subnormal's exponent,
 // integer bit 0) instead of renormalizing it for F, so the memory image
 // is its fields.
@@ -120,7 +119,7 @@ module z8070_dp
   // Flags (bit numbers) and compare codes.
   localparam int FL_INV = 0, FL_FOV = 1, FL_UN = 2, FL_DZ = 3, FL_INX = 4, FL_DE = 5, FL_NAN = 6,
                  FL_IX = 7;
-  localparam logic [5:0] CC_LT = 6'h22, CC_GT = 6'h0A, CC_EQ = 6'h10, CC_UN = 6'h04;
+  localparam logic [5:0] CC_LT = 6'h2A, CC_GT = 6'h02, CC_EQ = 6'h10, CC_UN = 6'h04;
   localparam int CF_FH = 0, CF_FD = 1, CF_FS = 3, CF_FZ = 4;
   localparam logic [2:0] RS_INF_INF = 3'd0, RS_ZERO_INF = 3'd1, RS_ZERO_ZERO = 3'd2,
                          RS_REM = 3'd3, RS_UNORDERED = 3'd4, RS_SQRT_NEG = 3'd5,
@@ -172,7 +171,7 @@ module z8070_dp
 
   // ---- sequencer -------------------------------------------------------
   // Justification: (reg-a) the microprogram counter, the run flag and the
-  // operation latched at start.
+  // operation, latched while idle.
   logic            run_q;
   logic [UA_W-1:0] upc_q;
   logic [5:0]      kind_q;
@@ -180,29 +179,25 @@ module z8070_dp
   logic            out_q;
 
   logic            step, cond;
-  logic [UA_W-1:0] upc, upc_next, entry, body;
+  logic [UA_W-1:0] upc_next, entry, body;
   logic [5:0]      kind;
   logic [1:0]      prec, rm;
-  logic [$bits(dp_uw_t)-1:0] uw_rom, uw_first;
+  logic [$bits(dp_uw_t)-1:0] uw_rom;
   dp_uw_t          uw;
 
   z8070_dp_rom u_rom (
     .addr       (upc_q),
     .kind       (kind_q),
-    .start_kind (op_kind),
+    .next_kind  (op_kind),
     .uw         (uw_rom),
-    .uw_first   (uw_first),
     .entry      (entry),
     .body       (body)
   );
 
-  // A start on a CLK.D rise runs its first word in that clock; that word
-  // comes from its own table, not through the ROM address.
-  assign uw   = dp_uw_t'(start ? uw_first : uw_rom);
-  assign upc  = start ? entry : upc_q;
-  assign kind = start ? op_kind : kind_q;
-  assign prec = start ? op_prec : prec_q;
-  assign rm   = start ? op_rm   : rm_q;
+  assign uw   = dp_uw_t'(uw_rom);
+  assign kind = kind_q;
+  assign prec = prec_q;
+  assign rm   = rm_q;
   assign step = clkd_rise & (run_q | start);
   assign done = step & uw.fin;
   assign busy = run_q;
@@ -210,9 +205,9 @@ module z8070_dp
   always_comb begin
     unique case (uw.seq)
       SQ_JMP:   upc_next = uw.tgt;
-      SQ_JCOND: upc_next = cond ? uw.tgt : upc + 1'b1;
+      SQ_JCOND: upc_next = cond ? uw.tgt : upc_q + 1'b1;
       SQ_RET:   upc_next = body;
-      default:  upc_next = upc + 1'b1;
+      default:  upc_next = upc_q + 1'b1;
     endcase
   end
 
@@ -233,13 +228,19 @@ module z8070_dp
 
   assign opnd_nxt = b_due_q;
 
+  // Idle: the next operation and its entry address, so a start's first
+  // word comes from registers.
+  logic preload;
+
+  assign preload = !run_q && !start;
+
   always_ff @(posedge clk) begin
-    if (step)       upc_q <= upc_next;
-    else if (start) upc_q <= upc;
+    if (step)         upc_q <= upc_next;
+    else if (preload) upc_q <= entry;
   end
 
   always_ff @(posedge clk) begin
-    if (start) begin
+    if (preload) begin
       kind_q <= op_kind;
       prec_q <= op_prec;
       rm_q   <= op_rm;
@@ -306,7 +307,7 @@ module z8070_dp
   logic        ex_sub;
   assign ex_sum = ex_x + (ex_sub ? ~ex_y : ex_y) + {16'd0, ex_sub};
 
-  // Significand adder, 68 bits.
+  // Significand adder, 69 bits.
   logic [68:0] ad_x, ad_y, ad_sum;
   logic        ad_sub, ad_ci;
   assign ad_sum = ad_x + (ad_sub ? ~ad_y : ad_y) + {68'd0, ad_sub | ad_ci};

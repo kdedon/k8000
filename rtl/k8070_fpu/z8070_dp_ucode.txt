@@ -1,6 +1,6 @@
 # z8070_dp_ucode -- the Data Processor microprogram, one word per CLK.D clock.
 #
-# The source of the generated ROM ('make gen-fpu' writes it). Only
+# The source of the generated ROM in gen/. Only
 # the add/subtract, multiply and divide totals are published (1985 Data
 # Book p.532); every split of a total into steps, every other length and
 # every short path is a guess, tagged on each routine.

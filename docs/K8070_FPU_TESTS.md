@@ -22,15 +22,15 @@ nothing yet: only the Z8000 interface (11) is built.
 
 | vectors | format | files | bench |
 |---|---|---|---|
-| `vectors/k8070_fpu/fpu/` | `K8000VEC 1 fpu` | 52 from 47 tests | `tb/k8070_fpu/tb_fpu.cpp` |
+| `vectors/k8070_fpu/fpu/` | `K8000VEC 1 fpu` | 67 from 55 tests | `tb/k8070_fpu/tb_fpu.cpp` |
 | `vectors/k8070_fpu/dp/` | `K8000VEC 1 fpudp` | 20 (123,209 records, 15 MB) | `tb/k8070_fpu/tb_fpu_dp.cpp` |
-| `vectors/k8070_fpu/system/` | `K8000VEC 1 cpufpu` | 20 (10 tests, Z8001 and Z8002) | `tb/k8070_fpu/tb_cpu_fpu.cpp` on the `tb_cpu_fpu.sv` board |
+| `vectors/k8070_fpu/system/` | `K8000VEC 1 cpufpu` | 26 (10 tests, Z8001 and Z8002) | `tb/k8070_fpu/tb_cpu_fpu.cpp` on the `tb_cpu_fpu.sv` board |
 | `vectors/k8070_fpu/enc/enc.vec` | `K8000VEC 1 fpuenc` | 1 | `tb/k8070_fpu/tb_fpu_enc.sv` |
 
-`rtl/k8070_fpu/gen/z8070_enc_pkg.sv` (the decode table) and
-`vectors/k8070_fpu/enc/enc.vec` come from the vector generator;
-`gen/z8070_dp_rom_pkg.sv` and `gen/z8070_dp_rom.sv` are assembled from
-`z8070_dp_ucode.txt`.
+`rtl/k8070_fpu/gen/z8070_enc_pkg.sv` (the decode table) is
+hand-maintained and `vectors/k8070_fpu/enc/enc.vec` is generated;
+`make gen` assembles `gen/z8070_dp_rom_pkg.sv` and `gen/z8070_dp_rom.sv`
+from `z8070_dp_ucode.txt`.
 
 ## How to run
 
@@ -41,14 +41,12 @@ make build-fpu        # obj_dir/tb_fpu/tb_fpu
 make test-fpu         # replay every fpu vector, pass/fail + shortest failing
 make fpu ONLY=TestName [VCD=1] [CONTEXT=N] [MCLK=P]   # one vector, full context table
 make ladder-fpu       # every vector, shortest first, with status
-make test-fpu-timing  # the specification bench (75 checks; docs/TIMING_TESTS.md)
+make test-fpu-timing  # the specification bench (72 checks; docs/TIMING_TESTS.md)
 make test-fpu-dp [ONLY=add,cmp,...] [MCLK=P]   # the Data Processor alone, every dp record
 make test-cpu-fpu     # RTL CPU + FPU on one board, every system vector, Z8001 then Z8002
 make cpu-fpu ONLY=TestName[.Z8001.000] [VCD=1] [CONTEXT=N] [MCLK=P]   # one system vector
 make test-fpu-fastd   # every fpu and system vector with CLK.D rising every master clock (final state, memory, driven words)
-make gen-fpu          # maintainer only: the decode table, its digests, the microprogram ROM
-make vectors-fpu      # maintainer only: re-record fpu/ and dp/ with the vector generator
-make vectors-cpu-fpu  # maintainer only: re-record system/
+make test-fpu-slowd   # the same with CLK.D at 1/8 and 1/12 of CLK.I; the bench stops the CPU on /BSY
 ```
 
 ### The `fpu` file
@@ -118,7 +116,7 @@ rem, conv, bcd. A kind with no routine runs the two-clock tail and fails.
 Integer to float: the integer on `opnd[63:0]` as the source. Float to
 integer: `op_prec` carries the width (opts bit 0: 1 = 64 bits), a truncate
 (opts bit 1) is driven as `op_rm` 01, and `res` is compared with
-`{0000, rint}`. A stress file from the vector generator replays with
+`{0000, rint}`. A stress file in the same format replays with
 `obj_dir/tb_fpu_dp/tb_fpu_dp [--mclk 1] <file>.vec` once `make test-fpu-dp`
 has built the bench.
 
@@ -185,20 +183,50 @@ template, word 1 nibble and operation code.
 
 ## What is covered
 
-* `make test-fpu`: 54 files, 53 PASS, 1 SKIP (TestSnapshotMidOperation.001:
+* `make test-fpu`: 1382 files, 1381 PASS, 1 SKIP (TestSnapshotMidOperation.001:
   a poke of internal state).
-* `make test-cpu-fpu`: 10 of 10 on the Z8001 and 10 of 10 on the Z8002.
-* `make test-fpu-fastd`, at `--mclk 1` and `1,2,1,3` each: fpu 51 PASS, 3
-  SKIP; system 16 PASS, 4 SKIP. Skipped: TestSnapshotMidOperation.001 (a poke
-  of internal state) and six files whose outcome depends on the Data
+* `make test-cpu-fpu`: 457 of 457 on the Z8001 and 17 of 17 on the Z8002.
+* `make test-fpu-fastd`, at `--mclk 1` and `1,2,1,3` each: fpu 1379 PASS, 3
+  SKIP; system 468 PASS, 6 SKIP. Skipped: TestSnapshotMidOperation.001 (a poke
+  of internal state) and eight files whose outcome depends on the Data
   Processor's speed, each failing at `1,2,1,3`: TestLostStoreWord,
   TestQueueAbortAtStart, TestFPUSystemInterrupt (2), TestFPUSystemStoreWithoutWait
-  (2). PC2 is not compared there (only an IF1 while busy loads it). At 5 or
+  (2), TestFPUSystemQueueHoldTrap (2). PC2 is not compared there (only an IF1 while busy loads it). At 5 or
   more master clocks a level TestQueueAbort and TestSnapshotMidOperation.000
   depend on the speed too.
+* `make test-fpu-slowd`, CLK.D at every 8th and 12th CLK.I rise, at `--mclk 1`
+  and `1,2,1,3` each: fpu 1380 PASS, 2 SKIP (TestSnapshotMidOperation.000 ends
+  mid-operation; .001 a poke); system 474 PASS.
+* Queue sweep, in the files above. An inexact FDIV, B queued complete
+  behind it, C around the clock P that promotes B, then FADD F6,F7
+  (inexact). B: FLD from memory, internal FADD, FSETMODE, FLDCTL USER in,
+  EPU<-FCW; C: internal FDIV, FLD from memory, FLD store, FLDCTL FOP2 out,
+  FSETMODE. A second set: B FADD, FSUB or FMUL from memory into F2 or F4,
+  or FLDCTL SC in; C internal FINT, FNEG, FSQR, FRDIV (the first read
+  Fs), FLDCTL FFLAGS out, an invalid word 2. TestQueueSweep* (1295 pin
+  files; the second set with B FADD and SC): per C the four run
+  one by one, then C's IF1 held with its word 2 at P-4 .. P+6 CLK
+  half-periods and its operand words right behind, or its IF1 at P-1 ..
+  P+4 with word 2 right behind, with CLK.D as CLK.I and inverted.
+  TestFPUSystemSweep* (332 Z8001 files, both sets): the CPU runs the same instructions
+  with 0-48 clocks of fill after the FDIV; per (B, C) one file for each
+  class of C's IF1 and word 2 offsets from P (clamped to -4..+4 and
+  -4..+8 half-periods, or no queue). TestFPUSystemQueueRandom (64 Z8001
+  files, fixed seed): the FDIV, 0-48 clocks of fill, then 2 to 5
+  instructions from both sets with 0-12 clocks of fill. Each is checked
+  when recorded, SC (the overlap bits aside) and PC1 included: a sweep
+  file against the one-by-one run, a random one against the same
+  instructions run far apart (PC1 as the instruction it names). All run
+  in every mode below and in `make test-mclk`.
+* TestFPUSystemStopShort (44 Z8001 files): the FDIV, a fill, internal FADD,
+  then INC, DEC, INCB, DECB, LD, LDB, LDK, ADD, ADDB, EX or EXB on R1, then
+  FLD from memory. The fill puts the /BSY-driven STOP on that instruction's
+  IF1, with streams of 1, 2, 3 and 12 refreshes; it runs once, after the
+  stream. Checked when recorded against the same program run far apart,
+  CPU registers included.
 * `make test-fpu-enc`: 65536 IF1 words and 7 templates x 16 x 65536 word 2s
   (7168 digests).
-* `make test-fpu-timing`: 75 checks.
+* `make test-fpu-timing`: 72 checks.
 * `make test-fpu-dp`: 123,209 of 123,209 records over the 11 groups.
 
 ### Assumed
@@ -217,10 +245,13 @@ Encoding and behaviour:
 | FLDBCD needs n = 5 | n = 1 forms carry an extra operand whose meaning is not given |
 | list target: word 1 bit 5 (trap) tested before bit 4 (compare byte) | the order is not given; no form sets both |
 | list byte: bits 5:0 in word 2 bits 13:8, bits 7:6 in word 1 bits 7:6 | the layout is not given; word 2 bits 15:8 would overlap the operation code |
-| 8E with direction 11, and 0E/4E, raise Invalid opcode | no template (TM PDF p.232-236) |
+| 8E with direction 11, and 0E/4E, raise Invalid opcode on the EPU their ID names | no template (TM PDF p.232-236) |
 | PC1/PC2 = {0, SN6-0, 00, IF1 address}; PC1 takes PC2 when the queued instruction starts | the Z8000 interface sends no PC; format not given |
+| An invalid word 2 raises Invalid opcode when its instruction would run: at once if executing, when promoted if queued or held, PC1 then its address | PC1 and PC2 are defined (p.533) but not for an invalid opcode, nor when the interrupt is raised; program order keeps an earlier SC write or trap ahead of it |
 | FOP exponent MSBs: FOP1/FOP2 exponent bits 14:13 copied into FFLAGS 27:26/25:24 | the spec gives the fields, not which exponent bits |
 | IEO blocked by a request from /AS rise to /DS rise of an acknowledge of the SC INTACK type | spec says only "Interrupt Acknowledge cycle" |
+| the acknowledge is decided at the /DS fall (SC.IP and SC.MIE, IEI) and held to the /DS rise: the vector, IEO and the IUS set | p.556 decides it when RD falls, for the Universal interface; the Z8000 interface's text does not say |
+| /INT = SC.IP and SC.MIE; IP is writable by FLDCTL SC, so clearing it withdraws the request | p.534: IP "a pending interrupt", MIE enables interrupts; SC is written whole |
 | Intermediate overlap: /BSY Low while a queued instruction and its operand words are complete (V1) | US 4,648,034 FIG. 7 (OVRLP 10: V1); p.535 stops the CPU after a second instruction is transferred |
 | /BSY Low from a store's word-2 decode until its word is ready, both overlap modes; the board takes /BSY to /WAIT in EPU data cycles | US 4,648,034 FIG. 7, FIG. 11 (a decoded store forces the busy term); p.542 Wait during stores, p.546 WAIT extends transfers; Fig 14 draws STOP only |
 | exception flush: an arithmetic trap drops the queued instruction, complete or in transfer; PC2 keeps its address | p.535, p.558 flush on an exception; which exceptions is not said, the trapped ones are those a handler re-transfers |
@@ -236,6 +267,7 @@ Encoding and behaviour:
 | FLDCTL SC privilege is the N/S level at the last transfer's /AS rise | p.534 says only "privileged"; the cycle is not named |
 | FLDCTL into PC1, PC2, FOP1 or FOP2 is dropped without an interrupt | p.533-534 make them read only; the effect of a write is not given |
 | multiply: the multiplier's bits below the precision's top nS go only to sticky (M x the truncated multiplier, then sticky) | the multiply clocks fix nS multiplier bits; an extended operand in a single or double multiply is not covered |
+| remainder flags: FD reduction complete, FZ zero remainder, FS its sign, FH the quotient's low bit; an invalid or NaN remainder writes all 0. Every compare and remainder writes the field, all 0 included | p.533 Table 1 gives the compare codes only (< FC FS FD, = FZ, > FD, unordered FV); p.539 FREMSTEP sends "the immediate result flag" to the CPU, layout not given |
 | float to integer out of range, NaN or infinity: the most negative integer | not given |
 | BCD store out of range (IX): the low 19 digits of the rounded integer (of the significand's 64 bits at 2^64 or more); NaN and infinity a zero container | not given |
 
