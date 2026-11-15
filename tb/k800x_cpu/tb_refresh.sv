@@ -12,9 +12,9 @@ module tb_refresh;
   logic       enable = 0, load = 0;
   logic [5:0] rate = 0, load_rate = 0;
   logic       pending, now;
-  logic [8:0] row_next, cyc_row;
+  logic [7:0] row_next, cyc_row;
 
-  z8000_refresh dut (.clk(clk), .clk_en(1'b1), .reset_n(reset_n), .enable(enable), .rate(rate), .row(9'd0),
+  z8000_refresh dut (.clk(clk), .clk_en(1'b1), .reset_n(reset_n), .enable(enable), .rate(rate), .row(8'd0),
                      .load(load), .load_rate(load_rate), .take(1'b1), .keep(1'b0), .lost(1'b0),
                      .pending(pending), .now(now),
                      .row_next(row_next), .cyc_row(cyc_row));

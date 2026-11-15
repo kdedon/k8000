@@ -15,6 +15,8 @@
 // The pins are sampled raw, in the CPU's clock domain; an asynchronous
 // board-level source needs a two-flop synchronizer at the top.
 
+`default_nettype none
+
 module z8000_int_unit
   import z8000_zbus_pkg::*;
 (
@@ -85,3 +87,5 @@ module z8000_int_unit
   end
 
 endmodule
+
+`default_nettype wire

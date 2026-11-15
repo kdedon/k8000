@@ -6,7 +6,9 @@
 // AD is split into ad_in / ad_out / ad_drive. ad_in must come straight from
 // a register (the read-data capture): its decode look-ahead takes the clock.
 // The test harness reads and pokes u_regfile.r, fcw, pc, psap, refresh,
-// nspoff, nspseg, refresh_en and halted by name.
+// nspoff, nspseg and halted by name.
+
+`default_nettype none
 
 module z8000_cpu
   import z8000_ctrl_pkg::*, z8000_mc_pkg::*;
@@ -66,12 +68,11 @@ module z8000_cpu
 
   // ---- architectural registers ----------------------------------------------
   logic [15:0] fcw;
-  logic [31:0] pc;          // Z8002: 16-bit; Z8001: seg[22:16]:offset[15:0]
-  logic [31:0] psap;
+  logic [22:0] pc;          // seg[22:16]:offset[15:0]; Z8002: segment 0
+  logic [22:0] psap;
   logic [15:0] refresh;
   logic [15:0] nspoff;
   logic [15:0] nspseg;
-  logic        refresh_en;
   logic        halted;
 
   // ---- register file --------------------------------------------------------
@@ -112,20 +113,20 @@ module z8000_cpu
   // ---- control and bus ------------------------------------------------------
   logic        fcw_we, pc_we, ex_fcw_we, ctl_we, ref_we;
   logic [15:0] ex_fcw_d, ctl_rdata, ctl_wd;
-  logic [2:0]  ctl_rsel, ctl_sel;
+  logic [2:0]  ctl_rsel;
   logic [15:0] fcw_d;
-  logic [31:0] pc_d;
+  logic [22:0] pc_d;
   logic [15:0] dec_w0;
   logic [3:0]  dec_w1_lo;
   ctrl_word_t  ctrl, ctrl_q;
-  logic        ex_handles, ex_first, ex_last, ex_last2, ex_last_nx, ex_last2_nx, ex_to_last, ex_flags_we, ex_pc_we;
+  logic        ex_first, ex_last, ex_last2, ex_last_nx, ex_last2_nx, ex_to_last, ex_flags_we, ex_pc_we;
   logic [22:0] ex_pc_d;
   logic [15:0] ir_w0, ir_w1, ir_w2;
   logic [22:0] ir_ea;
   logic        ir_ea_long;
   logic [15:0] ex_flags, ex_flags_mask;
   logic        rf_pending, rf_now, rf_take, rf_keep, bus_lost;
-  logic [8:0]  rf_row_in, rf_row_next, rf_cyc_row;
+  logic [7:0]  rf_row_in, rf_row_next, rf_cyc_row;   // ROW, bits 8:1
   logic [22:0] rf_addr;
   logic        bus_nodata;
   logic        bus_mem, bus_write, mem_take, int_take, opnd_take, ex_mem_byte;
@@ -140,7 +141,8 @@ module z8000_cpu
   logic [2:0]  bus_tail;
   logic [15:0] bus_rdata;
   logic        cc_met, more;
-  logic [5:0]  iter;
+  logic        blk_cls;   // block and translate: elements, each a repetition
+  logic [4:0]  iter;
 
   z8000_decode u_decode (
     .w0    (dec_w0),
@@ -165,7 +167,6 @@ module z8000_cpu
   // Sequencer inputs from the units.
   logic        md_take, blk_more, mult_more, mreq_more, halt_exit, ex_word;
   mc_path_e    md_path;
-  logic [15:0] rf_count;
   // Interrupt requests.
   logic        smp_end, smp_elem, smp_iop, irq, irq_now, irq_take, seq_bound;
   logic [3:0]  irq_st;
@@ -207,13 +208,13 @@ module z8000_cpu
   // word the clock after the start, a long's high word as it starts and its
   // low word the clock after; it is given and picks the program's path
   // there. A memory or immediate source is given on the edge its last word
-  // arrives. The result and flags go in from the unit's registers the
-  // clock after the last.
-  logic        imm_take, imm_in, seq_in_rf, seq_rf_due, bus_twait, bus_held, bus_iop, bus_away;
+  // arrives. The result and flags go in on the program's last clock, the
+  // unit's last pass.
+  logic        imm_take, imm_in, seq_in_rf, seq_rf_due, bus_twait, bus_held, bus_iop, bus_away, bus_tail_on;
   logic        bus_bound, ex_ph_hold;
   logic        md_mul, md_div, md_on, md_long, md_reg, md_imm, md_tick;
   logic        md_start, md_lda, md_data, md_arrive, md_src_hi, md_src_valid, md_pick_q, md_seen_q;
-  logic        md_pend_q, md_mul_q, md_long_q, md_wb, md_rf_we;
+  logic        md_pend_q, md_mul_q, md_long_q, md_wb;
   logic [3:0]  md_dst_q, md_flags;
   logic [15:0] md_src;
   logic [31:0] md_dst_w, m_product;
@@ -227,9 +228,9 @@ module z8000_cpu
   assign md_long = ctrl_q.width == WIDTH_LONG;
   assign md_reg  = ctrl_q.src2 == SRC_REG;
   assign md_imm  = ctrl_q.src2 == SRC_IMM;
-  assign md_tick = !seq_in_rf && !bus_twait && !bus_held;
+  // The tail a STOP stream's last refresh carries is the held cycle's.
+  assign md_tick = (!seq_in_rf || bus_tail_on) && !bus_twait && !bus_held;
 
-  localparam logic [1:0] RF_BYTE = 2'd0, RF_WORD = 2'd1, RF_LONG = 2'd2, RF_QUAD = 2'd3;   // register file widths
 
   assign md_lda   = md_on && ex_first;
   assign md_start = md_lda && md_tick;
@@ -251,7 +252,7 @@ module z8000_cpu
       md_pick_q <= 1'b0;
       md_seen_q <= 1'b0;
     end else if (clk_en) begin
-      md_pick_q <= md_start && md_reg;
+      md_pick_q <= (md_start && md_reg) || (md_pick_q && !md_tick);
       if (ex_first)     md_seen_q <= 1'b0;
       else if (md_data) md_seen_q <= 1'b1;
     end
@@ -280,10 +281,10 @@ module z8000_cpu
   assign md_rz    = md_long ? (md_nz_hi | md_nz_lo) == 2'b00 : (md_rs_q[0] ? md_nz_lo : md_nz_hi) == 2'b00;
 
   // A multiplier picks the path as it is given: a register source's pick
-  // lands in the IF1's tail (clock 3), where no refresh or wait runs, and
-  // no cycle starts on its edge. A divide has one program, which the
-  // unit's last cycle ends.
-  assign md_take = md_mul && (md_pick_q || md_arrive);
+  // lands in the IF1's tail (clock 3), where no wait runs, and no cycle
+  // starts on its edge; a STOP stream puts it after the stream. A divide
+  // has one program, which the unit's last cycle ends.
+  assign md_take = md_mul && ((md_pick_q && md_tick) || md_arrive);
   assign md_path = (md_reg ? md_rz : md_mz) ? MC_PATH_ZERO : MC_PATH_DEFAULT;
 
   // MULT: Rd+1 (RQ's low long for MULTL). DIV: RRd (RQd for DIVL).
@@ -310,8 +311,9 @@ module z8000_cpu
 
   // The result goes in on the unit's last clock, the program's last. Divide
   // by zero writes the dividend back; overflow, the unit's partial words.
-  assign md_wb    = md_pend_q && (s_done || (s_fin && md_tick));
-  assign md_rf_we = md_wb;
+  // MULT's C and Z come from the product: its zero finish's pair flags
+  // give the same, and its other path has no flag routine.
+  assign md_wb    = md_pend_q && s_fin && md_tick;
   always_comb begin
     md_wdata  = md_long_q ? s_words : {32'd0, s_words[63:32]};
     m_product = s_words[63:32];
@@ -337,20 +339,20 @@ module z8000_cpu
   logic        sh_on, sh_reg, sh_start, sh_arm_q, sh_step, sh_cnt_ok_q, sh_pend_q, sh_wb;
   logic [1:0]  sh_rwidth, sh_wwidth_q;
   logic [3:0]  sh_dst_q;
-  logic [15:0] sh_cnt_q, sh_flags, sh_fmask;
+  logic [15:0] sh_flags, sh_fmask;
+  logic [6:0]  sh_cnt_q;   // a register count's sign and low six bits
   logic [ALUOP_W-1:0] sh_op;
 
   assign sh_on     = ctrl_q.valid && ctrl_q.exec == CLS_SHIFT;
   assign sh_reg    = ctrl_q.count == SRC_REG;
   assign sh_rwidth = ctrl_q.width == WIDTH_BYTE ? RF_BYTE : ctrl_q.width == WIDTH_WORD ? RF_WORD : RF_LONG;
-  assign rf_count  = sh_cnt_q;
   assign sh_step   = sh_on && sh_arm_q && bus_cyc_end && !seq_rf_due;
   assign sh_start  = sh_step && (!sh_reg || sh_cnt_ok_q);
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       sh_arm_q    <= 1'b0;
-      sh_cnt_q    <= 16'h0000;
+      sh_cnt_q    <= 7'd0;
       sh_cnt_ok_q <= 1'b0;
     end else if (clk_en) if (ex_first) begin
       sh_arm_q    <= 1'b0;
@@ -359,24 +361,24 @@ module z8000_cpu
       if (sh_on && imm_take) sh_arm_q <= 1'b1;
       else if (sh_start)     sh_arm_q <= 1'b0;
       if (sh_step && sh_reg && !sh_cnt_ok_q) begin
-        sh_cnt_q    <= rf_rdata_b;
+        sh_cnt_q    <= {rf_rdata_b[15], rf_rdata_b[5:0]};
         sh_cnt_ok_q <= 1'b1;
       end
     end
   end
 
-  logic [15:0] sh_cnt;
-  logic [5:0]  sh_n;
+  // The count as sign and six bits: legal counts are at most 32 (long).
   // Static byte forms encode the count as 00|n8; only the low byte counts.
-  assign sh_cnt = sh_reg                     ? rf_count :
-                  ctrl_q.width == WIDTH_BYTE ? {{8{ir_w1[7]}}, ir_w1[7:0]} : ir_w1;
-  // Legal counts are at most 32 (long), so six bits.
-  assign sh_n   = sh_cnt[15] ? 6'd0 - sh_cnt[5:0] : sh_cnt[5:0];
+  logic [6:0]  sh_cnt;
+  logic [5:0]  sh_n;
+  assign sh_cnt = sh_reg                     ? sh_cnt_q :
+                  ctrl_q.width == WIDTH_BYTE ? {ir_w1[7], ir_w1[5:0]} : {ir_w1[15], ir_w1[5:0]};
+  assign sh_n   = sh_cnt[6] ? 6'd0 - sh_cnt[5:0] : sh_cnt[5:0];
 
   // A negative count shifts right.
   always_comb begin
-    if (ctrl_q.alu_op == OP_SLA) sh_op = sh_cnt[15] ? OP_SRA : OP_SLA;
-    else                         sh_op = sh_cnt[15] ? OP_SRL : OP_SLL;
+    if (ctrl_q.alu_op == OP_SLA) sh_op = sh_cnt[6] ? OP_SRA : OP_SLA;
+    else                         sh_op = sh_cnt[6] ? OP_SRL : OP_SLL;
   end
 
   always_ff @(posedge clk or negedge reset_n) begin
@@ -476,11 +478,11 @@ module z8000_cpu
   assign rf_rsel_b  = sh_on && sh_reg ? ir_w1[11:8] : ex_rf_rsel_b;
   assign rf_rbyte_b = sh_on && sh_reg ? 1'b0 : ex_rf_rbyte_b;
 
-  assign rf_we     = md_rf_we || sh_wb || mq_wb || ex_rf_we;
-  assign rf_wwidth = md_rf_we ? (md_long_q ? RF_QUAD : RF_LONG) : sh_wb ? sh_wwidth_q
+  assign rf_we     = md_wb || sh_wb || mq_wb || ex_rf_we;
+  assign rf_wwidth = md_wb ? (md_long_q ? RF_QUAD : RF_LONG) : sh_wb ? sh_wwidth_q
                    : mq_wb ? RF_WORD : ex_rf_wwidth;
-  assign rf_wsel   = md_rf_we ? md_dst_q : sh_wb ? sh_dst_q : mq_wb ? ir_w0[7:4] : ex_rf_wsel;
-  assign rf_wdata  = md_rf_we ? md_wdata : sh_wb ? {32'd0, s_words[31:0]}
+  assign rf_wsel   = md_wb ? md_dst_q : sh_wb ? sh_dst_q : mq_wb ? ir_w0[7:4] : ex_rf_wsel;
+  assign rf_wdata  = md_wb ? md_wdata : sh_wb ? {32'd0, s_words[31:0]}
                    : mq_wb ? {48'd0, mq_cnt}
                    : {48'd0, ex_wdata};
 
@@ -500,6 +502,7 @@ module z8000_cpu
     .dec_w1_lo    (dec_w1_lo),
     .dec_valid    (ctrl_q.valid),
     .dec_exec     (ctrl_q.exec),
+    .dec_blk      (blk_cls),
     .trap_if1     (trap_if1),
     .trap_epa     (trap_epa),
     .abt_hit      (VMPU && !abort_n && bus_abt_smp),
@@ -526,7 +529,6 @@ module z8000_cpu
     .bus_iop      (bus_iop),
     .bus_away     (bus_away),
     .iter         (iter),
-    .ex_handles   (ex_handles || sh_on || mp_on),
     .io_write     (ctrl_q.io_write || (ctrl_q.exec == CLS_EPU && ir_w0[3])),
     .ex_first     (ex_first),
     .ex_word      (ex_word),
@@ -593,20 +595,22 @@ module z8000_cpu
   assign u_end2 = md_div && s_end2;
   assign u_last = (md_on || sh_on) && s_last;
 
+  assign blk_cls = ctrl_q.exec == CLS_BLOCK_TRANSFER || ctrl_q.exec == CLS_BLOCK_COMPARE ||
+                   ctrl_q.exec == CLS_BLOCK_STRING || ctrl_q.exec == CLS_BLOCK_IO ||
+                   ctrl_q.exec == CLS_TRANSLATE;
+
   // Whether the repeated part runs again after `iter` repetitions: LDM and
   // EPU transfers take their count from word 1; MULTL's frame and add
   // cycles follow while the multiplier says.
   always_comb begin
     more = 1'b0;
     unique case (ctrl_q.exec)
-      CLS_LDM:        more = iter <= {2'b00, ir_w1[3:0]};
-      CLS_EPU:        more = iter <= {2'b00, ir_w1[3:0]};
-      CLS_BLOCK_TRANSFER, CLS_BLOCK_COMPARE, CLS_BLOCK_STRING, CLS_TRANSLATE, CLS_BLOCK_IO:
-                      more = iter == 6'd0 || blk_more;
+      CLS_LDM:        more = iter <= {1'b0, ir_w1[3:0]};
+      CLS_EPU:        more = iter <= {1'b0, ir_w1[3:0]};
       CLS_MUL:        more = mult_more;
       CLS_MULTI_PROC: more = mreq_more;
       CLS_HALT:       more = !halt_exit;
-      default:        ;
+      default:        more = blk_cls && (iter == 5'd0 || blk_more);
     endcase
   end
 
@@ -632,7 +636,8 @@ module z8000_cpu
     .dst_nib    (ctrl_q.dst_nib),
     .w1         (ir_w1),
     .w2         (ir_w2),
-    .handles    (ex_handles),
+    .io_wr      (ctrl_q.io_write),
+    .io_spec    (ctrl_q.io_spec),
     .block_decr (ctrl_q.block_decr),
     .block_rept (ctrl_q.block_rept),
     .blk_more   (blk_more),
@@ -676,14 +681,11 @@ module z8000_cpu
     .rf_wdata   (ex_wdata),
     .pc_we      (ex_pc_we),
     .pc_d       (ex_pc_d),
-    .fcw_c      (fcw[7]),
-    .fcw_lo     (fcw[10:0]),
-    .fcw_sn     (fcw[14]),
     .fcw        (fcw),
     .exc        (seq_exc),
     .af_done    (af_done),
     .exc_vec    (exc_vec),
-    .psap       (psap[22:0]),
+    .psap       (psap),
     .id_word    (exc_id),
     .exc_pcoff  (exc_pcoff),
 
@@ -692,7 +694,6 @@ module z8000_cpu
     .ctl_rsel   (ctl_rsel),
     .ctl_rdata  (ctl_rdata),
     .ctl_we     (ctl_we),
-    .ctl_sel    (ctl_sel),
     .ctl_wd     (ctl_wd),
     .flags_we   (ex_flags_we),
     .flags      (ex_flags),
@@ -713,13 +714,13 @@ module z8000_cpu
     endcase
   end
 
-  assign ref_we = ctl_we && ctl_sel == 3'd3;
+  assign ref_we = ctl_we && ctl_rsel == 3'd3;
 
   z8000_refresh u_refresh (
     .clk      (clk),
     .clk_en   (clk_en),
     .reset_n  (reset_n),
-    .enable   (refresh_en),
+    .enable   (refresh[15]),
     .rate     (refresh[14:9]),
     .row      (rf_row_in),
     .load     (ref_we && ctl_wd[15]),
@@ -735,12 +736,10 @@ module z8000_cpu
 
   // A refresh starting on a REFRESH write runs the written row. A write
   // loads bits 15:1 only; bit 0 is always 0, so AD0 is Low on a refresh.
-  logic [8:0] ref_wrow;
-  assign ref_wrow  = {ctl_wd[8:1], 1'b0};
-  assign rf_row_in = ref_we ? ref_wrow : refresh[8:0];
+  assign rf_row_in = ref_we ? ctl_wd[8:1] : refresh[8:1];
 
   // Refresh addresses take the PC segment in nonsegmented mode.
-  assign rf_addr = {(SEGMENTED && !fcw[15]) ? pc[22:16] : 7'd0, 7'd0, rf_cyc_row};
+  assign rf_addr = {(SEGMENTED && !fcw[15]) ? pc[22:16] : 7'd0, 7'd0, rf_cyc_row, 1'b0};
 
   // TSET's lock as of this edge: no grant as its read's T3 ends.
   logic lock_q;
@@ -763,7 +762,6 @@ module z8000_cpu
     .req_write      (bus_write),
     .req_nodata     (bus_nodata),
     .req_byte       (bus_mem && ex_mem_byte),
-    .req_odd        (ex_mem_addr[0]),
     .req_epu_drives (ctrl_q.valid && ctrl_q.exec == CLS_EPU && ctrl_q.epu_kind == EPU_MEM),
     .req_normal     (bus_normal),
     .req_len        (bus_len),
@@ -783,6 +781,7 @@ module z8000_cpu
     .lost           (bus_lost),
     .away           (bus_away),
     .cyc_iop        (bus_iop),
+    .cyc_tail       (bus_tail_on),
     .done           (bus_done),
     .rdata          (bus_rdata),
     .wait_n         (wait_n),
@@ -807,7 +806,7 @@ module z8000_cpu
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       fcw <= 16'h0000;
-      pc  <= 32'h0;
+      pc  <= 23'h0;
     end else if (clk_en) begin
       if (fcw_we)           fcw <= fcw_d;
       else if (ex_fcw_we)   fcw <= ex_fcw_d;
@@ -819,7 +818,7 @@ module z8000_cpu
         fcw[6] <= mq_req_q;
         fcw[5] <= mq_req_q && !mi_n;
       end
-      if (ex_pc_we)         pc  <= {9'd0, ex_pc_d};
+      if (ex_pc_we)         pc  <= ex_pc_d;
       else if (pc_we)       pc  <= pc_d;
     end
   end
@@ -828,22 +827,27 @@ module z8000_cpu
     if (!reset_n) begin
       refresh <= 16'h0;
     end else if (clk_en) if (ref_we) begin
-      refresh <= {ctl_wd[15:9], rf_take ? rf_row_next : ref_wrow};
+      refresh <= {ctl_wd[15:9], rf_take ? rf_row_next : ctl_wd[8:1], 1'b0};
     end else if (rf_take) begin
-      refresh <= {refresh[15:9], rf_row_next};
+      refresh <= {refresh[15:9], rf_row_next, 1'b0};
     end
   end
 
+  // `halted` is for the testbench; execute decodes priv, stk_mode and
+  // br_mode from the next-edge words, and the opcode bits are the decoder's.
+  // verilator lint_off UNUSEDSIGNAL
+  logic unused_ok;
+  assign unused_ok = ^{halted, ctrl_q.priv, ctrl_q.stk_mode, ctrl_q.br_mode, ir_w0[15:12]};
+  // verilator lint_on UNUSEDSIGNAL
+
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-      psap       <= 32'h0;
+      psap       <= 23'h0;
       nspoff     <= 16'h0;
       nspseg     <= 16'h0;
-      refresh_en <= 1'b0;
     end else if (clk_en) if (ctl_we) begin
-      unique case (ctl_sel)
-        3'd3:    refresh_en <= ctl_wd[15];
-        3'd4:    psap[31:16] <= {9'd0, ctl_wd[14:8]};
+      unique case (ctl_rsel)
+        3'd4:    psap[22:16] <= ctl_wd[14:8];
         3'd5:    psap[15:0]  <= ctl_wd;
         3'd6:    nspseg      <= ctl_wd;
         3'd7:    nspoff      <= ctl_wd;
@@ -851,15 +855,6 @@ module z8000_cpu
       endcase
     end
   end
-
-  // Inputs and registers that later control units will consume.
-  // verilator lint_off UNUSEDSIGNAL
-  logic unused_ok;
-  assign unused_ok = ^{rf_rdata[63:32], fcw[13:8], fcw[3:0], psap, refresh[15], nspoff, nspseg,
-                       halted, ir_w0[15:12], sh_cnt[14:6],
-                       ctrl_q.priv, ctrl_q.fcw_op, ctrl_q.fcw_mask, ctrl_q.stk_mode,
-                       ctrl_q.br_mode, ctrl_q.io_spec};
-  // verilator lint_on UNUSEDSIGNAL
 
   // synthesis translate_off
   // Unit and program in step; read by the testbench.
@@ -915,7 +910,7 @@ module z8000_cpu
         check_q <= 1'b1;
       end
     end
-    if (md_pick_q && !md_tick) begin
+    if (md_pick_q && !md_tick && !seq_in_rf) begin
       $display("%%Error: %m: register source pick on a held clock");
       check_q <= 1'b1;
     end
@@ -959,3 +954,5 @@ module z8000_cpu
   // synthesis translate_on
 
 endmodule
+
+`default_nettype wire

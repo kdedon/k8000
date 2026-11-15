@@ -5,6 +5,8 @@
 //
 // Codes 8-F are the complements of 0-7.
 
+`default_nettype none
+
 module z8000_cond (
   input  logic [3:0] cc,
   input  logic       c,
@@ -32,3 +34,5 @@ module z8000_cond (
   assign met = f ^ cc[3];
 
 endmodule
+
+`default_nettype wire

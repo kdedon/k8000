@@ -8,11 +8,11 @@ docs/VECTOR_FORMAT.md.
 
 | vectors | files | bench |
 |---|---|---|
-| `cpu/` | 2752 (1135 Z8001, 1595 Z8002, 7 Z8003, 15 Z8004; 264 named `Unknown`) | `tb/k800x_cpu/tb_cpu.cpp` |
-| `alu/`, `alu_from_cpu/` | 17, 427 | `tb_alu.sv` |
+| `cpu/` | 3078 (1298 Z8001, 1758 Z8002, 7 Z8003, 15 Z8004; 264 named `Unknown`) | `tb/k800x_cpu/tb_cpu.cpp` |
+| `alu/`, `alu_from_cpu/` | 17, 433 | `tb_alu.sv` |
 | `decode/decode.vec` | 1 | `tb_decode.sv` |
 | `serial/random.vec` | 1 | `tb_serial.sv` |
-| `cycles/cycles.vec` | 1 (240 lines) | `tb_cpu_cycles.sv` |
+| `cycles/cycles.vec`, `cycles/cycles_z8001.vec` | 2 (Z8002; Z8001 segmented) | `tb_cpu_cycles.sv` |
 
 Sources (printed page numbers of the 1988 Z8000 Family Data Book,
 `1988_Zilog_Z8000_Family_Data_Book.pdf`; PDF page = printed + 7 in the
@@ -40,31 +40,27 @@ make test-decode        # the decode ROM against decode.vec
 make test-decode-table  # the decode ROM against z8000_decode_table.txt
 make test-mc-table      # the machine-cycle ROM against z8000_mc_table.txt
 make test-alu | test-regfile | test-serial | test-refresh | test-seq-words | test-seq-paths | test-cond
-make refresh-rtl        # maintainer only: regenerate rtl/k800x_cpu/gen and the tables
-make refresh-vectors    # maintainer only: re-record every vector set with the vector generator
 ```
 
 `tb_cpu` takes `--mclk P` / `K8000_MCLK` (comma list of master clocks per
 record, cycled; default `1,2,1,3`) and `--combined` / `K8000_COMBINED=1`.
 Results land in `results/cpu.txt` and `results/cpu_combined.txt`.
 
-### Reviewing the generated tables
+### Reviewing the ROM tables
 
-Decoder changes are reviewed in `rtl/k800x_cpu/z8000_decode_table.txt`: the
-ROM (`gen/z8000_decode_rom_gen.sv`, 1649 lines of 69-bit hex) as 478
+Decoder changes are made in `rtl/k800x_cpu/z8000_decode_table.txt`, then
+`make gen`: the ROM (`gen/z8000_decode_rom_gen.sv`, 1649 lines of 69-bit hex) as 478
 control words with non-default fields named (`alu_op=OP_SUB
-width=WIDTH_BYTE src2=SRC_IMM ...`) over 8446 range records. Kept
+width=WIDTH_BYTE src2=SRC_IMM ...`) over 8417 range records. Kept
 honest by:
 
-* the generator re-packing every field list and failing unless it is
-  bit-identical to the hex;
 * `make test-decode-table`, which checks the ROM against every range
   (1048576 checks). A `-` in the w1 column claims word 2's low nibble is
   irrelevant, so all 16 nibbles are checked.
 
 The decoder gives no instruction length: each instruction's machine-cycle
 program does. Program changes are reviewed in
-`rtl/k800x_cpu/z8000_mc_table.txt` (generated with
+`rtl/k800x_cpu/z8000_mc_table.txt` (the source of
 `gen/z8000_mc_rom_gen.sv`): 434 forms (first word, a block form's second
 word), 206 programs over the NS/SS/SL columns and the default, not-taken
 and zero paths, each program's text above its entries. `make
@@ -102,7 +98,7 @@ responses hold while DS is Low.
 
 ## What is covered
 
-`make test-cpu`: 2752 of 2752 PASS, 0 SKIP. `make test-decode-table`,
+`make test-cpu`: 3078 of 3078 PASS, 0 SKIP. `make test-decode-table`,
 `make test-mc-table` and `make test-cpu-cycles` pass.
 
 ### Bus behaviour the vectors encode
@@ -154,7 +150,7 @@ vectors (`<TestName>.*.vec`) or the tb_cpu tolerance.
 | 14 | Refresh: ST = 0001, AS pulse, MREQ Low T2-T3, DS never Low, ROW on AD0-8 (AD0 = 0), AD9-15 undefined; R/W, B/W, N/S same as the previous transaction | Fig 18 p.156; RM 9.4.6 p.237 | SPEC | TestBusSpec_RefreshKeepsRWBWNS, TestBusSpec_RefreshAfterByteWrite; tb compares only AD[8:0] on refresh |
 | 15 | Internal operation: ST = 0000, AS pulse opening each cycle, MREQ/DS High, AD undefined, B/W undefined, N/S same as previous; 3 to 8 clocks ("An internal operation can extend up to a maximum of eight clock periods", Fawcett p.66; "three to eight clock cycles long", 1988 DB p.155). Internal cycles appear only where an instruction's machine-cycle program names them | Fig 17 p.155; RM 9.4.6; Fawcett p.66 (PDF 77); 1988 DB p.155 (PDF 162) | SPEC | tb does not compare AD or B/W while ST = 0000 |
 | 16 | HALT: 5-clock IF1, then 3-clock internal operations interspersed with refresh; interrupts sampled at the beginning of every T3; after two consecutive active samples the 7-clock aborted IF1, then the 10-clock acknowledge | Fawcett p.96 (PDF 107): "a five-clock instruction fetch cycle, followed by successive three-clock-period internal cycles", Fig 6.13 p.95 (PDF 106); PS "HALT" p.155 ("If an input is found active during two consecutive samples, the subsequent IF1 cycle is exercised, but ignored, and the normal interrupt acknowledge cycle is started"); Fawcett p.93 Table 6.3 (PDF 104) | SPEC | TestBusSpec_HaltInternalOpsAndTwoSampleExit, TestMachineCycleHalt, TestG78_8_RefreshContinuesDuringHalt |
-| 17 | STOP sampled on the falling edge before an IF1 / before an EPA second word; the fetch runs, then a refresh stream after its T3, STOP re-sampled on each T3 fall (the IF1's, then each refresh's); when found High the next refresh completes and the CPU continues; ROW += 2 per cycle, prescaler bypassed | Fig 16 p.154 + text; RM 9.6.4 p.240-241 | SPEC | TestSTOPStallsAndResumes, TestSTOPStreamShape, TestSTOPSampledOnT3Fall, TestSTOPBeforeEPAWord2, TestStopAtIF1Z8001; the CPU+FPU system vectors (/BSY to STOP) |
+| 17 | STOP sampled on the falling edge before an IF1 / before an EPA second word; the fetch runs, then a refresh stream after its T3, STOP re-sampled on each T3 fall (the IF1's, then each refresh's); when found High the next refresh completes and the CPU continues; ROW += 2 per cycle, prescaler bypassed | Fig 16 p.154 + text; RM 9.6.4 p.240-241 | SPEC | TestSTOPStallsAndResumes, TestSTOPStreamShape, TestSTOPSampledOnT3Fall, TestSTOPBeforeEPAWord2, TestStopAtIF1Z8001, TestStopShortReg, TestStopShortRegFlags (a three or four clock register instruction runs once, after the stream; streams of 1 and 3), TestStopShortRegEvents (with /WAIT in the IF1, a refresh owed, /BUSREQ, NMI or NVI), TestStopSerial (MULT, MULTL, DIV, DIVL from a register, immediate, address or @R, and shifts: the unit runs as without STOP, 3 clocks later per refresh); the CPU+FPU system vectors (/BSY to STOP) |
 | 18 | STOP: the refresh stream goes in after the IF1's T3 and the IF1's remaining clocks follow the last stream refresh. TM 9.6.4: "a stream of memory refresh cycles is inserted after the third clock cycle in the instruction fetch"; Fig 9-10 shows the IF1's T4, T5 after the stream. The only refresh placed between T3 and a tail (item 35) | TM Mar81 9-12 Fig 9-10 (PDF 247); Fig 16 | SPEC | TestMachineCycleRefresh, TestSTOPStreamShape |
 | 19 | BUSREQ sampled at the rising edge opening each machine cycle's T1; if Low, BUSACK Low (bus outputs floated) right after that cycle's T3: "the CPU will relinquish the bus at the end of the bus transaction in that cycle (in other words, immediately after T3)". The cycle's later clocks (tail, internal operation past its third clock, acknowledge T4/T5) run on during the grant; the next cycle waits for the bus. TSET does not grant between its read and its write on every variant: "BUSRQ is not honored in the time between loading the destination from memory and storing the destination to memory" | Fawcett PDF p.114 (printed 103); TM Jan83 p.262-263 Fig 9-9; DB 1988 p.41 Fig 15; TM Mar81 6-163 (PDF 216) | CONFLICT | TestBusRequestTail, TestBusRequestInternal, TestBusRequestAcknowledge, TestBusRequestRefresh, TestBusRequestTSET, TestBusRequestSampledAtT1, TestMachineCycleBusRequest, TestBusSpec_BusRequestTiming, TestTSETBusReqNotGranted. An internal operation's transaction taken as its first three clocks (TM Fig 9-7, Fawcett Fig 5.8): interpretation. TM p.262 and DB p.41 text say BUSACK after the whole machine cycle; Fawcett's worked acknowledge (8 of 10 clocks) is followed |
 | 20 | BUSREQ release: sampled High at edge P, BUSACK High at P+1, CPU regains the bus two clocks after BUSREQ rises (P+2) | PS p.153; RM 9.6.2 p.240 | SPEC; OPEN by one clock | TestBusSpec_BusRequestTiming. Fig 15's AD row hints at a T1 at P+3, its AS row shows none; the text's "two clock cycles" is encoded |

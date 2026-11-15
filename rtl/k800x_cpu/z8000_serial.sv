@@ -80,6 +80,8 @@
 // says another MULTL frame or add cycle follows the one in flight; held
 // through a clock without `tick`.
 
+`default_nettype none
+
 module z8000_serial
   import z8000_ctrl_pkg::*;
 (
@@ -116,10 +118,6 @@ module z8000_serial
   output logic               last         // the internal cycle in flight is the program's last
 );
 
-  localparam logic [15:0] F_C = 16'h0080;
-  localparam logic [15:0] F_Z = 16'h0040;
-  localparam logic [15:0] F_S = 16'h0020;
-  localparam logic [15:0] F_V = 16'h0010;
 
   // Micro-operations. R_* are routines: call (sub 0-1), passes (2-4),
   // return (5-6).
@@ -635,16 +633,15 @@ module z8000_serial
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       u_q <= U_IDLE; tgt_q <= U_IDLE; sub_q <= 3'd0; cnt_q <= 6'd0;
-      r_q[0] <= 16'h0; r_q[1] <= 16'h0; r_q[2] <= 16'h0; r_q[3] <= 16'h0;
-      b_q <= 32'd0; have_q <= 1'b0; mul_q <= 1'b0; div_q <= 1'b0; long_q <= 1'b0;
+      have_q <= 1'b0; mul_q <= 1'b0; div_q <= 1'b0; long_q <= 1'b0;
       x_q <= 1'b0; c_q <= 1'b0; v_q <= 1'b0; k_q <= 1'b0; z_q <= 1'b0; bz_q <= 1'b0;
       eq_q <= 1'b0; fc_q <= 1'b0;
       q_q <= 1'b0; f_q <= 1'b0; sd_q <= 1'b0; o_q <= 1'b0; od_q <= 1'b0; w_q <= 1'b0; l_q <= 1'b0;
       qneg_q <= 1'b0; qzero_q <= 1'b0; zin_q <= 1'b0;
       width_q <= WIDTH_NONE; left_q <= 1'b0; arith_q <= 1'b0; zn_q <= 1'b0;
     end else if (clk_en) if (tick || start) begin
-      u_q <= u_d; tgt_q <= tgt_d; sub_q <= sub_d; cnt_q <= cnt_d; r_q <= r_d;
-      b_q <= b_d; have_q <= have_d;
+      u_q <= u_d; tgt_q <= tgt_d; sub_q <= sub_d; cnt_q <= cnt_d;
+      have_q <= have_d;
       x_q <= x_d; c_q <= c_d; v_q <= v_d; k_q <= k_d; z_q <= z_d; bz_q <= bz_d;
       eq_q <= eq_d; fc_q <= fc_d;
       q_q <= q_d; f_q <= f_d; sd_q <= sd_d; o_q <= o_d; od_q <= od_d; w_q <= w_d; l_q <= l_d;
@@ -657,6 +654,12 @@ module z8000_serial
         zn_q    <= count == 6'd0;
       end
     end
+  end
+
+  // The working words: loaded at the start, never read before.
+  always_ff @(posedge clk) if (clk_en && (tick || start)) begin
+    r_q <= r_d;
+    b_q <= b_d;
   end
 
   // ---- outputs ------------------------------------------------------------------
@@ -751,3 +754,5 @@ module z8000_serial
   end
 
 endmodule
+
+`default_nettype wire

@@ -1,8 +1,7 @@
 // z8000_execute -- register, immediate and memory operands through the ALU.
 //
-// The instruction is decoded from its words for as long as it runs. This
-// unit says whether it runs it (`handles`); the machine-cycle program says
-// when. The work lands on the program's last clocks: a byte or word op is
+// The instruction is decoded from its words for as long as it runs; the
+// machine-cycle program says when. The work lands on the program's last clocks: a byte or word op is
 // one ALU pass on the last clock (a byte or word immediate's as its word
 // arrives), a long op a low-word pass on the second last and a high-word
 // pass on the last. Results are written at the end of the pass's clock.
@@ -35,7 +34,7 @@
 // or a PUSH/POP's own pointer) with stack status. The pointer is read on
 // port A while the cycle is requested; the adder forms the pushed address
 // or the popped one + 2 (4 for a long), written back to the pointer's
-// offset word when the cycle is taken. A long's second word goes to the
+// offset word the clock after the cycle is taken. A long's second word goes to the
 // first's address + 2. CALL pushes the PC offset, then segmented its
 // segment word.
 //
@@ -55,6 +54,8 @@
 //
 // MULT, MULTL, DIV and DIVL only have their memory operand read here (the
 // pointer or index from w0[7:4]); the CPU top runs the work.
+
+`default_nettype none
 
 module z8000_execute
   import z8000_ctrl_pkg::*, z8000_zbus_pkg::*;
@@ -80,7 +81,8 @@ module z8000_execute
   input  logic [1:0]  dst_nib,
   input  logic [15:0] w1,           // instruction words 1 and 2
   input  logic [15:0] w2,
-  output logic        handles,
+  input  logic        io_wr,        // the I/O, block I/O or transfer cycle writes
+  input  logic        io_spec,      // special I/O
   input  logic        block_decr,
   input  logic        block_rept,
   output logic        blk_more,     // a repeated translate runs again
@@ -132,9 +134,6 @@ module z8000_execute
   output logic [22:0] pc_d,
 
   // flags
-  input  logic        fcw_c,
-  input  logic [10:0] fcw_lo,       // FCW bits 10:0
-  input  logic        fcw_sn,       // S/N
   input  logic [15:0] fcw,
 
   // trap entry
@@ -151,16 +150,12 @@ module z8000_execute
   output logic [2:0]  ctl_rsel,
   input  logic [15:0] ctl_rdata,
   output logic        ctl_we,
-  output logic [2:0]  ctl_sel,
   output logic [15:0] ctl_wd,
   output logic        flags_we,
   output logic [15:0] flags,        // FCW bit positions
   output logic [15:0] flags_mask
 );
 
-  localparam logic [1:0] RF_BYTE = 2'd0;
-  localparam logic [1:0] RF_WORD = 2'd1;
-  localparam logic [1:0] RF_LONG = 2'd2;
 
   // ---- which instructions ---------------------------------------------------------
 
@@ -171,9 +166,9 @@ module z8000_execute
           op_on_a, mem_ir, mem_x, mem_ra, mem_ba, mem_bx, uni, br, br_ir, br_x, br_da,
           br_jr, br_dj, br_rel, br_call, br_ret, stk, stk_push, stk_long, stk_opnd,
           stk_imm, stk_pop_r, fop, tcc, dab, exts, sm, sm_byte, xr, xm, bcd, lea, ldctl,
-          ctl_wr, ctl_fcw, ldps, iret, ps_ld, ldps_ir, ldps_x, chg_fcw, ldm, ldm_st, epm, ep_reg, ep_fl, tr,
-          tr_test, md, md_reg, io, io_wr, io_spec, io_ir, bc, bs, bio, blk, handles, is_long, is_byte, hi_first,
-          imm_ip, bd;
+          ctl_fcw, ldps, iret, ps_ld, ldps_ir, ldps_x, chg_fcw, ldm, ldm_st, epm, ep_reg, ep_fl, tr,
+          tr_test, md, md_reg, io, io_ir, bc, bs, bio, blk, is_long, is_byte, hi_first,
+          imm_ip, bd, rot2;
   } cls_t;
   /* verilator lint_off UNUSEDSIGNAL */
   function automatic cls_t cls_of(input ctrl_word_t c, input logic [11:0] w);
@@ -221,8 +216,7 @@ module z8000_execute
     k.bd = c.valid && c.exec == CLS_BIT_DYNAMIC;
     k.lea = c.valid && c.exec == CLS_LEA;
     k.ldctl = c.valid && c.exec == CLS_LDCTL;
-    k.ctl_wr = w[3];
-    k.ctl_fcw = k.ldctl && k.ctl_wr && w[2:0] == 3'd2;
+    k.ctl_fcw = k.ldctl && w[3:0] == 4'hA;
     k.ldps = c.valid && c.exec == CLS_LDPS;
     k.iret = c.valid && c.exec == CLS_IRET;
     k.ps_ld = k.ldps || k.iret;
@@ -240,18 +234,17 @@ module z8000_execute
     k.md = c.valid && (c.exec == CLS_MUL || c.exec == CLS_DIV);
     k.md_reg = k.md && c.src2 == SRC_REG;
     k.io = c.valid && c.exec == CLS_IO;
-    k.io_wr = c.io_write;
-    k.io_spec = c.io_spec;
     k.io_ir = c.src2 == SRC_IR;
     k.bc = c.valid && c.exec == CLS_BLOCK_COMPARE;
     k.bs = c.valid && c.exec == CLS_BLOCK_STRING;
     k.bio = c.valid && c.exec == CLS_BLOCK_IO;
     k.blk = k.bc || k.bs || k.bio || (c.valid && c.exec == CLS_BLOCK_TRANSFER);
-    k.handles = (c.valid && c.exec == CLS_SYS_CALL) || k.blk || k.io || k.md || k.uni || k.br || k.stk || k.sm || k.xr || k.xm || k.bcd || k.bd || k.lea || k.ldctl || k.ps_ld || k.ldm || k.tr || k.ep_reg || k.ep_fl;
     k.is_long = c.width == WIDTH_LONG;
     k.is_byte = c.width == WIDTH_BYTE || (k.br_dj && !w[7]);
     k.hi_first = k.is_long && k.mem_read && c.alu_op == OP_LD;
     k.imm_ip = k.uni && !src_mem && !dst_mem && c.src2 == SRC_IMM && !k.is_long;
+    k.rot2 = k.uni && c.src2 == SRC_TWO &&
+             (c.alu_op == OP_RL || c.alu_op == OP_RR || c.alu_op == OP_RLC || c.alu_op == OP_RRC);
     return k;
   endfunction
   /* verilator lint_on UNUSEDSIGNAL */
@@ -282,7 +275,7 @@ module z8000_execute
   assign uni = k_q.uni;
 
   // Branches: the target's source and whether a stack cycle is next.
-  logic cc_met, taken;
+  logic taken;
   logic br, br_ir, br_x, br_da, br_rel, br_call, br_ret, br_dj, br_jr;
   assign br = k_q.br;
   assign br_ir = k_q.br_ir;
@@ -334,7 +327,7 @@ module z8000_execute
   // LDCTL: w0[3] set loads the control register w0[2:0] from w0[7:4].
   logic ldctl, ctl_wr, ctl_fcw;
   assign ldctl = k_q.ldctl;
-  assign ctl_wr = k_q.ctl_wr;
+  assign ctl_wr = w0[3];
   assign ctl_fcw = k_q.ctl_fcw;
 
   // LDPS reads FCW, then PC (segmented: from the address + 2, the PC
@@ -467,17 +460,14 @@ module z8000_execute
     end
   end
 
-  assign handles = k_q.handles;
 
   // IN/OUT: the port is word 1, or the register w0[7:4] (IR); the data
   // register is w0[7:4], or w0[3:0] (IR). A byte goes out on both halves
   // and comes in on the half the port's A0 picks, as for memory. IN writes
   // the register in the last clock, its I/O cycle's T3.
-  logic io, io_wr, io_spec, io_ir;
+  logic io, io_ir;
   logic [3:0] io_reg;
   assign io      = k_q.io;
-  assign io_wr   = k_q.io_wr;
-  assign io_spec = k_q.io_spec;
   assign io_ir   = k_q.io_ir;
   assign io_reg  = io_ir ? w0[3:0] : w0[7:4];
 
@@ -496,6 +486,7 @@ module z8000_execute
   // ---- passes ---------------------------------------------------------------------------
   logic is_long, is_byte, pass_lo, pass, imm_pass;
   logic high;      // the second pass of a long op
+  logic rot_hi;    // a rotate by 2's second bit
   logic upper;     // this pass works on the high word
   logic hi_first;  // a long load
   logic ld_hi_q;   // a long load's high-word pass: the clock after its first read's T3
@@ -505,16 +496,17 @@ module z8000_execute
   assign is_byte = k_q.is_byte;
   assign hi_first = k_q.hi_first;
   // A unified op's register pass: a long's low pass on the second last
-  // clock (a long load's on the last), else the last. A byte or word
+  // clock (a long load's on the last), else the last. A rotate by 2 rotates
+  // one bit on each of the last two clocks (`rot_hi` the second). A byte or word
   // immediate's pass is instead on its word, straight off the bus, so the
   // result is in as its T3 opens.
   assign imm_pass = k_q.imm_ip && imm_in;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) pass_lo <= 1'b0;
     else if (clk_en)          pass_lo <= k_d.uni && !k_d.mem_write && !k_d.mem_rmw && !k_d.imm_ip &&
-                             (k_d.hi_first ? last_nx : k_d.is_long ? last2_nx : last_nx);
+                             (k_d.hi_first ? last_nx : (k_d.is_long || k_d.rot2) ? last2_nx : last_nx);
   end
-  assign pass    = pass_lo || high || rmw_pass || ld_hi_q;
+  assign pass    = pass_lo || high || rot_hi || rmw_pass || ld_hi_q;
   assign upper   = high || ld_hi_q;
 
   always_ff @(posedge clk or negedge reset_n) begin
@@ -531,8 +523,13 @@ module z8000_execute
 
   // The high pass is the clock after the low pass.
   always_ff @(posedge clk or negedge reset_n) begin
-    if (!reset_n) high <= 1'b0;
-    else if (clk_en)          high <= pass_lo && is_long && !hi_first;
+    if (!reset_n) begin
+      high   <= 1'b0;
+      rot_hi <= 1'b0;
+    end else if (clk_en) begin
+      high   <= pass_lo && is_long && !hi_first;
+      rot_hi <= pass_lo && k_q.rot2;
+    end
   end
 
   // ---- trap entry ---------------------------------------------------------------------
@@ -623,7 +620,6 @@ module z8000_execute
   logic [3:0] ptr;
   logic [4:0] bsel;
   logic [15:0] opnd_q, opnd_hi_q, opnd_w;
-  logic        ea0_q;
   logic        bx_dat_q;  // a based-indexed store's index is in; port B reads its data
   assign ptr_read = (mem_read || mem_write || mem_rmw || stk_opnd) && !pass;
   assign seg_ir   = seg_mode && (mem_ir || mem_ba || mem_bx);
@@ -704,8 +700,6 @@ module z8000_execute
   assign a          = (op_on_a || bs) ? opnd_w : rf_rdata[15:0];
   assign bsel       = dj_pass ? SRC_ONE : bd ? SRC_NIB3_BIT : op_on_a ? count : src2;
 
-  // DAB takes the decimal-adjust and half-carry flags as b[1:0].
-
   // Address words are kept apart, so an immediate after them is word 1.
   always_comb begin
     unique case (bsel)
@@ -720,14 +714,14 @@ module z8000_execute
       SRC_OP_LO_BYTE:     b = {8'h00, w0[7:0]};
       default:            b = 16'h0000;
     endcase
-    if (dab) b = {14'h0000, fcw_lo[3:2]};
+    if (dab) b = {14'h0000, fcw[3:2]};   // D and H
     if (cmp) b = bs ? opnd_hi_q : opnd_q;
   end
 
   // A long's high pass carries from the low pass; CP's low pass runs as SUB.
   always_comb begin
     op  = dj_pass ? OP_SUB : dab ? OP_DAB : alu_op;
-    cin = fcw_c;
+    cin = fcw[7];
     if (is_long && !high && alu_op == OP_CP) op = OP_SUB;
     if (cmp) op = OP_CP;
     if (high) begin
@@ -865,9 +859,7 @@ module z8000_execute
       mem_st = ST_BUS_LOCK_DATA;
     else if (stk_cyc)
       mem_st = ST_STACK_MEM;
-    else if (io)
-      mem_st = io_spec ? ST_SPECIAL_IO : ST_IO;
-    else if (bk_io_cyc)
+    else if (io || bk_io_cyc)
       mem_st = io_spec ? ST_SPECIAL_IO : ST_IO;
     else if (epm)
       mem_st = ST_DATA_MEM_EPU;
@@ -905,7 +897,7 @@ module z8000_execute
     else if (stk)     mem_wdata = (stk_first && rf_rsel_b == sp_off) ? off_sum : rf_rdata_b;
     else if (xm)      mem_wdata = wdata_q;
     else if (ldm || ep_reg) mem_wdata = rf_rdata_b;
-    else if (ep_fl)   mem_wdata = {8'h00, fcw_lo[7:2], 2'b00};
+    else if (ep_fl)   mem_wdata = {8'h00, fcw[7:2], 2'b00};
     else if (tr || (blk && is_byte)) mem_wdata = {opnd_q[7:0], opnd_q[7:0]};
     else if (blk)     mem_wdata = opnd_q;
     else if (mem_rmw) mem_wdata = (alu_op == OP_TSET) ? 16'hFFFF : wdata_q;
@@ -915,14 +907,9 @@ module z8000_execute
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-      ea0_q     <= 1'b0;
-      opnd_q    <= 16'h0000;
-      addr_q    <= 23'd0;
       wr_next_q <= 1'b0;
-      wdata_q   <= 16'h0000;
       opnd_hi_q <= 16'h0000;
       nxt2_q    <= 1'b0;
-      idx_q     <= 16'h0000;
       bx_dat_q  <= 1'b0;
       nfcw_q    <= 16'h0000;
       pcs_q     <= 7'd0;
@@ -934,10 +921,8 @@ module z8000_execute
       else if ((ldm || ep_reg) && mem_take) ldm_k_q <= ldm_k_q + 4'd1;
       ldm_we_q <= ((ldm && !ldm_st && !epm) || ep_reg) && opnd_take;
       ep_fl_we_q <= ep_fl && opnd_take;
-      if (idx_read) idx_q <= rf_rdata_b;
       if (first || mem_take)                bx_dat_q <= 1'b0;
       else if (mem_bx && mem_write && cyc_end3) bx_dat_q <= 1'b1;
-      if (ldps_idx) idx_q <= rf_rdata_b + {14'd0, seg_mode, 1'b0};
       if (!exc && opnd_take && mcnt_q == (iret ? 2'd2 : 2'd1)) nfcw_q <= rdata;
       if (!exc && opnd_take && mcnt_q == (iret ? 2'd3 : 2'd2)) pcs_q  <= rdata[14:8];
       // The entry's FCW word, then (Z8001) the PC segment word.
@@ -946,17 +931,20 @@ module z8000_execute
       if (mem_take) nxt2_q <= (((uni || k_q.md) && is_long) || stk_long) && !nxt2_q;
       if (opnd_take && nxt2_q) opnd_hi_q <= rdata;
       else if (blk_take && bs) opnd_hi_q <= opnd_q;
-      if (mem_take) begin
-        ea0_q  <= mem_addr[0];
-        addr_q <= mem_addr;
-      end
       if (mem_take)                             wr_next_q <= 1'b0;
       else if ((uni && mem_rmw || xm) && opnd_take) wr_next_q <= 1'b1;
-      if (rmw_pass || dj_pass) wdata_q <= is_byte ? {value[7:0], value[7:0]} : value;
-      if (xm_pass)             wdata_q <= is_byte ? {rf_rdata_b[7:0], rf_rdata_b[7:0]} : rf_rdata_b;
-      if ((xr || bcd) && last2) wdata_q <= sw_hold;
-      if (opnd_take) opnd_q <= (is_byte || tr) ? {8'h00, ea0_q ? rdata[7:0] : rdata[15:8]} : rdata;
     end
+  end
+
+  // Data latches, each loaded before it is read.
+  always_ff @(posedge clk) if (clk_en) begin
+    if (idx_read) idx_q <= rf_rdata_b;
+    if (ldps_idx) idx_q <= rf_rdata_b + {14'd0, seg_mode, 1'b0};
+    if (mem_take) addr_q <= mem_addr;
+    if (rmw_pass || dj_pass) wdata_q <= is_byte ? {value[7:0], value[7:0]} : value;
+    if (xm_pass)             wdata_q <= is_byte ? {rf_rdata_b[7:0], rf_rdata_b[7:0]} : rf_rdata_b;
+    if ((xr || bcd) && last2) wdata_q <= sw_hold;
+    if (opnd_take) opnd_q <= (is_byte || tr) ? {8'h00, addr_q[0] ? rdata[7:0] : rdata[15:8]} : rdata;
   end
 
   logic pop_we, sp_we_q;
@@ -971,9 +959,9 @@ module z8000_execute
   logic        sw15, sw14, sw14_q, ss_old, ctl_rf_we;
   logic [15:0] nfcw;
   // LDCTL FCW loads bits 15:11 and 7:2; the rest are reserved.
-  assign nfcw = ctl_fcw ? {rf_rdata_b[15:11], fcw_lo[10:8], rf_rdata_b[7:2], fcw_lo[1:0]} : nfcw_q;
-  assign sw15   = (chg_fcw && sw_clk && (nfcw[14] ^ fcw_sn)) || (xd1_q && !fcw_sn);
-  assign ss_old = seg_mode && fcw_sn;
+  assign nfcw = ctl_fcw ? {rf_rdata_b[15:11], fcw[10:8], rf_rdata_b[7:2], fcw[1:0]} : nfcw_q;
+  assign sw15   = (chg_fcw && sw_clk && (nfcw[14] ^ fcw[14])) || (xd1_q && !fcw[14]);
+  assign ss_old = seg_mode && fcw[14];
   assign sw14   = sw14_q && (last || exc);
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) sw14_q <= 1'b0;
@@ -984,7 +972,6 @@ module z8000_execute
   assign ctl_rf_we = sw15 || sw14 || (ldctl && !ctl_wr && last);
   assign ctl_rsel  = sw15 ? 3'd7 : sw14 ? 3'd6 : w0[2:0];
   assign ctl_we    = sw15 || sw14 || (ldctl && ctl_wr && !ctl_fcw && last);
-  assign ctl_sel   = ctl_rsel;
   assign ctl_wd    = rf_rdata[15:0];
   assign fcw_we    = (chg_fcw && sw_clk) || xd1_q;
   assign fcw_d     = xd1_q ? {SEGMENTED, 1'b1, fcw[13:0]} : {SEGMENTED && nfcw[15], nfcw[14:0]};
@@ -1030,11 +1017,11 @@ module z8000_execute
   logic [15:0] sm_val;
   assign ex_sign = width == WIDTH_BYTE ? rf_rdata[7] : rf_rdata[15];
   always_comb begin
-    sm_we  = last && (dab || (tcc && cc_met) || (fop && fcw_op == FCW_STORE_LO) ||
+    sm_we  = last && (dab || (tcc && cc_held) || (fop && fcw_op == FCW_STORE_LO) ||
                       exts) || (exts && is_long && last2);
     sm_val = value;
     if (tcc)       sm_val = rf_rdata[15:0] | 16'h0001;
-    else if (fop)  sm_val = {8'h00, fcw_lo[7:2], 2'b00};
+    else if (fop)  sm_val = {8'h00, fcw[7:2], 2'b00};
     else if (exts) sm_val = width == WIDTH_BYTE ? {{8{ex_sign}}, rf_rdata[7:0]} : {16{ex_sign}};
   end
 
@@ -1045,16 +1032,13 @@ module z8000_execute
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       sp_we_q <= 1'b0;
-      sp_d_q  <= 16'h0000;
       sp_sel_q <= 4'd0;
     end else if (clk_en) begin
       sp_we_q <= mem_take && stk_first;
-      if (mem_take && stk_first) begin
-        sp_d_q   <= off_sum;
-        sp_sel_q <= sp_off;
-      end
+      if (mem_take && stk_first) sp_sel_q <= sp_off;
     end
   end
+  always_ff @(posedge clk) if (clk_en && mem_take && stk_first) sp_d_q <= off_sum;
 
   always_comb begin
     rf_we     = (pass || imm_pass) && dst == DST_REG;
@@ -1140,12 +1124,11 @@ module z8000_execute
   );
 
   // ---- branch target ----------------------------------------------------------------
-  assign cc_met = cc_held;
 
   always_comb begin
     if (br_call)    taken = 1'b1;
     else if (br_dj) taken = nz_q;
-    else            taken = cc_met;
+    else            taken = cc_held;
     if (ps_ld || exc) pc_d = {seg_mode ? pcs_q : pc_seg, opnd_take ? rdata : opnd_q};
     else if (br_ret) pc_d = {seg_mode ? opnd_q[14:8] : pc_seg, rdata};
     else if (br_da) pc_d = ea_word;
@@ -1161,11 +1144,13 @@ module z8000_execute
   end
 
   always_comb begin
-    flags_we   = (pass_lo && !is_long) || imm_pass || high || rmw_pass || (dab && last) ||
+    flags_we   = (pass_lo && !is_long) || imm_pass || high || rot_hi || rmw_pass || (dab && last) ||
                  (fop && last && fcw_op != FCW_STORE_LO) || (bd && last && alu_op == OP_BIT);
     flags      = alu_flags;
     flags_mask = alu_mask;
     if (high) flags[6] = alu_flags[6] & z_lo_q;
+    // V: either bit's step changed the sign.
+    if (rot_hi) flags[4] = alu_flags[4] | fcw[4];
     if (bcd) begin
       flags_we   = last;
       flags      = {9'h000, wdata_q[7:0] == 8'h00, 6'h00};
@@ -1190,7 +1175,7 @@ module z8000_execute
       flags_mask = fcw_op == FCW_LOAD_LO ? 16'h00FC : fcw_mask;
       unique case (fcw_op)
         FCW_SET:     flags = 16'hFFFF;
-        FCW_TOGGLE:  flags = {8'h00, ~fcw_lo[7:0]};
+        FCW_TOGGLE:  flags = {8'h00, ~fcw[7:0]};
         FCW_LOAD_LO: flags = {8'h00, rf_rdata[7:0]};
         default:     flags = 16'h0000;
       endcase
@@ -1198,3 +1183,5 @@ module z8000_execute
   end
 
 endmodule
+
+`default_nettype wire

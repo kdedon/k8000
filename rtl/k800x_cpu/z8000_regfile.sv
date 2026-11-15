@@ -16,6 +16,8 @@
 // `nz` holds each byte's nonzero bit ([1] high, [0] low) as `r` stood the
 // clock before, so a register's zero test needs no read.
 
+`default_nettype none
+
 module z8000_regfile (
   input  logic        clk,
   input  logic        clk_en,   // CLK rising edge seen this clock
@@ -88,3 +90,5 @@ module z8000_regfile (
   end
 
 endmodule
+
+`default_nettype wire

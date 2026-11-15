@@ -1,7 +1,7 @@
 // z8000_alu -- combinational 16-bit ALU.
 //
 // Implements what the CPU issues to it: ADD/ADC/SUB/SBC/CP, AND/OR/XOR/COM/
-// NEG/TEST, INC/DEC by 1-16, RL/RR/RLC/RRC by 1 or 2 (b[1] selects 2),
+// NEG/TEST, INC/DEC by 1-16, RL/RR/RLC/RRC by 1 (a rotate by 2 is two passes),
 // BIT/SET/RES on bit b[3:0], TSET, LD and DAB, at byte or word width.
 // Multi-bit shifts and sign extension run in their own units. Operands
 // arrive already masked to the operation width (byte ops get the byte).
@@ -21,6 +21,8 @@
 // set of flags the op writes; flags outside it are don't-care. Width is
 // byte when WIDTH_BYTE, word otherwise.
 
+`default_nettype none
+
 module z8000_alu
   import z8000_ctrl_pkg::*;
 (
@@ -34,12 +36,6 @@ module z8000_alu
   output logic [15:0]        flags_mask
 );
 
-  localparam logic [15:0] F_C = 16'h0080;
-  localparam logic [15:0] F_Z = 16'h0040;
-  localparam logic [15:0] F_S = 16'h0020;
-  localparam logic [15:0] F_V = 16'h0010;
-  localparam logic [15:0] F_D = 16'h0008;
-  localparam logic [15:0] F_H = 16'h0004;
 
   logic        is_byte;
   logic [15:0] wmask, sign, x;
@@ -81,34 +77,18 @@ module z8000_alu
     ovf   = ~(msb(add_a, sign) ^ msb(add_b, sign)) & (msb(add_a, sign) ^ msb(sum_v, sign));
   end
 
-  // ---- rotates by 1 or 2 ----------------------------------------------------
-  // RLC/RRC rotate through C; each step returns {carry out, value}.
-  function automatic logic [16:0] rot1(input logic [15:0] v, input logic c,
-                                       input logic byt, input logic lft, input logic thr);
-    logic co, in_bit;
-    logic [15:0] o;
-    if (lft) begin
-      co     = byt ? v[7] : v[15];
-      in_bit = thr ? c : co;
-      o      = byt ? {8'h00, v[6:0], in_bit} : {v[14:0], in_bit};
-    end else begin
-      co     = v[0];
-      in_bit = thr ? c : co;
-      o      = byt ? {8'h00, in_bit, v[7:1]} : {in_bit, v[15:1]};
-    end
-    return {co, o};
-  endfunction
-
-  logic        left, thru, rc1, rc2, rc;
-  logic [15:0] r1, r2, rv;
+  // ---- rotate by 1 -----------------------------------------------------------
+  // RLC/RRC rotate through C.
+  logic        left, thru, rc, in_bit;
+  logic [15:0] rv;
 
   always_comb begin
-    left      = (op == OP_RL) || (op == OP_RLC);
-    thru      = (op == OP_RLC) || (op == OP_RRC);
-    {rc1, r1} = rot1(x, cin, is_byte, left, thru);
-    {rc2, r2} = rot1(r1, rc1, is_byte, left, thru);
-    rv        = b[1] ? r2 : r1;
-    rc        = b[1] ? rc2 : rc1;
+    left   = (op == OP_RL) || (op == OP_RLC);
+    thru   = (op == OP_RLC) || (op == OP_RRC);
+    rc     = left ? msb(x, sign) : x[0];
+    in_bit = thru ? cin : rc;
+    if (left) rv = is_byte ? {8'h00, x[6:0], in_bit} : {x[14:0], in_bit};
+    else      rv = is_byte ? {8'h00, in_bit, x[7:1]} : {in_bit, x[15:1]};
   end
 
   // ---- DAB ------------------------------------------------------------------
@@ -211,3 +191,5 @@ module z8000_alu
   end
 
 endmodule
+
+`default_nettype wire

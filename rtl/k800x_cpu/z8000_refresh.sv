@@ -11,7 +11,7 @@
 // state is skipped: then the refreshes owed at that point go out back to
 // back from the first boundary after (`now`), whatever cycle it follows.
 // One coming due after them waits for an allowed boundary.
-// Each refresh cycle puts ROW on AD and steps it by two (bit 0 cleared).
+// Each refresh cycle puts ROW on AD8:AD1 and steps it by one.
 //
 // `pending` includes an underflow on this edge or the next: a refresh's T1
 // may be the clock the prescaler underflows in. A refresh taken against the
@@ -19,13 +19,15 @@
 // a refresh, which on a T3 edge is one clock before its T1; `cyc_row` is
 // the row that cycle drives.
 
+`default_nettype none
+
 module z8000_refresh (
   input  logic       clk,
   input  logic       clk_en,   // CLK rising edge seen this clock
   input  logic       reset_n,
   input  logic       enable,      // RE
   input  logic [5:0] rate,
-  input  logic [8:0] row,
+  input  logic [7:0] row,         // ROW, bits 8:1
   input  logic       load,        // REFRESH written with RE set
   input  logic [5:0] load_rate,
   input  logic       take,
@@ -33,23 +35,21 @@ module z8000_refresh (
   input  logic       lost,        // the clock ending at this edge had no bus
   output logic       pending,
   output logic       now,         // a skipped refresh is owed
-  output logic [8:0] row_next,    // ROW after this refresh
-  output logic [8:0] cyc_row
+  output logic [7:0] row_next,    // ROW after this refresh
+  output logic [7:0] cyc_row
 );
 
   logic [1:0]  div4_q, div4_d;     // CLK/4 sub-divider
-  logic [15:0] count_q, count_d;   // prescaler
+  logic [5:0]  count_q, count_d;   // prescaler; RATE 0 counts 64
   logic [1:0]  owed_q, owed_d;     // refreshes owed, 0 to 2
-  logic [8:0]  row_q;
+  logic [7:0]  row_q;
   logic        underflow, soon, skip_q;
   logic [1:0]  now_q, now_set;     // owed refreshes to issue at once
   logic        lost_q, mark;
 
-  logic [15:0] count_dec, reload;
-  logic [5:0]  rate_sel;
-  assign count_dec = count_q - 16'd1;
-  assign rate_sel  = load ? load_rate : rate;
-  assign reload    = (rate_sel == 6'd0) ? 16'd64 : {10'd0, rate_sel};
+  logic [5:0]  count_dec, reload;
+  assign count_dec = count_q - 6'd1;
+  assign reload    = load ? load_rate : rate;
 
   always_comb begin
     div4_d    = div4_q;
@@ -59,7 +59,7 @@ module z8000_refresh (
       div4_d = div4_q + 2'd1;
       if (div4_q == 2'd3) begin
         count_d = count_dec;
-        if (count_dec == 16'd0) begin
+        if (count_dec == 6'd0) begin
           count_d   = reload;
           underflow = 1'b1;
         end
@@ -71,7 +71,7 @@ module z8000_refresh (
 
   // A write on this edge is not seen; the CPU checks that none coincides
   // with a take.
-  assign soon      = enable && div4_q == 2'd2 && count_q == 16'd1;
+  assign soon      = enable && div4_q == 2'd2 && count_q == 6'd1;
   assign pending   = owed_q != 2'd0 || (underflow && !skip_q) || soon;
   logic used;
   logic [2:0] owed_in;
@@ -79,7 +79,7 @@ module z8000_refresh (
   // A take against the next edge's underflow counts it now and skips it then.
   assign owed_in   = {1'b0, owed_q} + {2'd0, underflow && !skip_q} + {2'd0, used && soon};
   assign owed_d    = (owed_in > 3'd2 ? 2'd2 : owed_in[1:0]) - {1'b0, used && owed_in != 3'd0};
-  assign row_next  = (row + 9'd2) & 9'h1FE;
+  assign row_next  = row + 8'd1;
   assign cyc_row   = take ? row : row_q;
   // An underflow here is due as of the previous edge, so the clock before
   // that one decides whether it was skipped. It marks every refresh then
@@ -100,7 +100,7 @@ module z8000_refresh (
       skip_q    <= 1'b0;
       now_q     <= 2'd0;
       lost_q    <= 1'b0;
-      row_q     <= 9'd0;
+      row_q     <= 8'd0;
     end else if (clk_en) begin
       owed_q    <= owed_d;
       skip_q    <= used && soon;
@@ -111,3 +111,5 @@ module z8000_refresh (
   end
 
 endmodule
+
+`default_nettype wire

@@ -11,7 +11,7 @@
 
 module tb_seq_paths
   import z8000_zbus_pkg::*, z8000_mc_pkg::*;
-;
+#(parameter bit SEGMENTED = 1'b0);
   logic clk = 1'b0;
   always #5 clk = ~clk;
   // Master clock: 5 per CLK, off CLK's edges.
@@ -33,7 +33,7 @@ module tb_seq_paths
   logic [3:0]  st;
   logic        busack_n, mo_n;
 
-  z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
+  z8000_cpu #(.SEGMENTED(SEGMENTED), .VMPU(1'b0)) dut (
     .clk(mclk), .clk_rise(clk_rise), .clk_fall(clk_fall), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(1'b1), .wait_n(1'b1), .busreq_n(1'b1),
     .nmi_n(1'b1), .nvi_n(1'b1), .vi_n(1'b1), .segt_n(1'b1),
@@ -85,8 +85,15 @@ module tb_seq_paths
     if (last_name != "") settle();
     last_name = name;
     for (i = 0; i < 256; i++) mem[i] = 16'h0000;
-    mem[1] = fcw;
-    mem[2] = PROG;
+    // Z8001 PSA: FCW, PC segment, PC offset; segmented mode.
+    if (SEGMENTED) begin
+      mem[1] = fcw | 16'h8000;
+      mem[2] = 16'h0000;
+      mem[3] = PROG;
+    end else begin
+      mem[1] = fcw;
+      mem[2] = PROG;
+    end
     mem[(PROG >> 1) + 0] = w0;
     mem[(PROG >> 1) + 1] = w1;
     reset_n = 1'b0;
@@ -124,7 +131,7 @@ module tb_seq_paths
     run(name, FCW, 16'h1C21, w1, 11 + 3 * n);
     bad = 0;
     for (k = 0; k <= 17; k++) begin
-      force dut.u_sequencer.iter_q = 6'(k);
+      force dut.u_sequencer.iter_q = 5'(k);
       #0.01;   // all counts inside the one clock
       if (dut.more !== (k < n)) bad++;
     end
@@ -140,23 +147,26 @@ module tb_seq_paths
   localparam logic [15:0] FCW   = 16'h4000;   // system, nonsegmented
   localparam logic [15:0] FCW_Z = 16'h4040;   // ... Z set
   localparam logic [15:0] FCW_C = 16'h4080;   // ... C set
+  // Segmented: JP cc,@RR2, taken in 15 clocks; RET taken in 13.
+  localparam logic [15:0] JP_RS = SEGMENTED ? 16'h0010 : 16'h0000;
+  localparam int JP_T  = SEGMENTED ? 15 : 10;
+  localparam int RET_T = SEGMENTED ? 13 : 10;
 
   initial begin
     reset_n = 1'b0;
     as_q = 1'b1;
     lat_addr = 16'h0000;
-    force dut.u_sequencer.run_ok = 1'b1;
 
-    run("JP F,@R1",       FCW,   16'h1E10, 16'h0000, 7);
-    run("JP T,@R1",       FCW,   16'h1E18, 16'h0000, 10);
-    run("JP Z,@R1 Z=1",   FCW_Z, 16'h1E16, 16'h0000, 10);
-    run("JP Z,@R1 Z=0",   FCW,   16'h1E16, 16'h0000, 7);
-    run("JP NC,@R1 C=1",  FCW_C, 16'h1E1F, 16'h0000, 7);
-    run("JP UGT,@R1 Z=1", FCW_Z, 16'h1E1B, 16'h0000, 7);
-    run("JP UGT,@R1",     FCW,   16'h1E1B, 16'h0000, 10);
+    run("JP F,@R1",       FCW,   16'h1E10 + JP_RS, 16'h0000, 7);
+    run("JP T,@R1",       FCW,   16'h1E18 + JP_RS, 16'h0000, JP_T);
+    run("JP Z,@R1 Z=1",   FCW_Z, 16'h1E16 + JP_RS, 16'h0000, JP_T);
+    run("JP Z,@R1 Z=0",   FCW,   16'h1E16 + JP_RS, 16'h0000, 7);
+    run("JP NC,@R1 C=1",  FCW_C, 16'h1E1F + JP_RS, 16'h0000, 7);
+    run("JP UGT,@R1 Z=1", FCW_Z, 16'h1E1B + JP_RS, 16'h0000, 7);
+    run("JP UGT,@R1",     FCW,   16'h1E1B + JP_RS, 16'h0000, JP_T);
     run("RET F",          FCW,   16'h9E00, 16'h0000, 7);
-    run("RET T",          FCW,   16'h9E08, 16'h0000, 10);
-    run("RET ULE C=1",    FCW_C, 16'h9E03, 16'h0000, 10);
+    run("RET T",          FCW,   16'h9E08, 16'h0000, RET_T);
+    run("RET ULE C=1",    FCW_C, 16'h9E03, 16'h0000, RET_T);
     ldm("LDM R3,@R2,#1",  16'h0300, 1);
     ldm("LDM R3,@R2,#3",  16'h0302, 3);
     ldm("LDM R0,@R2,#16", 16'h000F, 16);

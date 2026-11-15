@@ -29,7 +29,7 @@
 // its end two edges ahead (`unit_end3`), or one ahead from a pass
 // (`unit_end2`); in an internal operation of `len` only its last end
 // (`unit_last`) is taken, which may come before Tlen. `cyc_iop` is High
-// through an internal operation.
+// through an internal operation, `cyc_tail` through a tail.
 //
 // /WAIT is sampled on every CLK fall and acted on at the next rise.
 // A rise and a fall in one master clock (a board pulsing CLK every master
@@ -54,6 +54,8 @@
 // granted: a system top floats /AS, /DS, /MREQ, ST, R/W, B/W, N/S and SN
 // with it.
 
+`default_nettype none
+
 module z8000_bus_unit
   import z8000_zbus_pkg::*;
 #(
@@ -73,7 +75,6 @@ module z8000_bus_unit
   input  logic        req_write,
   input  logic        req_nodata,     // an aborted IF1: no data strobe
   input  logic        req_byte,
-  input  logic        req_odd,        // a byte write's address bit 0, ahead of the address select
   input  logic        req_epu_drives, // the EPU supplies the write data
   input  logic        req_normal,     // N/S for the cycle (1 = normal)
   input  logic [3:0]  req_len,        // internal operation length
@@ -95,6 +96,7 @@ module z8000_bus_unit
   output logic        lost,           // the clock ending at this edge was granted or a wait state
   output logic        away,           // the bus is granted, or given up as this clock ends
   output logic        cyc_iop,        // this clock is an internal operation's
+  output logic        cyc_tail,       // this clock is a transaction's tail
   output logic [15:0] rdata,          // read data, valid with done
 
   // pins
@@ -128,7 +130,7 @@ module z8000_bus_unit
   bus_state_e  state_q, state_d;
   logic        trail_q, trail_d;     // /DS /MREQ still Low from the last T3
   logic [2:0]  taw_q, taw_d;         // automatic waits left
-  logic [3:0]  rest_q, rest_d;       // tail clocks after this one
+  logic [2:0]  rest_q, rest_d;       // tail clocks after this one
   logic        iop_q, iop_d;         // HOLD is an internal operation
   logic [2:0]  t_q, t_d;             // its T-state less one
   logic [2:0]  tlen_q, tlen_d;       // its last T-state less one, for `len`
@@ -146,12 +148,13 @@ module z8000_bus_unit
   logic        cyc_epu_q, cyc_epu_d;
   logic        cyc_nod_q, cyc_nod_d;
   logic [15:0] cyc_wdata_q, cyc_wdata_d;
-  logic        cyc_byte_q, cyc_odd_q;
 
   logic [15:0] ad_out_d;
   logic        ad_drive_d, as_n_d, ds_n_d, mreq_n_d, r_w_d, b_w_d, n_s_d;
   logic [6:0]  sn_d;
   logic [3:0]  st_d;
+
+  assign bus_drive = busack_n;
 
   // ---- machine-cycle boundary -------------------------------------------------
   // The bus is given up as T3 ends; no cycle opens while it is away.
@@ -160,7 +163,7 @@ module z8000_bus_unit
     unique case (state_q)
       BUS_IDLE:  bound = 1'b1;
       BUS_T3CLK: bound = tail == 3'd0;
-      BUS_HOLD:  bound = !iop_q ? rest_q == 4'd0 : ue1_q || (!unit_q && t_q == tlen_q);
+      BUS_HOLD:  bound = !iop_q ? rest_q == 3'd0 : ue1_q || (!unit_q && t_q == tlen_q);
       default:   bound = 1'b0;
     endcase
   end
@@ -176,7 +179,7 @@ module z8000_bus_unit
   always_comb begin
     unique case (state_q)
       BUS_T3CLK: cyc_end3 = tail == 3'd2;
-      BUS_HOLD:  cyc_end3 = !iop_q ? rest_q == 4'd2 : ue_take || (!unit_q && t_q + 3'd2 == tlen_q);
+      BUS_HOLD:  cyc_end3 = !iop_q ? rest_q == 3'd2 : ue_take || (!unit_q && t_q + 3'd2 == tlen_q);
       default:   cyc_end3 = 1'b0;
     endcase
   end
@@ -197,18 +200,13 @@ module z8000_bus_unit
   // I/O timing, with its automatic wait: I/O and EPU transfers.
   assign cyc_iot     = cyc_io || cyc_epux;
 
-  // A byte write, memory or I/O, carries the byte on both halves; the
-  // receiver picks the lane from A0. The EPU flag byte rides AD7:AD0 alone.
-  // The data is held at every cycle end, read only in a write's T2, and
-  // the byte placed there, off the request decode.
-  logic [7:0]  wbyte;
-  logic [15:0] wdata_bus;
-  assign wbyte     = cyc_odd_q ? cyc_wdata_q[7:0] : cyc_wdata_q[15:8];
-  assign wdata_bus = (cyc_byte_q && !cyc_epux) ? {wbyte, wbyte} : cyc_wdata_q;
+  // Write data, held at every cycle end and read only in a write's T2. A
+  // byte comes on both halves (the EPU flag byte on AD7:AD0 alone).
 
   assign held    = (gnt_q || back_q) && state_q == BUS_IDLE;
   assign away    = give || gnt_q;
   assign cyc_iop = state_q == BUS_HOLD && iop_q;
+  assign cyc_tail = state_q == BUS_HOLD && !iop_q;
   assign wait_s = (clk_en && clk_fall) ? wait_n : wait_q;
   assign done  = state_q == BUS_T3 && wait_s;
   assign twait = state_q == BUS_T3 && !wait_s;
@@ -276,12 +274,12 @@ module z8000_bus_unit
         end
         BUS_T3:    if (wait_s) state_d = BUS_T3CLK;
         BUS_T3CLK: begin
-          rest_d  = {1'b0, tail} - 4'd1;
+          rest_d  = tail - 3'd1;
           iop_d   = 1'b0;
           state_d = (tail == 3'd0) ? BUS_IDLE : BUS_HOLD;
         end
         BUS_HOLD: begin
-          rest_d = rest_q - 4'd1;
+          rest_d = rest_q - 3'd1;
           t_d    = t_q + 3'd1;
           if (iop_q) begin
             ue2_d = ue_take;
@@ -376,7 +374,7 @@ module z8000_bus_unit
           if (!cyc_refresh && !cyc_ack && !cyc_iot && !cyc_write_q && !cyc_nod_q)
             ds_n_d = 1'b0;
           if (cyc_write_q && !cyc_epu_q) begin
-            ad_out_d   = wdata_bus;
+            ad_out_d   = cyc_wdata_q;
             ad_drive_d = 1'b1;
           end else begin
             ad_drive_d = 1'b0;
@@ -405,7 +403,7 @@ module z8000_bus_unit
     if (!reset_n) begin
       state_q     <= BUS_IDLE;
       taw_q       <= 3'd0;
-      rest_q      <= 4'd0;
+      rest_q      <= 3'd0;
       iop_q       <= 1'b0;
       t_q         <= 3'd0;
       tlen_q      <= 3'd0;
@@ -419,14 +417,10 @@ module z8000_bus_unit
       tw_q        <= 1'b0;
       wait_q      <= 1'b1;
       busack_n    <= 1'b1;
-      bus_drive   <= 1'b1;
       cyc_st_q    <= 4'b1111;
       cyc_write_q <= 1'b0;
       cyc_epu_q   <= 1'b0;
       cyc_nod_q   <= 1'b0;
-      cyc_wdata_q <= 16'h0000;
-      cyc_byte_q  <= 1'b0;
-      cyc_odd_q   <= 1'b0;
     end else if (clk_en) begin
       state_q     <= state_d;
       taw_q       <= taw_d;
@@ -444,20 +438,17 @@ module z8000_bus_unit
       // An acknowledge's external waits count too.
       tw_q        <= twait || (state_q == BUS_TAW && cyc_ack && !wait_s);
       busack_n    <= !gnt_d;
-      bus_drive   <= !gnt_d;
       cyc_st_q    <= cyc_st_d;
       cyc_write_q <= cyc_write_d;
       cyc_epu_q   <= cyc_epu_d;
       cyc_nod_q   <= cyc_nod_d;
-      cyc_wdata_q <= cyc_wdata_d;
-      if (cyc_end) begin
-        cyc_byte_q <= req_byte;
-        cyc_odd_q  <= req_odd;
-      end
     end else if (clk_fall) begin
       wait_q      <= wait_n;
     end
   end
+
+  // Write data, read only in a write's T2.
+  always_ff @(posedge clk) if (clk_en) cyc_wdata_q <= cyc_wdata_d;
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
@@ -516,3 +507,5 @@ module z8000_bus_unit
   // synthesis translate_on
 
 endmodule
+
+`default_nettype wire

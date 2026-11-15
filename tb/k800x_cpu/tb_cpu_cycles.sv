@@ -8,14 +8,13 @@
 // the RTL and measures the clocks between the IF1 (ST=1101) /AS fall at the
 // first PC and the next IF1 /AS fall, which must land on the second PC.  That
 // interval is the only pin-observable definition of "how long did this
-// instruction take", and for repeatable instructions the generator takes it in
+// instruction take", and for repeatable instructions the vector takes it in
 // pipeline steady state (the Z8000 prefetches: a first execution after a
 // different instruction borrows fetch clocks from its predecessor).
 //
 // Records are tagged `exact` when that measured interval equals the Mar81
-// figure (29 of the 33 curated cases) and `approx` when it does not
-// -- single-shot branch/stack cases, and shifts whose n_rec is base + per-step
-// clocks while the decode-time PLA figure is only the base.  Both are asserted
+// figure and `approx` when it does not: shifts, MULTL and block repeats,
+// whose figure is a base plus per-step clocks.  Both are asserted
 // against the measured number; the tag tells you whether the datasheet
 // figure and the pin-observable interval coincide for that instruction.
 //
@@ -23,7 +22,7 @@
 
 module tb_cpu_cycles
   import z8000_zbus_pkg::*;
-;
+#(parameter bit SEGMENTED = 1'b0);
   logic clk = 1'b0;
   always #5 clk = ~clk;
   // Master clock: 5 per CLK, off CLK's edges.
@@ -55,7 +54,7 @@ module tb_cpu_cycles
   logic [3:0]  st;
   logic        busack_n, mo_n;
 
-  z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
+  z8000_cpu #(.SEGMENTED(SEGMENTED), .VMPU(1'b0)) dut (
     .clk(mclk), .clk_rise(clk_rise), .clk_fall(clk_fall), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(stop_n), .wait_n(wait_n), .busreq_n(busreq_n),
     .nmi_n(nmi_n), .nvi_n(nvi_n), .vi_n(vi_n), .segt_n(segt_n),
@@ -66,7 +65,7 @@ module tb_cpu_cycles
     .busack_n(busack_n), .mo_n(mo_n)
   );
 
-  // ---- flat RAM slave (the generator's system: one 64 KiB chip) -------------
+  // ---- flat RAM slave (the recorded system: one 64 KiB chip) ---------------
   localparam logic [15:0] PROG = 16'h0100;
 
   logic [15:0] mem [0:32767];
@@ -122,6 +121,8 @@ module tb_cpu_cycles
   int fd, code;
   string line, tok, name, kind;
   int unsigned n_rec, passed, failed, notrun, n_total;
+  int          n_end;
+  bit          seen_variant;
 
   logic [15:0] prog_words [0:255];
   int          n_words;
@@ -138,8 +139,14 @@ module tb_cpu_cycles
   task automatic load_and_reset();
     int i;
     for (i = 0; i < 32768; i++) mem[i] = 16'h0000;
-    mem[16'h0002 >> 1] = 16'h4000;                  // FCW: system, non-segmented
-    mem[16'h0004 >> 1] = PROG;                      // PC
+    if (SEGMENTED) begin
+      mem[16'h0002 >> 1] = 16'hC000;                // FCW: system, segmented
+      mem[16'h0004 >> 1] = 16'h0000;                // PC segment
+      mem[16'h0006 >> 1] = PROG;                    // PC offset
+    end else begin
+      mem[16'h0002 >> 1] = 16'h4000;                // FCW: system, non-segmented
+      mem[16'h0004 >> 1] = PROG;                    // PC
+    end
     for (i = 0; i < n_words; i++) mem[(PROG >> 1) + i] = prog_words[i];
     reset_n = 1'b0;
     repeat (8) @(posedge clk);
@@ -177,6 +184,7 @@ module tb_cpu_cycles
 
   initial begin
     n_rec = 0; passed = 0; failed = 0; notrun = 0; n_total = 0;
+    n_end = -1; seen_variant = 1'b0;
     clk_no = 0; lat_valid = 1'b0; as_q = 1'b1; ds_q = 1'b1;
     lat_addr = 16'h0; lat_st = 4'h0; lat_rw = 1'b1; lat_bw = 1'b0;
     reset_n = 1'b0;
@@ -197,6 +205,13 @@ module tb_cpu_cycles
       if (code == 0) continue;
       if (line.len() < 1) continue;
       case (line[0])
+        "v": begin
+          seen_variant = 1'b1;
+          if ((line.substr(8, 12) == "Z8001") != SEGMENTED) begin
+            $display("RESULT FAIL  tb_cpu_cycles  %s is for another variant", vecfile);
+            $finish;
+          end
+        end
         "N": begin
           name = line.substr(2, line.len() - 2);
           while (name.len() > 0 && (name[name.len()-1] == "\n" || name[name.len()-1] == " "))
@@ -244,7 +259,8 @@ module tb_cpu_cycles
             $display("  [%2d] PASS   %-14s  %0d clocks  (%0s)", n_rec, name, got, kind);
           end
         end
-        default: ;   // W-continuation, comments, E
+        "E": if (line.len() > 3 && line.substr(0, 2) == "END") code = $sscanf(line, "END %d", n_end);
+        default: ;   // W-continuation, comments
       endcase
     end
     $fclose(fd);
@@ -254,7 +270,11 @@ module tb_cpu_cycles
     n_total = n_rec;
 
     $display("");
-    if (failed == 0 && notrun == 0 && n_total > 0)
+    if (!seen_variant)
+      $display("RESULT FAIL  tb_cpu_cycles  %s has no variant line", vecfile);
+    else if (n_end != int'(n_total))
+      $display("RESULT FAIL  tb_cpu_cycles  %s: %0d records, END says %0d (truncated?)", vecfile, n_total, n_end);
+    else if (failed == 0 && notrun == 0 && n_total > 0)
       $display("RESULT PASS  tb_cpu_cycles  %0d/%0d records", passed, n_total);
     else
       $display("RESULT FAIL  tb_cpu_cycles  %0d pass, %0d fail, %0d not run, of %0d",

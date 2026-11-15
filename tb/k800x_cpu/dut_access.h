@@ -9,9 +9,9 @@
 // If you rename or move any of these registers, update THIS FILE in the same
 // change -- nothing else in the harness knows the hierarchy.
 //
-//   u_regfile.r[16]  fcw  pc  psap  refresh  nspoff  nspseg  refresh_en  halted
-//   u_refresh.owed_q
-//   u_sequencer.unhandled_q  u_execute.sp_we_q/sp_sel_q/sp_d_q
+//   u_regfile.r[16]  fcw  pc  psap  refresh (bit 15 RE)  nspoff  nspseg  halted
+//   u_refresh.owed_q count_q
+//   u_execute.sp_we_q/sp_sel_q/sp_d_q
 //   u_execute.tset_rmw/wr_next_q  mem_take  bus_done   (TSET bus lock)
 
 #pragma once
@@ -37,13 +37,15 @@ struct DutAccess {
     void     set_fcw(uint16_t v)         { top->rootp->z8000_cpu__DOT__fcw = v; }
 
     uint32_t pc() const                  { return top->rootp->z8000_cpu__DOT__pc; }
-    void     set_pc(uint32_t v)          { top->rootp->z8000_cpu__DOT__pc = v; }
+    void     set_pc(uint32_t v)          { top->rootp->z8000_cpu__DOT__pc = v & 0x7FFFFF; }
 
     uint32_t psap() const                { return top->rootp->z8000_cpu__DOT__psap; }
-    void     set_psap(uint32_t v)        { top->rootp->z8000_cpu__DOT__psap = v; }
+    void     set_psap(uint32_t v)        { top->rootp->z8000_cpu__DOT__psap = v & 0x7FFFFF; }
 
     uint16_t refresh() const             { return top->rootp->z8000_cpu__DOT__refresh; }
-    void     set_refresh(uint16_t v)     { top->rootp->z8000_cpu__DOT__refresh = v; }
+    // RATE and ROW; RE is set by its bit 15 or kept from REFRESH_EN, in
+    // either order. With RE set the prescaler loads RATE, as a write does.
+    void     set_refresh(uint16_t v)     { auto& r = top->rootp->z8000_cpu__DOT__refresh; r = (v & 0xFFFE) | (r & 0x8000); load_prescaler(); }
 
     uint16_t nspoff() const              { return top->rootp->z8000_cpu__DOT__nspoff; }
     void     set_nspoff(uint16_t v)      { top->rootp->z8000_cpu__DOT__nspoff = v; }
@@ -51,16 +53,14 @@ struct DutAccess {
     uint16_t nspseg() const              { return top->rootp->z8000_cpu__DOT__nspseg; }
     void     set_nspseg(uint16_t v)      { top->rootp->z8000_cpu__DOT__nspseg = v; }
 
-    bool     refresh_en() const          { return top->rootp->z8000_cpu__DOT__refresh_en; }
-    void     set_refresh_en(bool v)      { top->rootp->z8000_cpu__DOT__refresh_en = v; }
+    bool     refresh_en() const          { return top->rootp->z8000_cpu__DOT__refresh >> 15; }
+    void     set_refresh_en(bool v)      { auto& r = top->rootp->z8000_cpu__DOT__refresh; r = (r & 0x7FFF) | (v ? 0x8000 : 0); load_prescaler(); }
+    void     load_prescaler()            { auto* r = top->rootp; if (r->z8000_cpu__DOT__refresh >> 15) r->z8000_cpu__DOT__u_refresh__DOT__count_q = (r->z8000_cpu__DOT__refresh >> 9) & 0x3F; }
 
     // A refresh owed, as the prescaler's underflow leaves one.
     void     set_rfsh_pend(bool v)       { top->rootp->z8000_cpu__DOT__u_refresh__DOT__owed_q = v ? 1 : 0; }
 
     bool     halted() const              { return top->rootp->z8000_cpu__DOT__halted; }
-
-    // A program reached a machine-cycle kind the CPU does not run yet.
-    bool     unhandled_cycle() const     { return top->rootp->z8000_cpu__DOT__u_sequencer__DOT__unhandled_q; }
 
     // TSET's lock, from its read's word to its write's take (no pin carries it).
     bool     rmw_lock() const            { auto* r = top->rootp; return r->z8000_cpu__DOT__u_execute__DOT__tset_rmw && r->z8000_cpu__DOT__u_execute__DOT__wr_next_q; }

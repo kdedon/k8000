@@ -8,7 +8,9 @@
 // Records the CPU never issues to the ALU (multi-bit shifts, EXTS, long
 // forms other than ADD/ADC/SUB/SBC/CP/TEST/LD, rotate counts other than 1-2,
 // bit numbers above 15) are skipped and counted. A long record runs as two
-// word passes composed the way the sequencer does it (see the ALU header).
+// word passes composed the way the sequencer does it (see the ALU header);
+// a rotate by 2 as two rotates by 1, the second taking the first's C, with
+// V either pass's V.
 // Prints the first 20 mismatches with the op decoded, then RESULT.
 //   obj_dir/tb_alu/tb_alu +vec=vectors/k800x_cpu/alu/random.vec
 
@@ -85,6 +87,7 @@ module tb_alu
     endcase
   endfunction
 
+  bit seen_end = 1'b0;
   initial begin
     if (!$value$plusargs("vec=%s", vecfile)) vecfile = "vectors/k800x_cpu/alu/random.vec";
     fd = $fopen(vecfile, "r");
@@ -94,6 +97,7 @@ module tb_alu
     end
     total = 0; bad = 0; shown = 0; skipped = 0; twopass = 0;
     while ($fgets(line, fd) != 0) begin
+      if (line.len() >= 3 && line.substr(0, 2) == "END") seen_end = 1'b1;
       if (line.len() < 2 || line.substr(0, 1) != "A ") continue;
       n = $sscanf(line, "A %h %h %h %d %h %h %h %h", r_op, r_a, r_b, r_cin, r_w, r_val, r_flags, r_mask);
       if (n != 8) begin
@@ -121,6 +125,19 @@ module tb_alu
         got_val = {32'd0, value, got_val[15:0]};
         got_f   = (flags & ~16'h0040) | (flags & lo_f & 16'h0040);
         got_m   = flags_mask;
+      end else if (r_aluop inside {OP_RL, OP_RR, OP_RLC, OP_RRC} && r_b == 64'd2) begin
+        twopass++;
+        op    = r_aluop;
+        width = wcode(r_w);
+        a = r_a[15:0]; b = 16'd1; cin = (r_cin != 0);
+        #1;
+        lo_f = flags;
+        a    = value;
+        cin  = lo_f[7];
+        #1;
+        got_val = {48'd0, value};
+        got_f   = flags | (lo_f & 16'h0010);
+        got_m   = flags_mask;
       end else begin
         op    = r_aluop;
         width = wcode(r_w);
@@ -141,7 +158,9 @@ module tb_alu
       end
     end
     $fclose(fd);
-    if (bad == 0) $display("RESULT PASS tb_alu %s: %0d checks (%0d two-pass), %0d out-of-contract skipped",
+    if (total + skipped == 0) $display("RESULT FAIL tb_alu %s: no records", vecfile);
+    else if (!seen_end) $display("RESULT FAIL tb_alu %s: no END (truncated?)", vecfile);
+    else if (bad == 0) $display("RESULT PASS tb_alu %s: %0d checks (%0d two-pass), %0d out-of-contract skipped",
                            vecfile, total, twopass, skipped);
     else          $display("RESULT FAIL tb_alu %s: %0d of %0d checks mismatched (%0d two-pass), %0d out-of-contract skipped",
                            vecfile, bad, total, twopass, skipped);

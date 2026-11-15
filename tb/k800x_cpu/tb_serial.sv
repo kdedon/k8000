@@ -61,7 +61,7 @@ module tb_serial
   assign s_result  = x_words[31:0];
 
   string vecfile, only, tok;
-  int fd, n, total, bad, shown, ticks, delay, exp_ticks, remv, k;
+  int fd, n, total, bad, shown, ticks, delay, exp_ticks, remv, k, recs;
   int r_width, r_delay, r_ticks, r_dbz, r_ovf, r_wide, r_qneg, r_qzero, r_op, r_count;
   logic [63:0] r_dst, r_src, r_product, r_dividend, r_divisor, r_quot, r_rem, r_val, r_result;
   logic [15:0] r_flags, r_mask;
@@ -287,19 +287,20 @@ module tb_serial
     report(id);
   endtask
 
+  bit seen_end = 1'b0;
   initial begin
     if (!$value$plusargs("vec=%s", vecfile)) vecfile = "vectors/k800x_cpu/serial/random.vec";
     if (!$value$plusargs("only=%s", only)) only = "";
     fd = $fopen(vecfile, "r");
     if (fd == 0) begin $display("RESULT FAIL tb_serial %s: cannot open", vecfile); $finish; end
-    total = 0; bad = 0; shown = 0;
+    total = 0; bad = 0; shown = 0; recs = 0;
     m_width32 = 0; m_dst = 0; m_src = 0; d_n32 = 0; d_dividend = 0; d_divisor = 0;
     s_width = 0; s_op = 0; s_val = 0; s_count = 0;
     reset_dut();
     while ($fscanf(fd, "%s", tok) == 1) begin
       if (tok == "K8000VEC") begin n = $fscanf(fd, "%s %s", tok, tok); continue; end
-      if (tok == "END") break;
-      fail_this = 0;
+      if (tok == "END") begin seen_end = 1'b1; break; end
+      fail_this = 0; recs++;
       if (tok == "M") begin
         // The record's own operand delay and remaining-clocks run are not the
         // CPU's; the unit is run with the multiplier arriving where the CPU
@@ -432,7 +433,9 @@ module tb_serial
       shift_b2b(WIDTH_BYTE, OP_SLL, 32'h0000_0081, 6'd3, WIDTH_LONG, OP_SRA, 32'h8000_0001, 6'd0);
     end
     $display("  %0d operations end on done alone (operand late)", fin_late);
-    if (bad == 0) $display("RESULT PASS tb_serial %s: %0d operations", vecfile, total);
+    if (recs == 0) $display("RESULT FAIL tb_serial %s: no records", vecfile);
+    else if (!seen_end) $display("RESULT FAIL tb_serial %s: no END (truncated?)", vecfile);
+    else if (bad == 0) $display("RESULT PASS tb_serial %s: %0d operations", vecfile, total);
     else          $display("RESULT FAIL tb_serial %s: %0d of %0d operations mismatched", vecfile, bad, total);
     $finish;
   end

@@ -12,13 +12,13 @@
 //      Figs 12/13/14/17/18/19 rules; anything it flags is a spec violation
 //      with the citation printed.
 //
-// Non-segmented (Z8002) so the program can use plain 16-bit @Rn addressing;
-// the segmented SN timing is covered by the vector-replay harness.  Run:
+// SEGMENTED=0 runs a Z8002, SEGMENTED=1 a Z8001 in segmented mode with
+// pointers in register pairs.  Run:
 //   make test-cpu-timing        (or obj_dir/tb_cpu_timing/tb_cpu_timing)
 
 module tb_cpu_timing
   import z8000_zbus_pkg::*;
-;
+#(parameter bit SEGMENTED = 1'b0);
   // ---- clock / reset ---------------------------------------------------------
   logic clk = 1'b0;
   always #5 clk = ~clk;
@@ -53,7 +53,7 @@ module tb_cpu_timing
   logic [3:0]  st;
   logic        busack_n, mo_n;
 
-  z8000_cpu #(.SEGMENTED(1'b0), .VMPU(1'b0)) dut (
+  z8000_cpu #(.SEGMENTED(SEGMENTED), .VMPU(1'b0)) dut (
     .clk(mclk), .clk_rise(clk_rise), .clk_fall(clk_fall), .reset_n(reset_n),
     .ad_in(ad_in), .stop_n(stop_n), .wait_n(wait_n), .busreq_n(busreq_n),
     .nmi_n(nmi_n), .nvi_n(nvi_n), .vi_n(vi_n), .segt_n(segt_n),
@@ -65,7 +65,7 @@ module tb_cpu_timing
   );
 
   logic mon_en = 1'b0;
-  z8000_bus_monitor #(.SEGMENTED(1'b0)) mon (
+  z8000_bus_monitor #(.SEGMENTED(SEGMENTED)) mon (
     .clk(clk), .enable(mon_en),
     .ad_out(ad_out), .ad_drive(ad_drive), .sn(sn),
     .as_n(as_n), .ds_n(ds_n), .mreq_n(mreq_n),
@@ -78,6 +78,8 @@ module tb_cpu_timing
   // address, A0 selects the byte lane on byte transfers (Ref Manual 9.4.2:
   // even address -> AD15:8, odd -> AD7:0).
   logic [15:0] mem [0:32767];
+  localparam logic [6:0] CODE_SEG = 7'h05;
+  localparam logic [6:0] DATA_SEG = 7'h12;
 
   logic [15:0] lat_addr;
   logic [3:0]  lat_st;
@@ -87,6 +89,7 @@ module tb_cpu_timing
 
   // Observation counters for the directed checks.
   int unsigned n_psa_read, n_fetch, n_mem_rd, n_mem_wr, n_bytewr, n_io_rd, n_io_wr;
+  int unsigned n_code_seg, n_data_seg;
   logic [15:0] io_last_write, io_last_port;
   logic [15:0] wr_seen_addr, wr_seen_data;
 
@@ -120,6 +123,8 @@ module tb_cpu_timing
         io_fall      <= -1;
       end
       if (st == ST_INSTR_FETCH_FIRST) n_fetch <= n_fetch + 1;
+      if (st == ST_INSTR_FETCH_FIRST && sn == CODE_SEG) n_code_seg <= n_code_seg + 1;
+      if (st == ST_DATA_MEM && sn == DATA_SEG) n_data_seg <= n_data_seg + 1;
       if (st[3] && ad_out < 16'h0008) n_psa_read <= n_psa_read + 1;
     end
     // Write data is captured at the /DS fall (Fig 12: data is valid on AD from
@@ -208,7 +213,37 @@ module tb_cpu_timing
   task automatic load_program();
     int i;
     for (i = 0; i < 32768; i++) mem[i] = 16'h0000;
-    // Reset PSA (Ref Manual 7.4): the Z8002 fetches FCW then PC.
+    // Reset PSA (Ref Manual 7.4): the Z8002 fetches FCW then PC, the Z8001
+    // FCW, PC segment, PC offset. The Z8001 runs segmented: it jumps to
+    // segment CODE_SEG, its pointer in RR4 = segment DATA_SEG, offset DATA.
+    // The slave decodes the offset only.
+    if (SEGMENTED) begin
+      mem[16'h0002 >> 1] = 16'hC000;  // FCW: segmented, system mode, ints off
+      mem[16'h0004 >> 1] = 16'h0000;  // PC segment
+      mem[16'h0006 >> 1] = PROG;      // PC offset
+      // 0100  5E08 8500 0106   JP   <<05>>0106
+      mem[(PROG + 16'h0000) >> 1] = 16'h5E08;
+      mem[(PROG + 16'h0002) >> 1] = {1'b1, CODE_SEG, 8'h00};
+      mem[(PROG + 16'h0004) >> 1] = PROG + 16'h0006;
+      // 0106  1404 1200 0200   LDL  RR4,#<<12>>DATA
+      mem[(PROG + 16'h0006) >> 1] = 16'h1404;
+      mem[(PROG + 16'h0008) >> 1] = {1'b0, DATA_SEG, 8'h00};
+      mem[(PROG + 16'h000A) >> 1] = DATA;
+      // 010C  2102 5A5A   LD   R2,#0x5A5A
+      mem[(PROG + 16'h000C) >> 1] = 16'h2102;
+      mem[(PROG + 16'h000E) >> 1] = 16'h5A5A;
+      // 0110  2F42 2143 2E4A   LD @RR4,R2; LD R3,@RR4; LDB @RR4,RL2
+      mem[(PROG + 16'h0010) >> 1] = 16'h2F42;
+      mem[(PROG + 16'h0012) >> 1] = 16'h2143;
+      mem[(PROG + 16'h0014) >> 1] = 16'h2E4A;
+      // 0116  OUTB, INB, HALT as below
+      mem[(PROG + 16'h0016) >> 1] = 16'h3AA6;
+      mem[(PROG + 16'h0018) >> 1] = 16'h0010;
+      mem[(PROG + 16'h001A) >> 1] = 16'h3AB4;
+      mem[(PROG + 16'h001C) >> 1] = 16'h0010;
+      mem[(PROG + 16'h001E) >> 1] = 16'h7A00;
+      return;
+    end
     mem[16'h0002 >> 1] = 16'hC000;    // FCW: segmented=0, system mode, ints off
     mem[16'h0004 >> 1] = PROG;        // PC
     // 0100  2101 0200   LD   R1,#DATA          (immediate: 2 extra fetch words)
@@ -241,13 +276,14 @@ module tb_cpu_timing
     checks = 0; fails = 0;
     n_psa_read = 0; n_fetch = 0; n_mem_rd = 0; n_mem_wr = 0;
     n_bytewr = 0; n_io_rd = 0; n_io_wr = 0; n_io_shape = 0; n_io_shape_bad = 0;
+    n_code_seg = 0; n_data_seg = 0;
     io_wait_left = 0;
     lat_addr = 16'h0; lat_st = 4'h0; lat_rw = 1'b1; lat_bw = 1'b0;
     wr_seen_addr = 16'h0; wr_seen_data = 16'h0;
     io_last_port = 16'h0; io_last_write = 16'h0;
     load_program();
 
-    $display("tb_cpu_timing -- Z-Bus spec timing conformance (Z8002 variant)");
+    $display("tb_cpu_timing -- Z-Bus spec timing conformance (%s variant)", SEGMENTED ? "Z8001" : "Z8002");
     $display("");
     $display("[1] reset pin state");
 
@@ -288,12 +324,16 @@ module tb_cpu_timing
     #1;
     mon_en = 1'b0;
 
-    ck(n_psa_read >= 2, "reset PSA fetch runs (FCW + PC on the Z8002)",
+    ck(n_psa_read >= (SEGMENTED ? 3 : 2), "reset PSA fetch runs (FCW + PC, the Z8001 PC in two words)",
        "Ref Manual 7.4: after /RESET rises the CPU reads the FCW and the PC from the Program Status Area",
        $sformatf("saw %0d PSA reads below address 0x0008", n_psa_read));
     ck(n_fetch > 0, "instruction fetches issued with ST=1101",
        "Fig 12 / zbus: the first word of every instruction is fetched with status 1101 (IF1)",
        $sformatf("saw %0d IF1 cycles", n_fetch));
+    if (SEGMENTED)
+      ck(n_code_seg > 0 && n_data_seg >= 3, "fetches and data cycles carry their segments on SN",
+         "Product Spec p.150 (1988 DB): SN6-SN0 carry the 7-bit segment number of the address",
+         $sformatf("%0d IF1 in segment %02h, %0d data cycles in segment %02h", n_code_seg, CODE_SEG, n_data_seg, DATA_SEG));
     ck(n_mem_wr > 0, "memory word write performed",
        "Fig 12 memory write cycle",
        $sformatf("saw %0d word writes", n_mem_wr));

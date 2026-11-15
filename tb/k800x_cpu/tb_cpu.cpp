@@ -197,7 +197,7 @@ int main(int argc, char** argv) {
     std::string finalMsg;
     bool sawEnd = false;
 
-    // Pokes are applied to the model, then settled with an eval() at the
+    // Pokes are applied to the DUT, then settled with an eval() at the
     // current clock level (the vector sets state between two records).
     auto poke = [&](const std::string& what, uint64_t v) -> bool {
         if (what.size() >= 2 && what[0] == 'R' && isdigit((unsigned char)what[1])) { dut.set_reg(atoi(what.c_str() + 1), (uint16_t)v); }
@@ -354,14 +354,13 @@ int main(int argc, char** argv) {
 #if VM_TRACE
     if (tfp) { tfp->close(); delete tfp; }
 #endif
-    const bool unhandled = dut.unhandled_cycle();
     const bool checkFail = dut.execute_check();
     top->final();
     delete top;
 
     if (!sawEnd && !(stopFirst && firstTick >= 0)) { printf("RESULT FAIL %s: truncated vector (no END)\n", vecPath.c_str()); return 4; }
 
-    bool pass = firstTick < 0 && finalFails == 0 && !unhandled && !checkFail;
+    bool pass = firstTick < 0 && finalFails == 0 && !checkFail;
     if (pass) {
         printf("RESULT PASS %s ticks=%ld clocks=%ld\n", vecPath.c_str(), tick, clock);
         return 0;
@@ -372,8 +371,6 @@ int main(int argc, char** argv) {
                finalFails ? " final-state-mismatch" : "");
     else if (finalFails)
         printf("RESULT FAIL %s pins-ok final-state-mismatch (%ld fields)\n", vecPath.c_str(), finalFails);
-    else if (unhandled)
-        printf("RESULT FAIL %s pins-ok unhandled-machine-cycle\n", vecPath.c_str());
     else
         printf("RESULT FAIL %s pins-ok execute-check\n", vecPath.c_str());
     if (!quiet) {

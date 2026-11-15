@@ -94,7 +94,6 @@ module tb_seq_words;
     reset_n = 1'b0;
     as_q = 1'b1;
     lat_addr = 16'h0000;
-    force dut.u_sequencer.run_ok = 1'b1;
 
     // Four words: segmented long address with an immediate or a second word.
     run("CP DA,#imm SL",   SEG, 4, 16'h4D01, 16'h8500, 16'h1234, 16'hBEEF, 23'h051234, 16'hBEEF, 16'h0000);

@@ -1,7 +1,7 @@
 // tb_regfile -- register file semantics.
 //
 // Directed register tests, write-enable and read-during-write checks, and a
-// seeded soak against a reference model that shares no index expressions
+// seeded soak against a reference register file that shares no index expressions
 // with the DUT.
 // Width code 0=byte 1=word 2=long 3=quad; data right-aligned.
 
@@ -59,7 +59,7 @@ module tb_regfile;
 
   always #5 clk <= ~clk;
 
-  // ---- reference model (sel-8, sel & 0xE, sel & 0xC) ----
+  // ---- reference register file (sel-8, sel & 0xE, sel & 0xC) ----
   logic [15:0] ref_r [16];
   function automatic void ref_write(input logic [1:0] w, input logic [3:0] sel, input logic [63:0] d);
     int n;
@@ -152,7 +152,7 @@ module tb_regfile;
     rdw("rdw long RR10", 2'd2, 4'd10, 64'h01234567, 64'h89ABCDEF);
     rdw("rdw quad RQ12", 2'd3, 4'd12, 64'h0011223344556677, 64'h8899AABBCCDDEEFF);
 
-    // ---- random soak vs the reference model ----
+    // ---- random soak vs the reference register file ----
     for (int i = 0; i < 16; i++) begin wr(2'd1, i[3:0], 64'd0); ref_r[i] = 0; end
     for (int i = 0; i < 4000; i++) begin
       ren = ($urandom(seed) % 4) != 0;

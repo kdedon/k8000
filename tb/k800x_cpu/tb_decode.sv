@@ -65,6 +65,7 @@ module tb_decode
     end
   endtask
 
+  bit seen_end = 1'b0;
   initial begin
     if (!$value$plusargs("vec=%s", vecfile)) vecfile = "vectors/k800x_cpu/decode/decode.vec";
     fd = $fopen(vecfile, "r");
@@ -74,6 +75,7 @@ module tb_decode
     end
     total = 0; bad = 0; shown = 0;
     while ($fgets(line, fd) != 0) begin
+      if (line.len() >= 3 && line.substr(0, 2) == "END") seen_end = 1'b1;
       if (line.len() < 2 || line.substr(0, 1) != "D ") continue;
       n = $sscanf(line, "D %h %s %h", r_w0, r_w1, want);
       if (n != 3) begin
@@ -89,7 +91,9 @@ module tb_decode
       end
     end
     $fclose(fd);
-    if (bad == 0) $display("RESULT PASS tb_decode: %0d checks", total);
+    if (total == 0) $display("RESULT FAIL tb_decode: no records");
+    else if (!seen_end) $display("RESULT FAIL tb_decode: %s has no END (truncated?)", vecfile);
+    else if (bad == 0) $display("RESULT PASS tb_decode: %0d checks", total);
     else          $display("RESULT FAIL tb_decode: %0d of %0d checks mismatched", bad, total);
     $finish;
   end
