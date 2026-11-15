@@ -1,9 +1,7 @@
 # k8000 vector file formats (v1)
 
-All vectors are recorded by the vector generator, never hand-written. The
-generator is currently a Go model of each chip, kept outside this repo; the
-committed vectors, not the generator, are the reference the benches judge
-against. `vectors/` is laid out by device, like `rtl/` and `tb/`:
+The committed vectors are the specification the benches judge against.
+They are generated, never hand-written. `vectors/` is laid out by device, like `rtl/` and `tb/`:
 
 | directory                         | content                                   | consumer                        |
 |-----------------------------------|-------------------------------------------|---------------------------------|
@@ -25,14 +23,8 @@ The `K8000VEC 1 <kind>` magic on line 1 uses the short kind name (`cpu`,
 `mmu`, `scc`, `cio`, `fpu`, `fpudp`): it names the record schema, not the
 folder.
 
-The files are committed sources, not build products, so a clone without
-the generator runs the whole suite. Refresh them with the maintainer
-targets `make refresh-vectors` and `make refresh-rtl`, then commit the
-diff. `make refresh-vectors` first replays every CPU vector through the
-generator: vectors it fails itself are never committed. Before committing
-a refresh, the generator's diff tool classifies every changed file (length,
-machine-cycle boundaries, other pins, final state) and names the cause; a
-change it cannot explain fails.
+The files are committed sources, not build products, so a clone runs the
+whole suite.
 
 ASCII text, one record per line. Hex is upper-case, unprefixed. `#` starts
 a comment; `END` ends the file.
@@ -59,9 +51,6 @@ F TICKS 46                    number of T records -- informational
 # hint: NOP; HALT             disassembly of the first program words fetched
 END
 ```
-
-Generator self-checks that sweep every form, column or snapshot point are
-not recorded.
 
 In `F REGS`, `----` marks a register the instruction leaves undefined
 (the destination of a DIV/DIVL past the quotient's width), not written
@@ -111,7 +100,10 @@ conformance ledger".
 `P <what> <hex>` where `what` is `R0..R15 | FCW | PC | PSAP | REFRESH |
 NSPOFF | NSPSEG | REFRESH_EN | RFSH_PEND`, applied through
 `tb/k800x_cpu/dut_access.h` before the next `T`. `RFSH_PEND 1` leaves one
-refresh owed, as a prescaler underflow does; `0` clears it. Pokes before the first `T` set the pre-reset state (otherwise all
+refresh owed, as a prescaler underflow does; `0` clears it. `REFRESH`
+sets RATE and ROW, and RE when its bit 15 is; `REFRESH_EN` sets or clears
+RE; either order gives the same register. With RE set, either loads the
+prescaler from RATE, as an LDCTL write does. Pokes before the first `T` set the pre-reset state (otherwise all
 zeros).
 
 ## ALU vectors (`K8000VEC 1 alu`)
@@ -151,20 +143,24 @@ Replayed by `tb_cpu_cycles.sv`
 N <name>                                    record name
 W <hex> <hex> ...                           program words, loaded at byte 0x0100
 T <from_pc> <to_pc> <clocks> <pla> <exact|approx>
-# hint: <disassembly>  (Mar81 6.7 / totals: N cycles; measured ...)
+# hint: <disassembly>  (Mar81 6.7 <column>: N cycles; measured ...)
 E
+...
+END <n>                                     after the last of n records
 ```
 
 `T` is the measurement: count clocks from the IF1 (`ST=1101`) `/AS` fall at
 `<from_pc>` to the next IF1 `/AS` fall, which must be at `<to_pc>`.
 `<clocks>` is the instruction's interval; `<pla>` is the published base
-total.
+total from the column the instruction runs: NS, SS or SL, or `seg` (the
+segmented figure) with no address word.
 `exact`: they agree. `approx`: the total is a base plus per-step clocks
 (shifts 13+3n, MULTL 282+7n, block repeats 11+9n). The bench always
 asserts `<clocks>`.
 
-The header is `variant Z8002`: non-segmented, so plain `@Rn` addressing
-works. The CPU replay vectors cover segmented SN timing.
+`variant Z8002` files run non-segmented; `variant Z8001` files run
+segmented in segment 0, pointers as register pairs. The bench fails
+without the variant line or the `END` count.
 
 ## FPU vectors (`K8000VEC 1 fpu`, `K8000VEC 1 fpudp`)
 

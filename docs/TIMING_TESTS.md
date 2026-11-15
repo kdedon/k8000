@@ -42,6 +42,7 @@ Per-sample rules:
 | `/AS` never stays Low across an address or status change | Fig 12: address+status are valid for the whole of T1; the `/AS` rise is the external latch point |
 | the address is driven whenever `/AS` is Low | Fig 12 |
 | `SN` reads zero when `SEGMENTED=0` | p.150: SN6-SN0 exist only on the Z8001/Z8003 |
+| a memory cycle's `SN` is set by Tn's fall and holds until T3's rise | Fig 12 (p.150): SN is output one clock earlier than the offset; AC #6 TdC(SNv), #7 TdC(SNn) |
 | every bus output is floated while `/BUSACK` is Low | Fig 15 |
 
 Per-transaction rules (offsets in half clocks from the `/AS` fall, external
@@ -77,13 +78,15 @@ Layer 2 -- a behavioural RAM + I/O slave runs a Z8002 program with the
 monitor armed: instruction fetch, memory word read/write, memory byte write,
 standard I/O in and out (two slave `/WAIT` clocks, Fig 13) and HALT. It also
 asserts the reset PSA fetch happened, each cycle class appeared, and a word
-write landed at the address latched at `/AS`.
+write landed at the address latched at `/AS`. The Z8001 build jumps to
+segment 05 and points at data in segment 12, so fetches and data cycles
+carry different segment numbers.
 
 ## 3. `tb_cpu_cycles.sv` -- instruction cycle counts
 
-Cycle counts are datasheet facts. The generator keeps one cited total per
-instruction form and reaches it with the form's machine-cycle program, so
-it emits a table the RTL can be checked against from the pins alone.
+Cycle counts are datasheet facts. `cycles.vec` keeps one cited total per
+instruction form, reached by the form's machine-cycle program, so the RTL
+can be checked against it from the pins alone.
 
 Each record is a short program plus two PCs. The bench counts clocks from
 the IF1 (`ST=1101`) `/AS` fall at the first PC to the next IF1 `/AS` fall,
@@ -91,10 +94,10 @@ which must land on the second PC: the only pin-observable definition of an
 instruction's length.
 
 Each instruction fetches only its own words, so an instruction's interval
-is its whole cost. The generator measures between two consecutive copies
-and checks that the copies SETTLE: an instruction whose operands drift (a
-`DIV` leaves its quotient in the dividend) can walk into a different cost
-path, and averaging that is meaningless, so the generator fails instead.
+is its whole cost. Each record measures between two consecutive copies
+that SETTLE: an instruction whose operands drift (a `DIV` leaves its
+quotient in the dividend) can walk into a different cost path, and
+averaging that is meaningless, so no record does.
 
 Repeat block instructions (`LDIR`, `CPIR`, `LDDR`) consume their count
 register, so their records repeat a self-restoring **group** (reload
@@ -111,8 +114,7 @@ Each record is tagged:
   a signed word), `LDIR`/`LDDR`/`CPIR` `11 + 9n`. Each measures exactly
   its formula.
 
-The generator refuses a record whose opcode does not decode to the claimed
-mnemonic, so a mistyped encoding fails the build.
+Every record's opcode decodes to its claimed mnemonic.
 
 ## 4. Peripheral timing benches
 
@@ -127,7 +129,9 @@ mnemonic, so a mistyped encoding fails the build.
   R/W) -- checked both ways round;
 * **back-to-back cycles**: the `/DS` rise sharing a sample with the next
   `/AS` fall (Product Spec Fig 19);
-* the `/AS`+`/DS` hardware reset (p.674 footnote, p.684).
+* the `/AS`+`/DS` hardware reset (p.674 footnote, p.684);
+* a port status write whose `/DS` falls in the sample of a matching `/AS`
+  rise keeps the IP that rise sets.
 
 `tb_scc_timing.sv` (Z8030, z8030_scc.pdf pp.631-651): register round-trip
 through WR12/WR13 and RR12/RR13, the A//B channel select on AD5 in Shift Left
@@ -158,8 +162,7 @@ with IEI Low keeps /INT High, and a request arriving after an acknowledge's
 pins, the IF1 and word-2 snoop, transfer drive windows, the store wait,
 /BSY at the STOP samples in both overlap modes, queued operations, FRDIV,
 FRVSUB, FCPF and FCPFX, and /ABORT with CLK.I and CLK.D at the master clock, the
-acknowledge (IEO, vector window, SV, NV, DLC), Interface Processor state
-recovery and the lost-word count.
+acknowledge (IEO, vector window, SV, NV, DLC) and the lost-word count.
 
 ### Peripheral cycle accuracy
 

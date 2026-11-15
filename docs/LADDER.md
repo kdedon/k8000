@@ -13,16 +13,14 @@ DUT-independent checkers. Ledgers: `docs/K800X_CPU_TESTS.md`,
 
 Rules:
 
-* **Never hand-edit `rtl/*/gen/*` or `vectors/*`.** They come from the
-  vector generator but are COMMITTED: `make lint build test` reads nothing
-  outside k8000. Only the maintainer targets `make refresh-rtl` /
-  `make refresh-vectors` run the generator, and they fail with an
-  explanation if it is absent. Refresh, review, commit. Review
-  decoder changes in `rtl/k800x_cpu/z8000_decode_table.txt` (the same ROM,
-  fields named); `make test-decode-table` proves the .sv matches it.
+* **Never hand-edit the generated ROMs in `rtl/*/gen/*` or `vectors/*`.**
+  They are COMMITTED: `make lint build test` reads nothing outside k8000.
+  Edit the ROM tables (`z8000_decode_table.txt`, `z8000_mc_table.txt`,
+  `z8070_dp_ucode.txt`) and run `make gen`; `make check-gen` proves the
+  .sv matches them (README, Generated RTL).
 * **Never change the vectors to make RTL pass**, unless a Zilog document
-  says they are wrong: then fix the generator with a cited regression test,
-  `make refresh-vectors`, and add a row to `docs/<DEVICE>_TESTS.md`.
+  says they are wrong: then regenerate them with a cited regression test
+  and add a row to `docs/<DEVICE>_TESTS.md`.
 * **RTL has zero lint suppressions** (`make lint`, `RTL_W`). Only
   testbenches get relaxations.
 * Cycle counts EMERGE from the sequencer doing real work each clock. No
@@ -57,7 +55,7 @@ Byte select: `wsel[3]` picks the half, so RH0 is
 `wsel=0`, RL0 is `wsel=8`.
 
 **Acceptance.** `make test-regfile`: 8 directed cases plus a 4000-case
-seeded soak against an independent inline reference model.
+seeded soak against an independent inline reference register file.
 
 **Watch out.** RR0 is R0:R1 with R0 HIGH. A byte write must not disturb the
 other half. The read port is combinational: the CPU reads operands in the
@@ -176,7 +174,7 @@ ladder shortens at once.
 ## Rung 3 -- ClsUnified register and immediate forms
 
 **Implement.** The sequencer walks each instruction's program from the
-generated program ROM (`rtl/k800x_cpu/z8000_mc_table.txt`); regfile read
+program ROM (`rtl/k800x_cpu/z8000_mc_table.txt`); regfile read
 -> ALU -> regfile write on the program's last clocks, for
 register/immediate modes.
 
@@ -476,9 +474,8 @@ The datasheet where it speaks; every other choice is in the "Assumed"
 section of `docs/K8070_FPU_TESTS.md`.
 
 ## F0. Vector baseline
-`make vectors-fpu` records `vectors/k8070_fpu/fpu` and `dp` and replays
-them through the generator. Pass: the self-check 100% (one
-`X unsupported` snapshot vector).
+The committed `vectors/k8070_fpu/fpu` and `dp` sets, one of them an
+`X unsupported` snapshot vector.
 
 ## F1. Reset and idle pins
 SC, USER, FFLAGS cleared but SC.ID from the ID pins; AD floated, /BSY and
@@ -508,10 +505,9 @@ shared unpack (classify, renormalize), special select, align, add,
 normalize, round (four modes, the operation's precision), range, pack and
 hand-over; FADD, FSUB, FRVSUB, FLD rounding, FCP/FCPX/FCPZ/FCPZX, FABS,
 FNEG, FCLR. `done` in the last clock's CLK.D master clock. Interface
-Processor: unused state codes return to idle, the lost-word count
-saturates. Pass: `make test-fpu-dp ONLY=add,load,cmp,sign` (results,
+Processor: the lost-word count saturates. Pass: `make test-fpu-dp ONLY=add,load,cmp,sign` (results,
 flags, reason, R bit, compare code, clocks: 18, 7, 14; 11; 4); timing:
-state recovery and the saturated count.
+the saturated count.
 
 ## F5. Data Processor: multiply, divide, remainder, sqrt
 Radix-4 multiply on the one adder (S accumulates, B takes the product's
