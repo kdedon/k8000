@@ -196,7 +196,7 @@ module tb_scc_timing;
        "p.643 WR5: D1 = RTS, D7 = DTR, both open-drain outputs",
        $sformatf("rts_n=%0b dtr_n=%0b", rts_n[CH_A], dtr_n[CH_A]));
     // Two full PCLK cycles Low together: >= TwRES (250 ns, p.648 row 39) at
-    // any legal PCLK, so this is a reset by the spec and not only by model
+    // any legal PCLK, so this is a reset by the spec and not only by
     // convention.
     as_n = 1'b0; ds_n = 1'b0;                                                 phase();
                                                                               phase();
@@ -241,7 +241,7 @@ module tb_scc_timing;
     $display("");
     $display("[7] one access per /AS: a further /DS without /AS is ignored (INFERRED)");
     // A DMA master with no /AS strobes /DS after the CPU's last cycle; the
-    // data book does not say what the chip does.  Model: the select is
+    // data book does not say what the chip does.  Assumed: the select is
     // spent at the first /DS rise.
     as_n = 1'b0; cs0_n = 1'b0; cs1 = 1'b1; r_w = 1'b0; ad_in = adr(CH_A, 12); phase();
     as_n = 1'b1;                                                              phase();

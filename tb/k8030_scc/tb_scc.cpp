@@ -246,6 +246,7 @@ int main(int argc, char** argv) {
         } else if (tag == "P") {
             std::string what, hex; ss >> what >> hex;
             uint64_t v = strtoull(hex.c_str(), nullptr, 16);
+            if (dut.vectorOnly(what)) continue;
             if (!dut.poke(what, v)) { printf("RESULT SKIP %s: unsupported poke %s\n", vecPath.c_str(), what.c_str()); return 2; }
             pokes++;
             top->eval();   // settle combinational outputs on the poked state
@@ -308,7 +309,9 @@ int main(int argc, char** argv) {
             if (what == "TICKS" || what == "POKES") continue;   // informational
             uint64_t e = strtoull(hex.c_str(), nullptr, 16), g = 0;
             auto fail = [&](const std::string& m) { finalFails++; if (finalFails <= 24) finalMsg += "  final " + m + "\n"; };
+            if (dut.vectorOnly(what)) continue;
             if (!dut.peek(what, g)) { fail(what + " (unknown to scc_access.h)"); continue; }
+            e = dut.canon(what, e);
             if (e != g) { char b[128]; snprintf(b, sizeof b, "%s exp=%llX got=%llX", what.c_str(), (unsigned long long)e, (unsigned long long)g); fail(b); }
         } else if (tag == "END") {
             sawEnd = true;

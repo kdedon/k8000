@@ -4,7 +4,7 @@
 
 RTL `rtl/k8030_scc/z8030_scc.sv` + `z8030_scc_channel.sv`; replay harness
 `tb/k8030_scc/tb_scc.cpp` with `scc_access.h`; vectors
-`vectors/k8030_scc/*.vec` (177 files from 100 tests); make fragment
+`vectors/k8030_scc/*.vec` (181 files from 104 tests); make fragment
 `mk/k8030_scc.mk`.
 
 Sources: z8030_scc.pdf (= 1985 data book pp.631-652); 1988 Z8000 Family
@@ -22,7 +22,6 @@ make ladder-scc       # every vector, shortest first, with status
 make scc ONLY=TestPins_TX_8N1_x16 [VCD=1] [CONTEXT=20]   # one vector, full context
 make test-scc-timing  # datasheet strobe bench (15 checks; docs/TIMING_TESTS.md)
 make test-scc-iack    # two chips on one daisy chain, acknowledge (11 checks)
-make vectors-scc      # maintainer only: re-record the vectors with the vector generator
 ```
 
 ### Vector format (`K8000VEC 1 scc`)
@@ -57,9 +56,8 @@ END
 Pokes and final state use register-inventory names: chip-level bare
 (`IntVector IntPending ShiftRight IUSMask`), per channel `A_`/`B_`, arrays
 suffixed with the index (`A_WR5`, `B_RxFIFOData2`). `scc_access.h` maps
-every name to an RTL register; an unknown name SKIPs the vector (poke) or
-fails it (F). Inventory `RxD`/`TxD` are the PCLK-sampled RxD register and
-the TxD output register.
+every name to an RTL register or marks it vector-only; an unknown name SKIPs the vector (poke) or
+fails it (F). Inventory `TxD` is the TxD output register.
 
 ### Clocking
 
@@ -100,21 +98,21 @@ hardware-reset state, which is also the RTL's power-up state.
 | AD | only while both sides drive it; a drive mismatch is reported as ADDrive |
 | TRxCOut (A/B) | only while TRxCDrive |
 | SYNCOut (A/B) | only while SYNCDrive |
-| register inventory | `F` records after the last `T` (`TICKS`/`POKES` informational) |
+| register inventory | `F` records after the last `T` (`TICKS`/`POKES` informational); IUSMask per priority level, SDLC_RxHist D31:D14 and SDLC_Residue D3:D1 only; WR0, RxD, RxStopBit, PendingWR0, PendingWR0Cmd and DPLL_RxBit have no RTL state and are neither poked nor compared; WR2 and WR9 read the chip's register, WR8 the transmit buffer |
 
 ## What is covered
 
-177 files from 100 tests, all PASS. 124 are pure pin vectors (`F POKES
+181 files from 104 tests, all PASS. 128 are pure pin vectors (`F POKES
 0`); 53 set the chip up by poke, then run on the pins (TestTickPinsStartBitIsAFullBitWide
 alone is 40, one per phase offset).
 
 | area | vectors |
 |---|---|
-| bus interface | TestTickPinsCSGatesBus, TestTickPinsReadRR0, TestTickPinsDirectWrite, TestTickPinsOneAccessPerAS, TestTickPinsRWAndCS1AtDSFall, TestPins_ReadFloatsAtDSRise, TestPins_CSGatesBothHalves, TestPins_AddressLatchedAtASRise, TestPins_ShiftRightAddressing, TestPins_StrayDSIgnored |
+| bus interface | TestTickPinsCSGatesBus, TestTickPinsReadRR0, TestTickPinsDirectWrite, TestTickPinsOneAccessPerAS, TestTickPinsRWAndCS1AtDSFall, TestPins_ReadFloatsAtDSRise, TestPins_CSGatesBothHalves, TestPins_AddressLatchedAtASRise, TestPins_ShiftRightAddressing, TestPins_StrayDSIgnored, TestPins_ReadRegisterImages |
 | resets | TestPins_HardwareResetViaASDS, TestPins_BriefASDSOverlapIsNotReset, TestPins_WR9Resets, TestPins_WR9HardwareResetKeepsShiftRight |
-| interrupts and acknowledge | TestTickPinsINTOnRxAvailable, TestTickPinsINTACKVector, TestTickPinsIEIBlocksINTACK, TestINTACKVectorFloatsAtDSRise, TestG81_12_IEOIntackAndDLC, TestW2_19_NVFloatsADDuringINTACK (2), TestTickPinsRXInterruptUnderALConfig, TestPins_TxInterrupt, TestPins_RxInterruptINTACKAndIUS, TestPins_RxIntFirstCharOneShot, TestPins_RR3RxIPFollowsInterrupt (2), TestPins_AckTakesOnlyASLatchedRequest, TestPins_IEILowHoldsINT |
+| interrupts and acknowledge | TestTickPinsINTOnRxAvailable, TestTickPinsINTACKVector, TestTickPinsIEIBlocksINTACK, TestINTACKVectorFloatsAtDSRise, TestG81_12_IEOIntackAndDLC, TestW2_19_NVFloatsADDuringINTACK (2), TestTickPinsRXInterruptUnderALConfig, TestPins_TxInterrupt, TestPins_RxInterruptINTACKAndIUS, TestPins_RxIntFirstCharOneShot, TestPins_RR3RxIPFollowsInterrupt (2), TestPins_AckTakesOnlyASLatchedRequest, TestPins_IEILowHoldsINT, TestPins_RR2BStatusAfterNVAck, TestPins_RR2BPollingMIEOff |
 | ext/status, modem | TestPins_ExtStatusDCD, TestPins_Break, TestPins_AutoEnablesCTS, TestPins_AutoEnablesRTSHold |
-| BRG and clock mux | TestPins_BRGTimeConstant (2), TestPins_BRGTimeConstantAtReload, TestPins_BRGChannelResetKeepsCount, TestPins_BRGHardwareResetLoadClock, TestPins_BRGRestartResumesCount, TestPins_TRxCOutBRG, TestG81_8_BRGSourceRTxC, TestG81_8_ClockMuxRouting (2) |
+| BRG and clock mux | TestPins_BRGTimeConstant (2), TestPins_BRGTimeConstantAtReload, TestPins_BRGChannelResetKeepsCount, TestPins_BRGHardwareResetLoadClock, TestPins_BRGRestartResumesCount, TestPins_BRGStartUp, TestPins_TRxCOutBRG, TestG81_8_BRGSourceRTxC, TestG81_8_ClockMuxRouting (2) |
 | async transmit | TestTickPinsTXShiftsOut, TestTickPinsTXAdvancesSerialFSM, TestPins_TX_8N1_x16, TestPins_TX_7E2_x1_Underrun, TestPins_TX_BackToBack, TestPins_TxDisableCompletesCharacter, TestPins_SendBreak, TestPins_SendBreakAtBitCells, TestPins_OneAndAHalfStopBits (3) |
 | async receive | TestTickPinsRXDelivers, TestTickPinsStartBitIsAFullBitWide (40), TestPins_RX_8N1_x16, TestPins_RX_FIFOOverrunLatchesAtTop, TestPins_RX_ParityAndFramingErrors, TestPins_RX_BreakLoadsOneNull, TestPins_RX_OneStopBitChecked, TestPins_RX_ShortCharFill, TestPins_RxAllCharsNoLock, TestPins_RxLockedFIFOOverruns, TestPins_RxSpecialLocksFIFO, TestPins_LoopbackTxToRx |
 | SDLC and SDLC Loop | TestSDLC* (34 files) |

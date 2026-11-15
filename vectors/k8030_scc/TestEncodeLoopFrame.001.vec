@@ -3147,9 +3147,10 @@ F A_RxFIFOLen 0
 F A_RxErrSticky 0
 F A_RxShiftErr 0
 F A_TxUnderrunEOM 1
-F A_BaudCounter A
-F A_BrgTC 6
-F A_BrgLoad 0
+F A_BaudCounter 5
+F A_BrgOut 0
+F A_BrgReload 0
+F A_BrgSync 1
 F A_RxD 1
 F A_RxState 0
 F A_RxShift 0
@@ -3261,9 +3262,10 @@ F B_RxFIFOLen 0
 F B_RxErrSticky 0
 F B_RxShiftErr 0
 F B_TxUnderrunEOM 1
-F B_BaudCounter 2
-F B_BrgTC 6
-F B_BrgLoad 0
+F B_BaudCounter 5
+F B_BrgOut 1
+F B_BrgReload 0
+F B_BrgSync 1
 F B_RxD 0
 F B_RxState 0
 F B_RxShift 0

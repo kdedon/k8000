@@ -133,8 +133,8 @@ module tb_scc_iack;
     ack_as();
     dcd_up[0] = 1'b0; repeat (4) phase();
     ack_ds(v, drv);
-    ck(drv == 2'b00 && g[0].u.ius_mask == 8'h00, $sformatf("no SCC answers: drivers %02b, upstream IUS %02h",
-       drv, g[0].u.ius_mask));
+    ck(drv == 2'b00 && g[0].u.ius == 6'h00, $sformatf("no SCC answers: drivers %02b, upstream IUS %02h",
+       drv, g[0].u.ius));
     ck(int_n[0], "upstream /INT still High after the acknowledge");
     other_cycle();
     ck(!int_n[0], "upstream /INT Low at the next /AS");

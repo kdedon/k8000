@@ -13,21 +13,21 @@
 // harness knows the hierarchy. A field missing here makes vectors that
 // poke it SKIP (and F records for it are reported as unknown).
 //
-//   z8030_scc: int_vector int_pending int_latch shift_right ius_mask
+//   z8030_scc: int_vector int_pending int_latch shift_right ius wr9
 //   u_cha / u_chb: wr[16] tx_buf tx_buf_empty tx_all_sent rx_fifo_data[3]
 //     rx_fifo_err[3] rx_fifo_len rx_err_sticky rx_shift_err tx_underrun_eom
-//     baud_counter brg_tc brg_load rxd_q rx_state rx_shift rx_bit_count rx_sub_count
-//     rx_stop_bit rx_break txd_q tx_state tx_shift tx_bit_count tx_sub_count
+//     baud_counter brg_out brg_reload brg_sync rx_state rx_shift rx_bit_count rx_sub_count
+//     rx_break txd_q tx_state tx_shift tx_bit_count tx_sub_count
 //     tx_stop_bit tx_break tx_ip rx_int_next_char rx_int_forced rx_lock ext_ip dcd_latch
 //     cts_latch dcd_sync1 cts_sync1 ext_latch_closed
-//     break_latch underrun_latch pending_wr0 pending_wr0_cmd prev_rtxc
+//     break_latch underrun_latch prev_rtxc
 //     prev_trxc trxc_out_lvl rts_hold sd_tx_sr sd_tx_n sd_tx_kind sd_tx_ones
 //     sd_tx_crc sd_tx_pipe sd_hunt sd_rx_raw sd_rx_ones sd_in_frame sd_rx_hist
 //     sd_rx_nb sd_rx_cnt sd_rx_chars sd_rx_crc sd_residue sd_tx_crc_on
 //     sd_rx_pend sd_crc_on sd_strip_prev sd_sync_out lp_on lp_send lp_poll lp_bit
 //     lp_conv lp_drain hunt_latch sync_pin
 //     dp_on dp_search dp_brg dp_fm dp_cnt dp_adj dp_seen dp_next dp_miss_n
-//     dp_miss1 dp_miss2 dp_clk dp_rx_in dp_rxo dp_txo tx_line tx_raw rx_prev rx_bit
+//     dp_miss1 dp_miss2 dp_clk dp_rx_in dp_rxo dp_txo tx_line tx_raw rx_prev
 
 #pragma once
 #include <cstdint>
@@ -49,7 +49,14 @@ struct SccAccess {
         FIELD("IntPending", r->z8030_scc__DOT__int_pending)
         FIELD("IntLatch",   r->z8030_scc__DOT__int_latch)
         FIELD("ShiftRight", r->z8030_scc__DOT__shift_right)
-        FIELD("IUSMask",    r->z8030_scc__DOT__ius_mask)
+        FIELD("IUSMask",    r->z8030_scc__DOT__ius)
+        // WR2 and WR9 are chip registers, WR8 is the transmit buffer.
+        FIELD("A_WR2", r->z8030_scc__DOT__int_vector)
+        FIELD("B_WR2", r->z8030_scc__DOT__int_vector)
+        FIELD("A_WR9", r->z8030_scc__DOT__wr9)
+        FIELD("B_WR9", r->z8030_scc__DOT__wr9)
+        FIELD("A_WR8", r->z8030_scc__DOT__u_cha__DOT__tx_buf)
+        FIELD("B_WR8", r->z8030_scc__DOT__u_chb__DOT__tx_buf)
         // -- channels --
 #define CHANNEL(P, H) \
         for (int i = 0; i < 16; i++) FIELD(std::string(P "WR") + std::to_string(i), r->H##wr[i]) \
@@ -63,14 +70,13 @@ struct SccAccess {
         FIELD(P "RxShiftErr",     r->H##rx_shift_err) \
         FIELD(P "TxUnderrunEOM",  r->H##tx_underrun_eom) \
         FIELD(P "BaudCounter",    r->H##baud_counter) \
-        FIELD(P "BrgTC",          r->H##brg_tc) \
-        FIELD(P "BrgLoad",        r->H##brg_load) \
-        FIELD(P "RxD",            r->H##rxd_q) \
+        FIELD(P "BrgOut",         r->H##brg_out) \
+        FIELD(P "BrgReload",      r->H##brg_reload) \
+        FIELD(P "BrgSync",        r->H##brg_sync) \
         FIELD(P "RxState",        r->H##rx_state) \
         FIELD(P "RxShift",        r->H##rx_shift) \
         FIELD(P "RxBitCount",     r->H##rx_bit_count) \
         FIELD(P "RxSubCount",     r->H##rx_sub_count) \
-        FIELD(P "RxStopBit",      r->H##rx_stop_bit) \
         FIELD(P "RxBreak",        r->H##rx_break) \
         FIELD(P "TxD",            r->H##txd_q) \
         FIELD(P "TxState",        r->H##tx_state) \
@@ -93,8 +99,6 @@ struct SccAccess {
         FIELD(P "ExtLatchClosed", r->H##ext_latch_closed) \
         FIELD(P "BreakLatch",     r->H##break_latch) \
         FIELD(P "UnderrunLatch",  r->H##underrun_latch) \
-        FIELD(P "PendingWR0",     r->H##pending_wr0) \
-        FIELD(P "PendingWR0Cmd",  r->H##pending_wr0_cmd) \
         FIELD(P "PrevRTxC",       r->H##prev_rtxc) \
         FIELD(P "PrevTRxC",       r->H##prev_trxc) \
         FIELD(P "TrxcOutLevel",   r->H##trxc_out_lvl) \
@@ -145,14 +149,35 @@ struct SccAccess {
         FIELD(P "DPLL_TxO",            r->H##dp_txo) \
         FIELD(P "DPLL_TxLine",         r->H##tx_line) \
         FIELD(P "DPLL_TxRaw",          r->H##tx_raw) \
-        FIELD(P "DPLL_RxPrev",         r->H##rx_prev) \
-        FIELD(P "DPLL_RxBit",          r->H##rx_bit)
+        FIELD(P "DPLL_RxPrev",         r->H##rx_prev)
         CHANNEL("A_", z8030_scc__DOT__u_cha__DOT__)
         CHANNEL("B_", z8030_scc__DOT__u_chb__DOT__)
 #undef CHANNEL
 #undef FIELD
         return false;
     }
-    bool poke(const std::string& name, uint64_t v)  { return access(name, v, true); }
+    // Vector fields with no state in the chip: neither poked nor compared.
+    // WR0 is commands, RxD the pin, the others bookkeeping.
+    bool vectorOnly(const std::string& name) const {
+        static const char* const f[] = {"WR0", "RxD", "RxStopBit", "PendingWR0", "PendingWR0Cmd", "DPLL_RxBit"};
+        if (name.size() < 2 || (name[0] != 'A' && name[0] != 'B') || name[1] != '_') return false;
+        for (const char* n : f) if (name.compare(2, std::string::npos, n) == 0) return true;
+        return false;
+    }
+
+    // A vector value in the RTL's form: the vector keeps IUS per source
+    // code (RTL: per level) and the whole receive history (RTL: D31:D14).
+    uint64_t canon(const std::string& name, uint64_t v) const {
+        if (name == "IUSMask") {
+            static const int level[8] = {1, 0, 2, 2, 4, 3, 5, 5};
+            uint64_t l = 0;
+            for (int i = 0; i < 8; i++) if (v >> i & 1) l |= 1ull << level[i];
+            return l;
+        }
+        if (name.size() > 2 && name.compare(2, std::string::npos, "SDLC_RxHist") == 0) return v >> 14;
+        if (name.size() > 2 && name.compare(2, std::string::npos, "SDLC_Residue") == 0) return v >> 1;
+        return v;
+    }
+    bool poke(const std::string& name, uint64_t v)  { v = canon(name, v); return access(name, v, true); }
     bool peek(const std::string& name, uint64_t& v) { return access(name, v, false); }
 };

@@ -1,10 +1,8 @@
 // z8030_scc_channel -- one Z8030 SCC serial channel (A or B).
 //
-// STATUS: register write/read, RR8 FIFO pop, resets, WR0 commands,
-// DCD/CTS ext/status, BRG, WR11 clock mux, the async, byte sync and SDLC
-// transmitters and receivers, SDLC Loop, the DPLL and line coding. tb/k8030_scc/scc_access.h pokes/peeks these by
-// hierarchical name (z8030_scc.u_cha.<name> / u_chb.<name>); keep the
-// names or update that one file in the same change.
+// The vector bench pokes and peeks these by hierarchical name
+// (z8030_scc.u_cha.<name> / u_chb.<name>); keep the names or update its
+// field table in the same change.
 //
 // Clocking: single fabric clock `clk`; `pclk_rise`
 // is a one-master-clock edge pulse from the board divider -- never a clock.
@@ -17,10 +15,12 @@
 //   2. WR0 command
 //   3. DCD/CTS sync + ext/status latch
 //      one sync stage (dcd_sync1, cts_sync1) of latency.
-//   4. BRG counter (2*(TC+2)) + WR11 mux
+//   4. BRG down counter + WR11 mux
 //   5. TX FSM (idle..pending)
 //   6. RX FSM + 3-deep FIFO + latches
 //   7. TBR->TSR handoff on PCLK
+
+`default_nettype none
 
 module z8030_scc_channel (
   input  logic        clk,
@@ -37,7 +37,6 @@ module z8030_scc_channel (
   input  logic        sync_in,       // /SYNC pin level
   output logic        txd,
   output logic        trxc_out_level, // /TRxC output level
-  output logic [7:0]  wr9,            // channel A's copy is the chip's WR9
 
   // register port (from the top's bus decode)
   input  logic        wr_en,         // write this channel's register wr_reg
@@ -50,38 +49,42 @@ module z8030_scc_channel (
   output logic [7:0]  rd_data,       // RR0/1/8/10/12/13/15; others read 0
   output logic [2:0]  rr3_ip,        // {Rx, Tx, Ext/Status} IP, each gated by its enable
   output logic [3:0]  int_req,       // {Rx fires, Rx is special, Tx, Ext/Status} for /INT
-  output logic [7:0]  wr5,
-  output logic [7:0]  wr11,
-  output logic        rts_hold_o,
+  output logic        rts_n,         // WR5 D1, held Low under Auto Enables until sent
+  output logic        dtr_n,         // WR5 D7
+  output logic        trxc_drive,    // WR11 D2
   output logic        sync_drive_o,  // /SYNC is an output (monosync, bisync)
   output logic        sync_low_o     // ... and is Low: a sync match
 );
   /*verilator inline_module*/
 
+  localparam logic [15:0] WR_HELD = 16'b1111_1100_1111_1010;
+
+  typedef enum logic [2:0] {TX_IDLE, TX_START, TX_DATA, TX_PARITY, TX_STOP, TX_PENDING} tx_state_e;
+  typedef enum logic [2:0] {RX_IDLE, RX_START, RX_DATA, RX_PARITY, RX_STOP} rx_state_e;
+
   // ---- register inventory -------------------------------------------------
-  logic [7:0]  wr [16];              // WR0..WR15
+  logic [7:0]  wr [16];              // WR1, WR3-WR7, WR10-WR15; WR0 is commands, WR2 and WR9 are the chip's, WR8 is tx_buf
   logic [7:0]  tx_buf;               // TBR
   logic        tx_buf_empty;         // RR0 D2
   logic        tx_all_sent;          // RR1 D0
   logic [7:0]  rx_fifo_data [3];
-  logic [7:0]  rx_fifo_err  [3];     // bit0 parity, bit1 overrun, bit2 framing
+  logic [3:0]  rx_fifo_err  [3];     // RR1 D7:D4: end of frame, CRC/framing, overrun, parity
   logic [1:0]  rx_fifo_len;          // 0..3
-  logic [7:0]  rx_err_sticky;
-  logic [7:0]  rx_shift_err;
+  logic [1:0]  rx_err_sticky;        // overrun, parity
+  logic [2:0]  rx_shift_err;         // framing, -, parity
   logic        tx_underrun_eom;      // RR0 D6
-  logic [17:0] baud_counter;         // max 2*(65535+2)
-  logic [15:0] brg_tc;               // time constant loaded into the counter
-  logic        brg_load;             // the next BRG clock loads brg_tc (after a hardware reset)
-  logic        rxd_q;                // pin sampled at PCLK rise
-  logic [2:0]  rx_state;             // 0 idle 1 start 2 data 3 parity 4 stop
+  logic [15:0] baud_counter;         // BRG down counter
+  logic        brg_out;              // BRG output flip-flop
+  logic        brg_reload;           // zero count reached: the next BRG clock loads the counter
+  logic        brg_sync;             // the enable has been taken by a BRG clock: later clocks count
+  rx_state_e   rx_state;
   logic [7:0]  rx_shift;
   logic [3:0]  rx_bit_count;
   logic [6:0]  rx_sub_count;         // 1..64
-  logic [1:0]  rx_stop_bit;
   logic        rx_break;             // RR0 D7 live
   logic        txd_q;
   logic        tx_break;             // Send Break as taken at a bit cell
-  logic [2:0]  tx_state;             // 0 idle 1 start 2 data 3 parity 4 stop 5 pending
+  tx_state_e   tx_state;
   logic [7:0]  tx_shift;             // TSR
   logic [3:0]  tx_bit_count;
   logic [6:0]  tx_sub_count;
@@ -98,8 +101,6 @@ module z8030_scc_channel (
   logic        ext_latch_closed;
   logic        break_latch;
   logic        underrun_latch;
-  logic        pending_wr0;
-  logic [2:0]  pending_wr0_cmd;
   logic        prev_rtxc;
   logic        prev_trxc;
   logic        trxc_out_lvl;
@@ -114,9 +115,9 @@ module z8030_scc_channel (
   logic        sd_hunt, sd_in_frame, sd_rx_chars, hunt_latch;
   logic [7:0]  sd_rx_raw;            // last 8 line bits, newest in D7
   logic [3:0]  sd_rx_ones, sd_rx_nb, sd_rx_cnt;
-  logic [31:0] sd_rx_hist;           // data bits after zero deletion, newest in D31
+  logic [31:14] sd_rx_hist;          // received bits, newest in D31
   logic [15:0] sd_rx_crc;
-  logic [7:0]  sd_residue;           // RR1 D3:D1
+  logic [3:1]  sd_residue;           // RR1 D3:D1
   // Byte sync
   logic        sd_tx_crc_on;         // WR5 D0 taken with the character
   logic [1:0]  sd_rx_pend;           // bits until the assembled character loads
@@ -128,24 +129,34 @@ module z8030_scc_channel (
   logic        dp_on, dp_search, dp_brg, dp_fm, dp_seen, dp_miss1, dp_miss2;
   logic [4:0]  dp_cnt;
   logic [1:0]  dp_adj, dp_next, dp_miss_n; // corrections: 1 add, 2 drop a count
-  logic        dp_clk, dp_rx_in, dp_rxo, dp_txo, tx_line, tx_raw, rx_prev, rx_bit;
+  logic        dp_clk, dp_rx_in, dp_rxo, dp_txo, tx_line, tx_raw, rx_prev;
   // live modem levels (pin sampled at PCLK rise, active-high)
   logic        dcd_live;
   logic        cts_live;
 
-  // No power-up values: every flop starts at 0 and the hardware reset
-  // (the top holds it through the first clock) sets the reset state.
+  // No power-up values: every flop starts at 0 until the /AS+/DS hardware
+  // reset sets the reset state.
 
   // ---- status and read mux ------------------------------------------------
   logic       rx_avail, sync_mode;
-  logic [7:0] rx_vis_err;
+  logic [3:0] rx_vis_err;
   assign rx_avail   = rx_fifo_len != 2'd0;
   assign sync_mode  = wr[4][3:2] == 2'b00;
-  assign rx_vis_err = (rx_avail ? (rx_fifo_err[0] & 8'h0C) : 8'h00) | rx_err_sticky;
+  assign rx_vis_err = (rx_avail ? (rx_fifo_err[0] & 4'hC) : 4'h0) | {2'b00, rx_err_sticky};
+  // Modes from WR4: SDLC, byte sync (mono, bi, external) and external sync.
+  function automatic logic is_sdlc(input logic [5:2] m);
+    is_sdlc = m == 4'b1000;
+  endfunction
+  function automatic logic is_bsync(input logic [5:2] m);
+    is_bsync = m[3:2] == 2'b00 && m[5:4] != 2'b10;
+  endfunction
+  function automatic logic is_ext_sync(input logic [5:2] m);
+    is_ext_sync = m == 4'b1100;
+  endfunction
   logic sdlc, bsync, ext_sync;
-  assign sdlc     = wr[4][5:2] == 4'b1000;
-  assign bsync    = sync_mode && wr[4][5:4] != 2'b10;
-  assign ext_sync = wr[4][5:2] == 4'b1100;
+  assign sdlc     = is_sdlc(wr[4][5:2]);
+  assign bsync    = is_bsync(wr[4][5:2]);
+  assign ext_sync = is_ext_sync(wr[4][5:2]);
   assign sync_drive_o = bsync && !ext_sync;
   assign sync_low_o   = sd_sync_out;
 
@@ -160,12 +171,12 @@ module z8030_scc_channel (
   always_comb begin
     case (rd_reg)
       4'd0:    rd_data = {brk_rr0, unr_rr0, cts_rr0, hunt_rr0, dcd_rr0, tx_buf_empty, 1'b0, rx_avail};
-      4'd1:    rd_data = {rx_vis_err[3:0], sdlc ? sd_residue[3:1] : 3'b011, tx_all_sent | sync_mode};
+      4'd1:    rd_data = {rx_vis_err, sdlc ? sd_residue : 3'b011, tx_all_sent | sync_mode};
       4'd8:    rd_data = rx_avail ? rx_fifo_data[0] : 8'h00;
       4'd10:   rd_data = {dp_miss1, dp_miss2, 1'b0, lp_send, 2'd0, lp_on, 1'b0};
       4'd12:   rd_data = wr[12];
       4'd13:   rd_data = wr[13];
-      4'd15:   rd_data = wr[15];
+      4'd15:   rd_data = wr[15] & 8'hFA;
       default: rd_data = 8'h00;
     endcase
   end
@@ -195,24 +206,24 @@ module z8030_scc_channel (
   logic [7:0]  n_wr [16];
   logic [7:0]  n_tx_buf, n_tx_shift;
   logic        n_tx_buf_empty, n_tx_all_sent, n_tx_underrun_eom, n_tx_ip, n_txd;
-  logic [2:0]  n_tx_state;
+  tx_state_e   n_tx_state;
   logic [3:0]  n_tx_bit_count;
   logic [6:0]  n_tx_sub_count;
   logic [1:0]  n_tx_stop_bit;
-  logic [17:0] n_baud_counter;
-  logic [15:0] n_brg_tc;
-  logic        n_brg_load, n_tx_break;
+  logic [15:0] n_baud_counter;
+  logic        n_brg_out, n_brg_reload, n_brg_sync, n_tx_break;
   logic        n_ext_ip, n_ext_latch_closed;
   logic        n_dcd_latch, n_cts_latch, n_break_latch, n_underrun_latch;
   logic        n_dcd_sync, n_cts_sync, n_trxc_out_lvl, n_rts_hold;
   logic [7:0]  n_rx_fifo_data [3];
-  logic [7:0]  n_rx_fifo_err  [3];
+  logic [3:0]  n_rx_fifo_err  [3];
   logic [1:0]  n_rx_fifo_len;
-  logic [7:0]  n_rx_err_sticky, n_rx_shift_err, n_rx_shift;
-  logic [2:0]  n_rx_state;
+  logic [1:0]  n_rx_err_sticky;
+  logic [2:0]  n_rx_shift_err;
+  logic [7:0]  n_rx_shift;
+  rx_state_e   n_rx_state;
   logic [3:0]  n_rx_bit_count;
   logic [6:0]  n_rx_sub_count;
-  logic [1:0]  n_rx_stop_bit;
   logic        n_rx_break, n_rx_int_next_char, n_rx_int_forced, n_rx_lock, rx_pop;
 
   // /RTxC and /TRxC levels rebuilt from the edge pulses; the wire is the
@@ -233,8 +244,6 @@ module z8030_scc_channel (
   assign brk_now   = reset_ch ? 1'b0 : rx_break;
 
   logic        brg_edge, brg_lvl, tx_edge, tx_en, tx_par, tx_two_stop, tx_half_stop;
-  logic [17:0] b_inc, b_per;
-  logic        b_wrap, b_half, b_inc_lt, b_cur_lt;
   logic [6:0]  cm;
   logic [3:0]  tx_bits;
   logic [7:0]  tx_mask;
@@ -243,18 +252,20 @@ module z8030_scc_channel (
   logic        rx_edge, rx_par;
   logic [3:0]  rx_bits;
   logic [6:0]  rx_mid;
-  logic [7:0]  rx_err, rx_fill, rx_data;
+  logic [3:0]  rx_err;
+  logic [7:0]  rx_fill, rx_data;
   logic        rx_push;
   logic [15:0] n_sd_tx_sr, n_sd_tx_crc, n_sd_rx_crc;
   logic [4:0]  n_sd_tx_n;
   logic [1:0]  n_sd_tx_kind;
   logic [2:0]  n_sd_tx_ones;
-  logic [7:0]  n_sd_tx_pipe, n_sd_rx_raw, n_sd_residue, sd_char, sd_err;
+  logic [7:0]  n_sd_tx_pipe, n_sd_rx_raw, sd_char;
+  logic [3:1]  n_sd_residue;
+  logic [3:0]  sd_err;
   logic        n_sd_hunt, n_sd_in_frame, n_sd_rx_chars, n_hunt_latch;
   logic [3:0]  n_sd_rx_ones, n_sd_rx_nb, n_sd_rx_cnt;
-  logic [31:0] n_sd_rx_hist;
+  logic [31:14] n_sd_rx_hist;
   logic        sd_out, sd_b, sd_del, sd_done;
-  logic [15:0] crc_preset, sd_preset;
   logic        sd_mode, bs_mode, bs_ext, bs_load, n_sd_tx_crc_on, n_sd_crc_on;
   logic        n_sd_strip_prev, n_sd_sync_out, n_sync_pin;
   logic [1:0]  n_sd_rx_pend;
@@ -264,11 +275,11 @@ module z8030_scc_channel (
   logic [3:0]  sd_slot;
   logic [3:0]  bs_n, bs_w;
   logic [8:0]  bs_win;
-  logic [7:0]  bs_err;
+  logic [3:0]  bs_err;
   logic        n_dp_on, n_dp_search, n_dp_brg, n_dp_fm, n_dp_seen, n_dp_miss1, n_dp_miss2;
   logic [4:0]  n_dp_cnt;
   logic [1:0]  n_dp_adj, n_dp_next, n_dp_miss_n, enc;
-  logic        n_dp_clk, n_dp_rx_in, n_dp_rxo, n_dp_txo, n_tx_line, n_tx_raw, n_rx_prev, n_rx_bit;
+  logic        n_dp_clk, n_dp_rx_in, n_dp_rxo, n_dp_txo, n_tx_line, n_tx_raw, n_rx_prev;
   logic        dclk, d_rx, d_tx, drr, drf, dtr, dtf, brg_fall, tx_mid, rx_half, rxa;
   logic [5:0]  d_h;
   logic [1:0]  dp_srx, dp_stx;        // outputs after the next count: NRZI in D0, FM in D1
@@ -293,7 +304,7 @@ module z8030_scc_channel (
   endfunction
 
   // RR0 D4: the /SYNC pin in External Sync, else Hunt.
-`define SCC_HUNT (n_wr[4][5:2] == 4'b1100 ? n_sync_pin : n_sd_hunt)
+`define SCC_HUNT (is_ext_sync(n_wr[4][5:2]) ? n_sync_pin : n_sd_hunt)
 
   // The newest line bits against the receive sync, left-justified in WR7:WR6.
   function automatic logic sync_match(input logic [15:0] h, input logic [7:0] w7, input logic [7:0] w6,
@@ -327,18 +338,17 @@ module z8030_scc_channel (
     n_lp_conv = lp_conv; n_lp_drain = lp_drain; lp_loop = 1'b0; lp_rep = 1'b0;
     sd_cut = 1'b0; sd_fill = 16'h0000; sd_slot = 4'd0;
     bs_mode = 1'b0; bs_ext = 1'b0; bs_load = 1'b0; bs_n = 4'd8; bs_w = 4'd8;
-    bs_win = 9'h000; bs_err = 8'h00;
-    sd_out = 1'b1; sd_b = 1'b1; sd_del = 1'b0; sd_done = 1'b0; sd_char = 8'h00; sd_err = 8'h00;
-    crc_preset = wr[10][7] ? 16'hFFFF : 16'h0000;
-    sd_mode = 1'b0; sd_preset = 16'h0000;
+    bs_win = 9'h000; bs_err = 4'h0;
+    sd_out = 1'b1; sd_b = 1'b1; sd_del = 1'b0; sd_done = 1'b0; sd_char = 8'h00; sd_err = 4'h0;
+    sd_mode = 1'b0;
     for (int i = 0; i < 16; i++) n_wr[i] = wr[i];
     n_tx_buf = tx_buf; n_tx_shift = tx_shift;
     n_tx_buf_empty = tx_buf_empty; n_tx_all_sent = tx_all_sent;
     n_tx_underrun_eom = tx_underrun_eom; n_tx_ip = tx_ip; n_txd = txd_q;
     n_tx_state = tx_state; n_tx_bit_count = tx_bit_count;
     n_tx_sub_count = tx_sub_count; n_tx_stop_bit = tx_stop_bit;
-    n_baud_counter = baud_counter; n_brg_tc = brg_tc;
-    n_brg_load = brg_load; n_tx_break = tx_break;
+    n_baud_counter = baud_counter; n_brg_out = brg_out; n_brg_reload = brg_reload;
+    n_brg_sync = brg_sync; n_tx_break = tx_break;
     n_ext_ip = ext_ip; n_ext_latch_closed = ext_latch_closed;
     n_dcd_latch = dcd_latch; n_cts_latch = cts_latch;
     n_break_latch = break_latch; n_underrun_latch = underrun_latch;
@@ -348,7 +358,7 @@ module z8030_scc_channel (
     n_dp_seen = dp_seen; n_dp_miss1 = dp_miss1; n_dp_miss2 = dp_miss2; n_dp_cnt = dp_cnt;
     n_dp_adj = dp_adj; n_dp_next = dp_next; n_dp_miss_n = dp_miss_n; n_dp_clk = dp_clk;
     n_dp_rx_in = dp_rx_in; n_dp_rxo = dp_rxo; n_dp_txo = dp_txo; n_tx_line = tx_line;
-    n_tx_raw = tx_raw; n_rx_prev = rx_prev; n_rx_bit = rx_bit;
+    n_tx_raw = tx_raw; n_rx_prev = rx_prev;
     dclk = 1'b0; d_rx = 1'b0; d_tx = 1'b0; drr = 1'b0; drf = 1'b0; dtr = 1'b0; dtf = 1'b0;
     brg_fall = 1'b0; tx_mid = 1'b0; rx_half = 1'b0; rxa = 1'b1; d_h = 6'd0; enc = 2'd0; rx_dec = 1'b1; d_step = 1'b0; ext_mid = 1'b1; dcd_mid = 1'b1; cts_mid = 1'b1;
     for (int i = 0; i < 3; i++) begin
@@ -357,10 +367,10 @@ module z8030_scc_channel (
     n_rx_fifo_len = rx_fifo_len; n_rx_err_sticky = rx_err_sticky;
     n_rx_shift_err = rx_shift_err; n_rx_shift = rx_shift; n_rx_state = rx_state;
     n_rx_bit_count = rx_bit_count; n_rx_sub_count = rx_sub_count;
-    n_rx_stop_bit = rx_stop_bit; n_rx_break = brk_now;
+    n_rx_break = brk_now;
     n_rx_int_next_char = rx_int_next_char; n_rx_int_forced = rx_int_forced;
     n_rx_lock = rx_lock; rx_pop = 1'b0;
-    rx_edge = 1'b0; rx_par = 1'b0; rx_bits = 4'd8; rx_mid = 7'd1; rx_err = 8'h00;
+    rx_edge = 1'b0; rx_par = 1'b0; rx_bits = 4'd8; rx_mid = 7'd1; rx_err = 4'h0;
     rx_fill = 8'h00; rx_data = 8'h00; rx_push = 1'b0;
     tx_two_stop = 1'b0; tx_half_stop = 1'b0;
     brg_edge = 1'b0; brg_lvl = 1'b0; tx_edge = 1'b0; tx_en = 1'b0; tx_par = 1'b0;
@@ -368,14 +378,12 @@ module z8030_scc_channel (
     cmd = wr_data[5:3];
 
     if (reset_ch) begin
-      n_wr[0]  = 8'h00;
       n_wr[1]  = wr[1] & 8'h24;
       n_wr[3]  = wr[3] & 8'hFE;
       n_wr[4]  = wr[4] | 8'h04;
       n_wr[5]  = wr[5] & 8'h61;
       n_wr[15] = 8'hF8;
       if (reset_hw) begin
-        n_wr[9]  = wr[9] & 8'h03;
         n_wr[10] = 8'h00;
         n_wr[11] = 8'h08;
         n_wr[14] = (wr[14] & 8'hC0) | 8'h20;
@@ -388,24 +396,26 @@ module z8030_scc_channel (
       n_tx_underrun_eom = 1'b1;
       n_ext_ip = 1'b0; n_ext_latch_closed = 1'b0;
       // A channel reset leaves the BRG running; a hardware reset stops it
-      // and leaves the time constant to load on its first clock.
-      if (reset_hw) begin n_baud_counter = '0; n_brg_load = 1'b1; end
+      // and leaves the time constant to load on its first count.
+      if (reset_hw) begin
+        n_baud_counter = '0; n_brg_out = 1'b1; n_brg_reload = 1'b1; n_brg_sync = 1'b0;
+      end
       n_trxc_out_lvl = 1'b0; n_tx_break = 1'b0;
-      n_txd = 1'b1; n_tx_state = 3'd0; n_tx_shift = 8'h00; n_tx_bit_count = 4'd0;
+      n_txd = 1'b1; n_tx_state = TX_IDLE; n_tx_shift = 8'h00; n_tx_bit_count = 4'd0;
       n_tx_sub_count = 7'd0; n_tx_stop_bit = 2'd0;
       // The modem latches and synchronisers restart at the live pin level.
       n_dcd_latch = dcd_live; n_cts_latch = cts_live;
       n_break_latch = 1'b0; n_underrun_latch = 1'b1; n_hunt_latch = 1'b1;
       n_dcd_sync = dcd_live; n_cts_sync = cts_live;
-      for (int i = 0; i < 3; i++) begin n_rx_fifo_data[i] = 8'h00; n_rx_fifo_err[i] = 8'h00; end
-      n_rx_fifo_len = 2'd0; n_rx_err_sticky = 8'h00; n_rx_shift_err = 8'h00;
+      for (int i = 0; i < 3; i++) begin n_rx_fifo_data[i] = 8'h00; n_rx_fifo_err[i] = 4'h0; end
+      n_rx_fifo_len = 2'd0; n_rx_err_sticky = 2'b00; n_rx_shift_err = 3'b000;
       n_rx_int_next_char = 1'b1; n_rx_int_forced = 1'b0; n_rx_lock = 1'b0;
-      n_rx_state = 3'd0; n_rx_shift = 8'h00; n_rx_bit_count = 4'd0;
-      n_rx_sub_count = 7'd0; n_rx_stop_bit = 2'd0;
+      n_rx_state = RX_IDLE; n_rx_shift = 8'h00; n_rx_bit_count = 4'd0;
+      n_rx_sub_count = 7'd0;
       n_sd_tx_sr = '0; n_sd_tx_n = '0; n_sd_tx_kind = '0; n_sd_tx_ones = '0;
       n_sd_tx_crc = '0; n_sd_tx_pipe = 8'h3F; n_sd_hunt = 1'b1; n_sd_in_frame = 1'b0;
       n_sd_rx_chars = 1'b0; n_sd_rx_raw = '0; n_sd_rx_ones = '0; n_sd_rx_nb = '0;
-      n_sd_rx_cnt = '0; n_sd_rx_hist = '0; n_sd_rx_crc = '0; n_sd_residue = 8'h06;
+      n_sd_rx_cnt = '0; n_sd_rx_hist = '0; n_sd_rx_crc = '0; n_sd_residue = 3'b011;
       n_sd_tx_crc_on = 1'b0; n_sd_rx_pend = '0; n_sd_crc_on = 1'b0;
       n_sd_strip_prev = 1'b0; n_sd_sync_out = 1'b0;
       n_lp_on = 1'b0; n_lp_send = 1'b0; n_lp_poll = 1'b0; n_lp_bit = 1'b1;
@@ -413,11 +423,11 @@ module z8030_scc_channel (
       n_dp_on = 1'b0; n_dp_search = 1'b1; n_dp_brg = 1'b0; n_dp_fm = 1'b0; n_dp_seen = 1'b0;
       n_dp_miss1 = 1'b0; n_dp_miss2 = 1'b0; n_dp_cnt = 5'd16; n_dp_adj = 2'd0; n_dp_next = 2'd0;
       n_dp_miss_n = 2'd0; n_dp_clk = 1'b0; n_dp_rx_in = 1'b1; n_dp_rxo = 1'b1; n_dp_txo = 1'b1;
-      n_tx_line = 1'b1; n_tx_raw = 1'b1; n_rx_prev = 1'b1; n_rx_bit = 1'b1;
+      n_tx_line = 1'b1; n_tx_raw = 1'b1; n_rx_prev = 1'b1;
     end
 
     if (wr_en) begin
-      n_wr[wr_reg] = wr_reg == 4'd9 ? (wr_data & 8'h3F) : wr_data;
+      if (WR_HELD[wr_reg]) n_wr[wr_reg] = wr_data;
       // DPLL commands. Reset Missing Clock disables it as Disable does.
       if (wr_reg == 4'd14) begin
         case (wr_data[7:5])
@@ -434,8 +444,8 @@ module z8030_scc_channel (
       case (wr_reg)
         4'd0: begin
           if (wr_data[7:6] == 2'b11) n_tx_underrun_eom = 1'b0;
-          if (wr_data[7:6] == 2'b01) n_sd_rx_crc = crc_preset;
-          if (wr_data[7:6] == 2'b10) n_sd_tx_crc = crc_preset;
+          if (wr_data[7:6] == 2'b01) n_sd_rx_crc = {16{n_wr[10][7]}};
+          if (wr_data[7:6] == 2'b10) n_sd_tx_crc = {16{n_wr[10][7]}};
           case (cmd)
             // Reset Ext/Status: reopen the latch at the live levels.
             3'd2: begin
@@ -455,7 +465,7 @@ module z8030_scc_channel (
             3'd4: n_rx_int_next_char = 1'b1;
             3'd5: n_tx_ip = 1'b0;
             3'd6: begin
-              n_rx_err_sticky = 8'h00;
+              n_rx_err_sticky = 2'b00;
               n_rx_lock       = 1'b0;
               rx_pop          = rx_lock;
             end
@@ -505,12 +515,12 @@ module z8030_scc_channel (
       n_rx_fifo_data[0] = rx_fifo_data[1]; n_rx_fifo_data[1] = rx_fifo_data[2];
       n_rx_fifo_err[0]  = rx_fifo_err[1];  n_rx_fifo_err[1]  = rx_fifo_err[2];
       n_rx_fifo_len     = rx_fifo_len - 2'd1;
-      if (n_rx_fifo_len != 2'd0) n_rx_err_sticky = n_rx_err_sticky | (n_rx_fifo_err[0] & 8'h03);
+      if (n_rx_fifo_len != 2'd0) n_rx_err_sticky = n_rx_err_sticky | n_rx_fifo_err[0][1:0];
     end
 
     if (pclk_rise) begin
       // /SYNC: in External Sync both edges are ext/status transitions.
-      if (n_wr[4][5:2] == 4'b1100 && n_sync_pin != sync_in && n_wr[15][4]) begin
+      if (is_ext_sync(n_wr[4][5:2]) && n_sync_pin != sync_in && n_wr[15][4]) begin
         n_sync_pin = sync_in;
         `SCC_EXT_RAISE
       end
@@ -528,23 +538,26 @@ module z8030_scc_channel (
       n_dcd_sync = dcd_now; n_cts_sync = cts_now;
       ext_mid = n_ext_latch_closed; dcd_mid = n_dcd_latch; cts_mid = n_cts_latch;
 
-      // BRG: 2 * (time constant + 2) source clocks per output cycle. A new
-      // time constant waits for the next load of the counter; re-enabling
-      // resumes the held count. The compares come from the registered count.
-      if (n_wr[14][0] && (n_wr[14][1] || rtxc_up)) begin
-        if (brg_load) begin
-          n_brg_tc = {n_wr[13], n_wr[12]}; n_brg_load = 1'b0;
-        end else if (b_wrap) begin
-          n_baud_counter = '0; n_brg_tc = {n_wr[13], n_wr[12]};
-          brg_edge = 1'b1;
-        end else begin
-          n_baud_counter = b_inc; brg_fall = b_half;
+      // BRG: a down counter; at zero the output toggles and the next
+      // clock loads the time constant, so each half is TC+2 clocks.
+      // Re-enabling resumes the held count. The enable is synchronised
+      // to the BRG clock: the first clock after it does not count.
+      if (!n_wr[14][0]) begin
+        n_brg_sync = 1'b0;
+      end else if (n_wr[14][1] || rtxc_up) begin
+        n_brg_sync = 1'b1;
+        if (brg_sync) begin
+          if (brg_reload) begin
+            n_baud_counter = {n_wr[13], n_wr[12]}; n_brg_reload = 1'b0;
+          end else if (baud_counter == 16'd0) begin
+            n_brg_out = ~brg_out; n_brg_reload = 1'b1;
+            brg_edge = ~brg_out; brg_fall = brg_out;
+          end else begin
+            n_baud_counter = baud_counter - 16'd1;
+          end
         end
-        brg_lvl = brg_load || b_wrap || b_inc_lt;
-      end else begin
-        brg_lvl = b_cur_lt;
       end
-      if (!n_wr[14][0]) brg_lvl = n_trxc_out_lvl;
+      brg_lvl = n_wr[14][0] ? n_brg_out : n_trxc_out_lvl;
 
       // DPLL: a 5-bit counter on its source clock's rises. An RxD edge is
       // placed by half counts (the clock is High in a count's first half)
@@ -625,15 +638,15 @@ module z8030_scc_channel (
         2'd2:    tx_bits = 4'd6;
         default: tx_bits = 4'd8;
       endcase
+      tx_mask = 8'hFF >> (4'd8 - tx_bits);
 
       // 1.5 stop bits end on a half bit; x1 has no half bit and sends 1.
       tx_two_stop  = n_wr[4][3:2] == 2'b11 || (n_wr[4][3:2] == 2'b10 && cm != 7'd1);
       tx_half_stop = n_wr[4][3:2] == 2'b10 && cm != 7'd1 && n_tx_stop_bit == 2'd1;
 
-      sd_mode = n_wr[4][5:2] == 4'b1000;
-      bs_mode = n_wr[4][3:2] == 2'b00 && n_wr[4][5:4] != 2'b10;
-      bs_ext  = n_wr[4][5:2] == 4'b1100;
-      sd_preset = n_wr[10][7] ? 16'hFFFF : 16'h0000;
+      sd_mode = is_sdlc(n_wr[4][5:2]);
+      bs_mode = is_bsync(n_wr[4][5:2]);
+      bs_ext  = is_ext_sync(n_wr[4][5:2]);
 
       // Loop Mode: TxD repeats RxD while the transmitter parks a flag at
       // the end of the zero inserter. Taking the loop sends one 0 (the
@@ -710,9 +723,9 @@ module z8030_scc_channel (
         if (n_sd_tx_n == 5'd0) begin
           if (!tx_en) ;
           else if (!n_tx_buf_empty) begin
-            n_sd_tx_sr = {8'h00, n_tx_buf & (8'hFF >> (4'd8 - tx_bits))}; n_sd_tx_n = {1'b0, tx_bits}; n_sd_tx_kind = 2'd1;
+            n_sd_tx_sr = {8'h00, n_tx_buf & tx_mask}; n_sd_tx_n = {1'b0, tx_bits}; n_sd_tx_kind = 2'd1;
             if (n_wr[4][0]) begin
-              n_sd_tx_sr[tx_bits] = ^(n_tx_buf & (8'hFF >> (4'd8 - tx_bits))) ^ ~n_wr[4][1];
+              n_sd_tx_sr[tx_bits] = ^(n_tx_buf & tx_mask) ^ ~n_wr[4][1];
               n_sd_tx_n = n_sd_tx_n + 5'd1;
             end
             n_sd_tx_crc_on = n_wr[5][0];
@@ -749,38 +762,38 @@ module z8030_scc_channel (
       end
 
       if (tx_edge && !sd_mode && !bs_mode) begin
-        if (!tx_en && (n_tx_state == 3'd0 || n_tx_state == 3'd5)) begin
-          if (n_tx_state == 3'd0) n_tx_all_sent = n_tx_buf_empty;
+        if (!tx_en && (n_tx_state == TX_IDLE || n_tx_state == TX_PENDING)) begin
+          if (n_tx_state == TX_IDLE) n_tx_all_sent = n_tx_buf_empty;
         end else begin
           case (n_tx_state)
-            3'd0: n_tx_all_sent = n_tx_buf_empty;
-            3'd5: begin
-              n_tx_bit_count = 4'd0; n_tx_sub_count = 7'd0; n_tx_state = 3'd1;
+            TX_IDLE: n_tx_all_sent = n_tx_buf_empty;
+            TX_PENDING: begin
+              n_tx_bit_count = 4'd0; n_tx_sub_count = 7'd0; n_tx_state = TX_START;
             end
-            3'd1: begin
+            TX_START: begin
               n_tx_sub_count = n_tx_sub_count + 7'd1;
               if (n_tx_sub_count >= cm) begin
-                n_tx_state = 3'd2; n_tx_sub_count = 7'd0; n_tx_bit_count = 4'd0;
+                n_tx_state = TX_DATA; n_tx_sub_count = 7'd0; n_tx_bit_count = 4'd0;
               end
             end
-            3'd2: begin
+            TX_DATA: begin
               n_tx_sub_count = n_tx_sub_count + 7'd1;
               if (n_tx_sub_count >= cm) begin
                 n_tx_sub_count = 7'd0;
                 n_tx_bit_count = n_tx_bit_count + 4'd1;
                 if (n_tx_bit_count == tx_bits) begin
-                  n_tx_state = n_wr[4][0] ? 3'd3 : 3'd4;
+                  n_tx_state = n_wr[4][0] ? TX_PARITY : TX_STOP;
                   if (!n_wr[4][0]) n_tx_stop_bit = 2'd0;
                 end
               end
             end
-            3'd3: begin
+            TX_PARITY: begin
               n_tx_sub_count = n_tx_sub_count + 7'd1;
               if (n_tx_sub_count >= cm) begin
-                n_tx_sub_count = 7'd0; n_tx_state = 3'd4; n_tx_stop_bit = 2'd0;
+                n_tx_sub_count = 7'd0; n_tx_state = TX_STOP; n_tx_stop_bit = 2'd0;
               end
             end
-            3'd4: begin
+            TX_STOP: begin
               n_tx_sub_count = n_tx_sub_count + 7'd1;
               if (n_tx_sub_count >= (tx_half_stop ? {1'b0, cm[6:1]} : cm)) begin
                 n_tx_sub_count = 7'd0;
@@ -790,23 +803,16 @@ module z8030_scc_channel (
                     // Back to back: the next start bit begins on this edge.
                     n_tx_shift = n_tx_buf; n_tx_buf_empty = 1'b1; n_tx_all_sent = 1'b0;
                     n_tx_ip = 1'b1; n_tx_bit_count = 4'd0; n_tx_sub_count = 7'd0;
-                    n_tx_state = 3'd1;
+                    n_tx_state = TX_START;
                   end else if (!n_tx_buf_empty) begin
-                    n_tx_state = 3'd0;
+                    n_tx_state = TX_IDLE;
                   end else begin
-                    n_tx_state = 3'd0;
+                    n_tx_state = TX_IDLE;
                     n_tx_all_sent = 1'b1;
                     // Ran dry: Tx Underrun/EOM sets, an ext/status source.
                     if (!n_tx_underrun_eom) begin
                       n_tx_underrun_eom = 1'b1;
-                      if (n_wr[15][6]) begin
-                        n_ext_ip = 1'b1;
-                        if (!n_ext_latch_closed) begin
-                          n_ext_latch_closed = 1'b1;
-                          n_dcd_latch = n_dcd_sync; n_cts_latch = n_cts_sync;
-                          n_break_latch = brk_now; n_underrun_latch = 1'b1; n_hunt_latch = `SCC_HUNT;
-                        end
-                      end
+                      if (n_wr[15][6]) `SCC_EXT_RAISE
                     end
                   end
                 end
@@ -816,27 +822,26 @@ module z8030_scc_channel (
           endcase
         end
 
-        tx_mask = 8'hFF >> (4'd8 - tx_bits);
         tx_par  = ^(n_tx_shift & tx_mask) ^ ~n_wr[4][1];
         case (n_tx_state)
-          3'd1:    n_txd = 1'b0;
-          3'd2:    n_txd = n_tx_shift[n_tx_bit_count[2:0]];
-          3'd3:    n_txd = tx_par;
-          default: n_txd = 1'b1;
+          TX_START:  n_txd = 1'b0;
+          TX_DATA:   n_txd = n_tx_shift[n_tx_bit_count[2:0]];
+          TX_PARITY: n_txd = tx_par;
+          default:   n_txd = 1'b1;
         endcase
       end
 
       // Send Break starts and ends on the transmit clock edge that begins
       // a bit cell; the transmitter shifts on beneath it.
-      if (tx_edge && (sd_mode || bs_mode || cm == 7'd1 || n_tx_state == 3'd0 ||
-                      n_tx_state == 3'd5 || n_tx_sub_count == 7'd0))
+      if (tx_edge && (sd_mode || bs_mode || cm == 7'd1 || n_tx_state == TX_IDLE ||
+                      n_tx_state == TX_PENDING || n_tx_sub_count == 7'd0))
         n_tx_break = n_wr[5][4];
 
       // The TBR moves to the TSR on PCLK, not on the transmit clock.
-      if (!sd_mode && !bs_mode && n_tx_state == 3'd0 && !n_tx_buf_empty && tx_en) begin
+      if (!sd_mode && !bs_mode && n_tx_state == TX_IDLE && !n_tx_buf_empty && tx_en) begin
         n_tx_shift = n_tx_buf; n_tx_buf_empty = 1'b1; n_tx_all_sent = 1'b0;
         n_tx_ip = 1'b1; n_tx_bit_count = 4'd0; n_tx_sub_count = 7'd0;
-        n_tx_state = 3'd5;
+        n_tx_state = TX_PENDING;
       end
 
       if (n_rts_hold && n_tx_all_sent && n_tx_buf_empty) n_rts_hold = 1'b0;
@@ -874,10 +879,7 @@ module z8030_scc_channel (
           n_tx_line = ~n_tx_line;
         end
         if (rx_half && enc[1]) n_rx_prev = rxd;
-        if (rx_edge) begin
-          n_rx_bit = rx_dec;
-          if (enc == 2'd1) n_rx_prev = rxd;
-        end
+        if (rx_edge && enc == 2'd1) n_rx_prev = rxd;
       end
       rxa = (enc != 2'd0 && cm == 7'd1) ? rx_dec : rxd;
       case (n_wr[3][7:6])
@@ -920,7 +922,7 @@ module z8030_scc_channel (
             end
             n_sd_in_frame = 1'b0;
           end
-          if (n_sd_hunt) n_sd_rx_crc = sd_preset;
+          if (n_sd_hunt) n_sd_rx_crc = {16{n_wr[10][7]}};
           // Loop: Go Active On Poll and an EOP (the seventh 1) go on loop;
           // on loop a flag then an EOP with it set take the loop. With Loop
           // Mode cleared the channel leaves at an EOP, or at once in one.
@@ -934,7 +936,7 @@ module z8030_scc_channel (
             end else if (n_lp_on && n_sd_rx_raw == n_wr[7]) n_lp_poll = 1'b1;
           end
           if (n_sd_in_frame && !sd_del) begin
-            n_sd_rx_hist = {sd_b, n_sd_rx_hist[31:1]};
+            n_sd_rx_hist = {sd_b, n_sd_rx_hist[31:15]};
             if (n_sd_rx_nb < 4'd11) n_sd_rx_nb = n_sd_rx_nb + 4'd1;
             if (n_sd_rx_nb > 4'd8) n_sd_rx_crc = crc_step(n_sd_rx_crc, n_sd_rx_hist[23], n_wr[5][2]);
             if (n_sd_rx_nb > 4'd10) begin
@@ -944,7 +946,7 @@ module z8030_scc_channel (
               end
             end
           end
-          sd_err = n_sd_rx_crc != 16'hF0B8 ? 8'h04 : 8'h00;
+          sd_err = n_sd_rx_crc != 16'hF0B8 ? 4'h4 : 4'h0;
           if (n_sd_rx_raw == n_wr[7]) begin
             if (n_sd_hunt) begin
               n_sd_hunt = 1'b0;
@@ -952,11 +954,11 @@ module z8030_scc_channel (
             end else if (n_sd_in_frame && n_sd_rx_nb > 4'd10 && (n_sd_rx_chars || !n_wr[3][2])) begin
               // End of Frame; RR1 D3..D1 hold the residue count bit-reversed.
               if (!sd_done) sd_char = sd_snap(n_sd_rx_hist[24:14], rx_bits);
-              n_sd_residue = {4'd0, n_sd_rx_cnt[0], n_sd_rx_cnt[1], n_sd_rx_cnt[2], 1'b0};
-              rx_push = 1'b1; rx_data = sd_char; rx_err = sd_err | 8'h08;
+              n_sd_residue = {n_sd_rx_cnt[0], n_sd_rx_cnt[1], n_sd_rx_cnt[2]};
+              rx_push = 1'b1; rx_data = sd_char; rx_err = sd_err | 4'h8;
             end
             n_sd_in_frame = 1'b1; n_sd_rx_nb = 4'd0; n_sd_rx_cnt = 4'd0;
-            n_sd_rx_chars = 1'b0; n_sd_rx_crc = sd_preset;
+            n_sd_rx_chars = 1'b0; n_sd_rx_crc = {16{n_wr[10][7]}};
           end else if (sd_done) begin
             // Address search: WR6 (high nibble with WR3 D1) or all 1s.
             if (!n_sd_rx_chars && n_wr[3][2] && sd_char != 8'hFF &&
@@ -982,10 +984,10 @@ module z8030_scc_channel (
           end
           n_sd_sync_out = 1'b0;
         end else begin
-          n_sd_rx_hist = {rx_dec, n_sd_rx_hist[31:1]};
+          n_sd_rx_hist = {rx_dec, n_sd_rx_hist[31:15]};
           n_sd_sync_out = !bs_ext && sync_match(n_sd_rx_hist[31:16], n_wr[7], n_wr[6], n_wr[4][4], n_wr[10][0]);
           if (n_sd_hunt) begin
-            n_sd_rx_crc = sd_preset; n_sd_rx_cnt = 4'd0; n_sd_rx_pend = 2'd0; n_sd_strip_prev = 1'b1;
+            n_sd_rx_crc = {16{n_wr[10][7]}}; n_sd_rx_cnt = 4'd0; n_sd_rx_pend = 2'd0; n_sd_strip_prev = 1'b1;
             if (bs_ext && !n_sync_pin) begin
               // The bit before /SYNC fell was the first of the character.
               n_sd_rx_cnt = 4'd2; n_sd_hunt = 1'b0;
@@ -1009,10 +1011,10 @@ module z8030_scc_channel (
             end
             if (bs_load) begin
               bs_win = bs_w == 4'd9 ? n_sd_rx_hist[31:23] : {1'b0, n_sd_rx_hist[31:24]};
-              bs_err = n_sd_rx_crc != 16'h0000 ? 8'h04 : 8'h00;
+              bs_err = n_sd_rx_crc != 16'h0000 ? 4'h4 : 4'h0;
               // Parity over the data bits and the bit after them.
               if (n_wr[4][0] && (^(bs_win & ((9'h002 << (bs_n - 4'd1)) - 9'h001)) ^ n_wr[4][1]) == 1'b0)
-                bs_err = bs_err | 8'h01;
+                bs_err = bs_err | 4'h1;
               n_sd_crc_on = n_wr[3][3] && !n_sd_strip_prev;
               n_sd_strip_prev = n_wr[3][1] && bs_win[7:0] == n_wr[6] &&
                                 !(n_wr[4][5:4] == 2'b01 && n_wr[10][0]);
@@ -1029,42 +1031,35 @@ module z8030_scc_channel (
         // RxD back High ends a break, an ext/status source.
         if (n_rx_break && rxa) begin
           n_rx_break = 1'b0;
-          if (n_wr[15][7]) begin
-            n_ext_ip = 1'b1;
-            if (!n_ext_latch_closed) begin
-              n_ext_latch_closed = 1'b1;
-              n_dcd_latch = n_dcd_sync; n_cts_latch = n_cts_sync;
-              n_break_latch = 1'b0; n_underrun_latch = n_tx_underrun_eom; n_hunt_latch = `SCC_HUNT;
-            end
-          end
+          if (n_wr[15][7]) `SCC_EXT_RAISE
           // One null is left at the end of a break; odd parity flags it.
           rx_push = 1'b1; rx_data = 8'h00;
-          rx_err = {7'd0, n_wr[4][0] & ~n_wr[4][1]};
+          rx_err = {3'd0, n_wr[4][0] & ~n_wr[4][1]};
         end
 
         // Disabled (or /DCD High under Auto Enables): held idle.
         if (!n_wr[3][0] || (auto_en && !dcd_now)) begin
-          n_rx_state = 3'd0; n_rx_sub_count = 7'd0; n_rx_bit_count = 4'd0;
-          n_rx_shift = 8'h00; n_rx_shift_err = 8'h00;
+          n_rx_state = RX_IDLE; n_rx_sub_count = 7'd0; n_rx_bit_count = 4'd0;
+          n_rx_shift = 8'h00; n_rx_shift_err = 3'b000;
         end else begin
           case (n_rx_state)
             // Start bit on RxD Low; x1 samples bit 0 on the next edge.
             // A break holds the receiver until RxD returns High.
-            3'd0: if (!rxa && !n_rx_break) begin
+            RX_IDLE: if (!rxa && !n_rx_break) begin
               n_rx_shift = 8'h00; n_rx_bit_count = 4'd0;
-              n_rx_state     = cm == 7'd1 ? 3'd2 : 3'd1;
+              n_rx_state     = cm == 7'd1 ? RX_DATA : RX_START;
               n_rx_sub_count = cm == 7'd1 ? 7'd0 : 7'd1;
             end
             // A start bit gone High by mid-bit was a glitch.
-            3'd1: begin
+            RX_START: begin
               n_rx_sub_count = n_rx_sub_count + 7'd1;
               if (n_rx_sub_count == rx_mid && rxa) begin
-                n_rx_state = 3'd0; n_rx_sub_count = 7'd0;
+                n_rx_state = RX_IDLE; n_rx_sub_count = 7'd0;
               end else if (n_rx_sub_count >= cm) begin
-                n_rx_state = 3'd2; n_rx_sub_count = 7'd0;
+                n_rx_state = RX_DATA; n_rx_sub_count = 7'd0;
               end
             end
-            3'd2: begin
+            RX_DATA: begin
               n_rx_sub_count = n_rx_sub_count + 7'd1;
               if (n_rx_sub_count == rx_mid && rxa)
                 n_rx_shift[n_rx_bit_count[2:0]] = 1'b1;
@@ -1072,47 +1067,38 @@ module z8030_scc_channel (
                 n_rx_sub_count = 7'd0;
                 n_rx_bit_count = n_rx_bit_count + 4'd1;
                 if (n_rx_bit_count == rx_bits) begin
-                  n_rx_state = n_wr[4][0] ? 3'd3 : 3'd4;
-                  if (!n_wr[4][0]) n_rx_stop_bit = 2'd0;
+                  n_rx_state = n_wr[4][0] ? RX_PARITY : RX_STOP;
                 end
               end
             end
-            3'd3: begin
+            RX_PARITY: begin
               n_rx_sub_count = n_rx_sub_count + 7'd1;
               rx_par = ^n_rx_shift ^ ~n_wr[4][1];
               if (n_rx_sub_count == rx_mid && rxa != rx_par)
-                n_rx_shift_err = n_rx_shift_err | 8'h01;
+                n_rx_shift_err = n_rx_shift_err | 3'b001;
               // The parity bit is loaded above the data when it fits.
               if (n_rx_sub_count == rx_mid && rxa && rx_bits != 4'd8)
                 n_rx_shift[rx_bits[2:0]] = 1'b1;
               if (n_rx_sub_count >= cm) begin
-                n_rx_sub_count = 7'd0; n_rx_state = 3'd4; n_rx_stop_bit = 2'd0;
+                n_rx_sub_count = 7'd0; n_rx_state = RX_STOP;
               end
             end
-            3'd4: begin
+            RX_STOP: begin
               n_rx_sub_count = n_rx_sub_count + 7'd1;
               if (n_rx_sub_count == rx_mid && !rxa)
-                n_rx_shift_err = n_rx_shift_err | 8'h04;
+                n_rx_shift_err = n_rx_shift_err | 3'b100;
               if (n_rx_sub_count >= cm) begin
                 n_rx_sub_count = 7'd0;
-                n_rx_stop_bit = n_rx_stop_bit + 2'd1;
                 // One stop bit is checked whatever WR4 D3:D2 select.
                 // The break character itself is not loaded.
                 if (n_rx_shift_err[2] && n_rx_shift == 8'h00 && !n_rx_break) begin
                   n_rx_break = 1'b1;
-                  if (n_wr[15][7]) begin
-                    n_ext_ip = 1'b1;
-                    if (!n_ext_latch_closed) begin
-                      n_ext_latch_closed = 1'b1;
-                      n_dcd_latch = n_dcd_sync; n_cts_latch = n_cts_sync;
-                      n_break_latch = 1'b1; n_underrun_latch = n_tx_underrun_eom; n_hunt_latch = `SCC_HUNT;
-                    end
-                  end
+                  if (n_wr[15][7]) `SCC_EXT_RAISE
                 end else begin
-                  rx_push = 1'b1; rx_data = n_rx_shift; rx_err = n_rx_shift_err;
+                  rx_push = 1'b1; rx_data = n_rx_shift; rx_err = {1'b0, n_rx_shift_err};
                 end
-                n_rx_shift_err = 8'h00;
-                n_rx_state = 3'd0; n_rx_sub_count = 7'd0;
+                n_rx_shift_err = 3'b000;
+                n_rx_state = RX_IDLE; n_rx_sub_count = 7'd0;
               end
             end
             default: ;
@@ -1127,13 +1113,13 @@ module z8030_scc_channel (
           if (!sd_mode) rx_data = rx_data | rx_fill;
           if (n_rx_fifo_len == 2'd3) begin
             n_rx_fifo_data[2] = rx_data;
-            n_rx_fifo_err[2]  = rx_err | 8'h02;
+            n_rx_fifo_err[2]  = rx_err | 4'h2;
           end else begin
             n_rx_fifo_data[n_rx_fifo_len] = rx_data;
             n_rx_fifo_err[n_rx_fifo_len]  = rx_err;
             n_rx_fifo_len = n_rx_fifo_len + 2'd1;
           end
-          n_rx_err_sticky = n_rx_err_sticky | (n_rx_fifo_err[0] & 8'h03);
+          n_rx_err_sticky = n_rx_err_sticky | n_rx_fifo_err[0][1:0];
           if (n_rx_int_next_char) begin
             n_rx_int_forced = 1'b1; n_rx_int_next_char = 1'b0;
           end
@@ -1147,16 +1133,6 @@ module z8030_scc_channel (
         n_dcd_latch = dcd_mid; n_cts_latch = cts_mid;
       end
     end
-  end
-
-  // BRG compares on the registered count and time constant.
-  always_comb begin
-    b_per    = {brg_tc, 1'b0} + 18'd4;
-    b_inc    = baud_counter + 18'd1;
-    b_wrap   = b_inc >= b_per;
-    b_half   = b_inc == {1'b0, b_per[17:1]};
-    b_inc_lt = b_inc < {1'b0, b_per[17:1]};
-    b_cur_lt = baud_counter < {1'b0, b_per[17:1]};
   end
 
   // The DPLL's outputs after its next count, straight from the
@@ -1175,13 +1151,14 @@ module z8030_scc_channel (
   end
 
   always_ff @(posedge clk) begin
-    for (int i = 0; i < 16; i++) wr[i] <= n_wr[i];
+    for (int i = 0; i < 16; i++) if (WR_HELD[i]) wr[i] <= n_wr[i];
     tx_buf <= n_tx_buf; tx_shift <= n_tx_shift;
     tx_buf_empty <= n_tx_buf_empty; tx_all_sent <= n_tx_all_sent;
     tx_underrun_eom <= n_tx_underrun_eom; tx_ip <= n_tx_ip; txd_q <= n_txd;
     tx_state <= n_tx_state; tx_bit_count <= n_tx_bit_count;
     tx_sub_count <= n_tx_sub_count; tx_stop_bit <= n_tx_stop_bit;
-    baud_counter <= n_baud_counter; brg_tc <= n_brg_tc; brg_load <= n_brg_load;
+    baud_counter <= n_baud_counter; brg_out <= n_brg_out; brg_reload <= n_brg_reload;
+    brg_sync <= n_brg_sync;
     tx_break <= n_tx_break;
     ext_ip <= n_ext_ip; ext_latch_closed <= n_ext_latch_closed;
     dcd_latch <= n_dcd_latch; cts_latch <= n_cts_latch;
@@ -1196,7 +1173,7 @@ module z8030_scc_channel (
     rx_fifo_len <= n_rx_fifo_len; rx_err_sticky <= n_rx_err_sticky;
     rx_shift_err <= n_rx_shift_err; rx_shift <= n_rx_shift; rx_state <= n_rx_state;
     rx_bit_count <= n_rx_bit_count; rx_sub_count <= n_rx_sub_count;
-    rx_stop_bit <= n_rx_stop_bit; rx_break <= n_rx_break;
+    rx_break <= n_rx_break;
     rx_int_next_char <= n_rx_int_next_char; rx_int_forced <= n_rx_int_forced;
     rx_lock <= n_rx_lock;
     sd_tx_sr <= n_sd_tx_sr; sd_tx_n <= n_sd_tx_n; sd_tx_kind <= n_sd_tx_kind;
@@ -1213,18 +1190,10 @@ module z8030_scc_channel (
     dp_seen <= n_dp_seen; dp_miss1 <= n_dp_miss1; dp_miss2 <= n_dp_miss2; dp_cnt <= n_dp_cnt;
     dp_adj <= n_dp_adj; dp_next <= n_dp_next; dp_miss_n <= n_dp_miss_n; dp_clk <= n_dp_clk;
     dp_rx_in <= n_dp_rx_in; dp_rxo <= n_dp_rxo; dp_txo <= n_dp_txo; tx_line <= n_tx_line;
-    tx_raw <= n_tx_raw; rx_prev <= n_rx_prev; rx_bit <= n_rx_bit;
-
-    if (reset_ch) begin
-      pending_wr0 <= 1'b0; pending_wr0_cmd <= 3'd0;
-      rxd_q <= 1'b1;
-    end
-
-    if (wr_en && wr_reg == 4'd0 && wr_data[5:3] >= 3'd2) pending_wr0_cmd <= wr_data[5:3];
+    tx_raw <= n_tx_raw; rx_prev <= n_rx_prev;
 
     // Pins sampled at every PCLK rise.
     if (pclk_rise) begin
-      rxd_q     <= rxd;
       dcd_live  <= dcd_now;
       cts_live  <= cts_now;
       prev_rtxc <= rxc_in;
@@ -1238,17 +1207,14 @@ module z8030_scc_channel (
                 (wr[10][6:5] != 2'd0 && (wr[4][3:2] == 2'b00 || wr[4][7:6] == 2'b00)) ? tx_line : txd_q)
                & ~tx_break;
   assign trxc_out_level = trxc_out_lvl;
-  assign wr9            = wr[9];
-  assign wr5            = wr[5];
-  assign wr11           = wr[11];
-  assign rts_hold_o     = rts_hold;
+  assign rts_n          = ~wr[5][1] & ~rts_hold;
+  assign dtr_n          = ~wr[5][7];
+  assign trxc_drive     = wr[11][2];
 
-  // ---- lint waivers: unused register bits; rxd_q is the RxD pin as the
-  // bench reads it, the receiver samples rxd itself ----
-  // verilator lint_off UNUSEDSIGNAL
-  logic unused_ok;
-  assign unused_ok = ^{wr[2], wr[8], sd_residue[7:4], sd_residue[0], rx_vis_err[7:4],
-                       pending_wr0, pending_wr0_cmd, rxd_q};
-  // verilator lint_on UNUSEDSIGNAL
+
+`undef SCC_HUNT
+`undef SCC_EXT_RAISE
 
 endmodule
+
+`default_nettype wire
