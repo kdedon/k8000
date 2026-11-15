@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Fit one unit on Cyclone V and summarize area and timing.
 #   quartus/build.sh <unit> [period_ns]     unit: regfile | alu | serial | execute | cpu | mmu | cio | scc | fpudp | fpu
+#   quartus/build.sh --srcs <unit>          print the unit's sources and wrapper, fit nothing
 # Default period is 48 MHz.
 # SEED=<n> picks the fitter seed (default 1) and keeps its own work directory.
 # Uses quartus_sh on PATH, else the pinned Quartus Lite 17.0.2 image.
 set -euo pipefail
 
 repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+list_srcs=""
+if [ "${1:-}" = "--srcs" ]; then list_srcs=1; shift; fi
 image="${QUARTUS_IMAGE:-theypsilon/quartus-lite-c5@sha256:f638634df509786bc7507dbcb45673acd6adf32e5278c7b4e64ce67ae8ac2c70}"
 unit="${1:?usage: $0 <unit> [period_ns]}"
 period="${2:-20.833}"
@@ -18,7 +21,7 @@ case "${unit}" in
   alu)     srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/z8000_alu.sv) ;;
   serial)  srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/z8000_serial.sv) ;;
   execute) srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
-                 rtl/k800x_cpu/z8000_{regfile,alu,execute}.sv) ;;
+                 rtl/k800x_cpu/z8000_{regfile,alu,cond,execute}.sv) ;;
   cpu)     srcs=(rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv rtl/k800x_cpu/gen/z8000_zbus_pkg.sv
                  rtl/k800x_cpu/gen/z8000_mc_pkg.sv rtl/k800x_cpu/gen/z8000_decode_rom_gen.sv rtl/k800x_cpu/gen/z8000_mc_rom_gen.sv
                  rtl/k800x_cpu/z8000_{regfile,decode,bus_unit,sequencer,cond,refresh,alu,execute,serial,int_unit,cpu}.sv) ;;
@@ -32,6 +35,7 @@ case "${unit}" in
 esac
 top="z8000_${unit}_measure"
 srcs+=("quartus/measure/${top}.sv")
+if [ -n "${list_srcs}" ]; then echo "${srcs[@]}"; exit 0; fi
 
 work="obj_dir/quartus/${tag}"
 rm -rf "${repo:?}/${work}"

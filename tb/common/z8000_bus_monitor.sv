@@ -82,6 +82,7 @@ module z8000_bus_monitor #(
   logic        as_q, ds_q, mreq_q, busack_q;
   logic [15:0] ad_q;
   logic [3:0]  st_q;
+  logic [6:0]  sn_q;
 
   // ---- in-flight transaction ------------------------------------------------
   logic        t_live;
@@ -271,6 +272,18 @@ module z8000_bus_monitor #(
              $sformatf("busack_n=0 with as_n=%0b ds_n=%0b mreq_n=%0b ad_drive=%0b", as_n, ds_n, mreq_n, ad_drive));
 
       // --- transaction tracking ---------------------------------------------
+      // R6: a memory cycle's segment number is out a clock before its offset
+      // and holds through T2: it changes no later than Tn's fall and not
+      // before T3's rise.
+      if (SEGMENTED && as_q && !as_n && is_mem(st) && sn != sn_q)
+        viol("SN not valid a clock before the address",
+             "Fig 12 / AC #6 TdC(SNv): SN0-SN6 are output one clock period earlier than the address offset",
+             $sformatf("SN %02h->%02h as /AS fell", sn_q, sn));
+      if (SEGMENTED && t_live && !(as_q && !as_n) && is_mem(t_st) && t_off + 1 <= 3 && sn != t_sn)
+        viol("SN changed before T3",
+             "Fig 12 / AC #7 TdC(SNn): SN0-SN6 hold through T2",
+             $sformatf("%s: SN %02h->%02h at T1+%0d halves", cyc_name(), t_sn, sn, t_off + 1));
+
       if (as_q && !as_n) begin
         // /AS fall == T1 of a new transaction.  A /DS rise may share this very
         // sample (Fig 19 back-to-back): the OLD cycle ended, this is the new
@@ -341,12 +354,13 @@ module z8000_bus_monitor #(
     busack_q <= busack_n;
     ad_q     <= ad_out;
     st_q     <= st;
+    sn_q     <= sn;
   end
 
   initial begin
     errors = 0; transactions = 0; clk_no = 0; reported = 0;
     as_q = 1'b1; ds_q = 1'b1; mreq_q = 1'b1; busack_q = 1'b1;
-    ad_q = 16'h0; st_q = 4'h0;
+    ad_q = 16'h0; st_q = 4'h0; sn_q = 7'h0;
     t_live = 1'b0; t_off = 0; t_tw = 0; t_tw_pre = 0; t_st = 4'h0;
     t_rw = 1'b1; t_bw = 1'b0; t_ns = 1'b0; t_addr = 16'h0; t_sn = 7'h0;
     t_ds_fall = -1; t_ds_rise = -1; t_mreq_fall = -1;

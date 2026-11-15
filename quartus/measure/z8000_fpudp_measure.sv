@@ -3,12 +3,12 @@
 
 module z8000_fpudp_measure (
   input  logic         clk,
-  input  logic [179:0] in_i,
-  output logic [180:0] out_o
+  input  logic [180:0] in_i,
+  output logic [182:0] out_o
 );
 
-  logic [179:0] in_q;
-  logic [180:0] res;
+  logic [180:0] in_q;
+  logic [182:0] res;
 
   always_ff @(posedge clk) begin
     in_q  <= in_i;
@@ -27,7 +27,8 @@ module z8000_fpudp_measure (
     .op_out    (1'b0),
     .opnd      (in_q[166:87]),
     .opnd_src  (res[179]),
-    .opnd_rd   (),
+    .opnd_rd   (res[182]),
+    .opnd_nxt  (res[181]),
     .done      (res[178]),
     .res       (res[177:98]),
     .res_flags (res[97:90]),
@@ -38,6 +39,7 @@ module z8000_fpudp_measure (
     .f_waddr   ({1'b0, in_q[85:83]}),
     .f_wdata   (in_q[82:3]),
     .f_raddr   ({1'b0, in_q[2:0]}),
+    .f_re      (in_q[180]),
     .f_rdata   (res[79:0])
   );
 
