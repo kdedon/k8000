@@ -27,6 +27,7 @@
 | SCC vectors | `make test-scc` | 181 of 181 |
 | SCC timing | `make test-scc-timing` | 15 of 15 |
 | SCC daisy-chain acknowledge | `make test-scc-iack` | 11 of 11 |
+| SCC async receive, sender off rate | `make test-scc-async-rx` | 14 of 14 (-3% to +3%, one and two stop bits; +/-10% fails as it must) |
 | FPU vectors | `make test-fpu` | 1381 pass, 1 skip (`X`) |
 | FPU timing | `make test-fpu-timing` | 72 of 72 (reset, snoop, drive windows, the store wait, /BSY at the STOP samples in both overlap modes, queued operations, FRDIV, FRVSUB, FCPF and FCPFX, and /ABORT with CLK.I and CLK.D at the master clock, the acknowledge: IEO, vector window, SV, NV, DLC; the lost-word count) |
 | FPU decode table | `make test-fpu-enc` | PASS, every IF1 word and every template x word 1 bits 7:4 x word 2 |

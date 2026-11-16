@@ -22,6 +22,7 @@ make ladder-scc       # every vector, shortest first, with status
 make scc ONLY=TestPins_TX_8N1_x16 [VCD=1] [CONTEXT=20]   # one vector, full context
 make test-scc-timing  # datasheet strobe bench (15 checks; docs/TIMING_TESTS.md)
 make test-scc-iack    # two chips on one daisy chain, acknowledge (11 checks)
+make test-scc-async-rx  # async receive from a fast or slow sender (14 checks)
 ```
 
 ### Vector format (`K8000VEC 1 scc`)

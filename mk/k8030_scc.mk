@@ -6,14 +6,15 @@
 #   make test-scc      replay every SCC vector; per-vector PASS/FAIL/SKIP + ladder
 #   make scc ONLY=TestPins_TX_8N1_x16 [VCD=1] [CONTEXT=20]   one vector, verbose
 #   make ladder-scc    every SCC vector shortest first with status
+#   make test-scc-async-rx   async receive against a fast or slow sender
 
 SCC_SRCS := rtl/k8030_scc/z8030_scc_channel.sv rtl/k8030_scc/z8030_scc.sv
 SCC_TB   := $(OBJ)/tb_scc/tb_scc
 
-.PHONY: lint-scc build-scc test-scc scc ladder-scc test-scc-timing test-scc-iack
+.PHONY: lint-scc build-scc test-scc scc ladder-scc test-scc-timing test-scc-iack test-scc-async-rx
 CHIP_LINT    += lint-scc
-CHIP_BUILD   += build-scc $(OBJ)/tb_scc_timing/tb_scc_timing $(OBJ)/tb_scc_iack/tb_scc_iack
-CHIP_TEST    += test-scc test-scc-timing test-scc-iack
+CHIP_BUILD   += build-scc $(OBJ)/tb_scc_timing/tb_scc_timing $(OBJ)/tb_scc_iack/tb_scc_iack $(OBJ)/tb_scc_async_rx/tb_scc_async_rx
+CHIP_TEST    += test-scc test-scc-timing test-scc-iack test-scc-async-rx
 CHIP_TIMING_TEST += test-scc-timing test-scc-iack
 
 lint-scc:
@@ -59,3 +60,12 @@ $(OBJ)/tb_scc_iack/tb_scc_iack: $(SCC_SRCS) tb/k8030_scc/tb_scc_iack.sv
 
 test-scc-iack: $(OBJ)/tb_scc_iack/tb_scc_iack
 	@scripts/run_sv_bench.sh $(OBJ)/tb_scc_iack/tb_scc_iack
+
+# Asynchronous receive against a sender a few percent fast or slow.
+$(OBJ)/tb_scc_async_rx/tb_scc_async_rx: $(SCC_SRCS) tb/k8030_scc/tb_scc_async_rx.sv
+	@mkdir -p $(dir $@)
+	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_scc_async_rx \
+	  $(SCC_SRCS) tb/k8030_scc/tb_scc_async_rx.sv -o tb_scc_async_rx >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+test-scc-async-rx: $(OBJ)/tb_scc_async_rx/tb_scc_async_rx
+	@scripts/run_sv_bench.sh $(OBJ)/tb_scc_async_rx/tb_scc_async_rx

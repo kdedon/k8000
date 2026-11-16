@@ -1087,7 +1087,10 @@ module z8030_scc_channel (
               n_rx_sub_count = n_rx_sub_count + 7'd1;
               if (n_rx_sub_count == rx_mid && !rxa)
                 n_rx_shift_err = n_rx_shift_err | 3'b100;
-              if (n_rx_sub_count >= cm) begin
+              // A good stop bit ends the character at its centre, so a
+              // fast sender's next start bit is not missed; a framing
+              // error waits out the bit.
+              if (n_rx_sub_count >= cm || (n_rx_sub_count == rx_mid && rxa)) begin
                 n_rx_sub_count = 7'd0;
                 // One stop bit is checked whatever WR4 D3:D2 select.
                 // The break character itself is not loaded.

@@ -75,7 +75,8 @@ tb/k800x_cpu/         tb_cpu.cpp (per-edge pin replay) + dut_access.h (the harne
                       contract); tb_decode, decode_table, mc_table, alu, regfile,
                       serial, refresh, seq_words, seq_paths, cond, cpu_timing, cpu_cycles
 tb/k8010_mmu/         tb_mmu.cpp + mmu_access.h, tb_mmu_timing.sv, tb_cpu_mmu_clk.sv
-tb/k8030_scc/         tb_scc.cpp + scc_access.h, tb_scc_timing.sv, tb_scc_iack.sv
+tb/k8030_scc/         tb_scc.cpp + scc_access.h, tb_scc_timing.sv, tb_scc_iack.sv,
+                      tb_scc_async_rx.sv
 tb/k8036_cio/         tb_cio.cpp, tb_cio_timing.sv, tb_cio_iack.sv
 tb/k8070_fpu/         tb_fpu.cpp, tb_fpu_dp.cpp, tb_fpu_enc.sv, tb_fpu_timing.sv,
                       tb_cpu_fpu.{sv,cpp} (CPU and FPU on one board)
