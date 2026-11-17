@@ -152,3 +152,14 @@ or `halted` means updating that file.
 - A behaviour change updates the affected vectors in the same change.
 - RTL lints clean under `-Wall` with no suppressions. An `unused_ok`
   waiver is a placeholder: delete it once its inputs gain consumers.
+
+## AI disclosure
+
+k8000 was developed with AI assistance (Claude, by Anthropic): writing and
+reviewing the RTL, test benches, generators and documentation, and checking
+behaviour against the Zilog manuals.
+
+## Licence
+
+Copyright (C) 2026 kdedon. GNU General Public License, version 2 or (at
+your option) any later version (GPL-2.0-or-later); the text is in `LICENSE`.
