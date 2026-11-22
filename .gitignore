@@ -2,3 +2,4 @@ obj_dir/
 results/
 *.vcd
 .claude/
+__pycache__/
