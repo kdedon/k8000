@@ -13,6 +13,7 @@ docs/VECTOR_FORMAT.md.
 | `decode/decode.vec` | 1 | `tb_decode.sv` |
 | `serial/random.vec` | 1 | `tb_serial.sv` |
 | `cycles/cycles.vec`, `cycles/cycles_z8001.vec` | 2 (Z8002; Z8001 segmented) | `tb_cpu_cycles.sv` |
+| `silicon/z8001.vec`, `silicon/z8001-seg.vec` | 2 (1202 and 1072 programs captured on a Z8001, non-segmented and segmented) | `tb_silicon.sv` |
 
 Sources (printed page numbers of the 1988 Z8000 Family Data Book,
 `1988_Zilog_Z8000_Family_Data_Book.pdf`; PDF page = printed + 7 in the
@@ -40,6 +41,7 @@ make test-decode        # the decode ROM against decode.vec
 make test-decode-table  # the decode ROM against z8000_decode_table.txt
 make test-mc-table      # the machine-cycle ROM against z8000_mc_table.txt
 make test-alu | test-regfile | test-serial | test-refresh | test-seq-words | test-seq-paths | test-cond
+make test-cpu-silicon   # programs captured on a physical Z8001
 ```
 
 `tb_cpu` takes `--mclk P` / `K8000_MCLK` (comma list of master clocks per
@@ -99,7 +101,41 @@ responses hold while DS is Low.
 ## What is covered
 
 `make test-cpu`: 3078 of 3078 PASS, 0 SKIP. `make test-decode-table`,
-`make test-mc-table` and `make test-cpu-cycles` pass.
+`make test-mc-table` and `make test-cpu-cycles` pass. `make
+test-cpu-silicon`: 1202 of 1202 and 1072 of 1072.
+
+### Silicon vectors
+
+Programs run on a physical Z8001 (Z8001APS) by the z8000_test suite
+(Salvatore Paxia, MIT; `vectors/k800x_cpu/silicon/LICENSE`), converted by
+`python3 -I tools/silicon_vectors.py SUITE`. `tb_silicon.sv` is the
+capture rig: 8 KiB RAM on {SN0, AD11:0}, I/O ports 0x0100-0x010F as twelve
+word registers kept from test to test, 0xFFFF elsewhere, no waits. Each
+test loads the rig's bootstrap, its registers and memory and its code at
+0x0200, runs to the HALT fetch, and checks what the bootstrap's dump
+routine stored: R0-R15, the FCW, the observed memory and I/O registers.
+Where the rig recorded a bus trace (177 non-segmented tests, and the
+odd-port I/O tests in both modes) it also checks every /DS-completed
+cycle from the test's first word to the dump routine's IF1 (address,
+data, R/W, B/W, I/O, and SN0 and status where recorded) and the CLK rises
+in that window (`F ICC`). Traces from the first segmented rig build are
+not used: its B/W and clock counts are wrong.
+
+One mask, a known difference: a DIV/DIVL quotient overflow (case 3)
+leaves destination and S uncompared. The chip gives 0001/FFFD with S set
+for 0x0001FFFE / 0xFFFF (`sys_div_rr_r_large`), the RTL 0004/FFF3 with S
+clear; no reading of the RTL's divide steps yields the chip's words. The
+suite's own mask file names no field. 848 coverage tests are not
+converted: the suite assembles them, and no assembler listing in the
+suite confirms their words; eleven more are converted on a hand check of
+their words against the manual's formats (`silicon/dropped.txt`). With
+all of them included every one of the 3122 tests passes.
+
+Where silicon fills or overrides the manual, the RTL follows it
+(DECISIONS rows tagged silicon). `tools/update_cpu_vectors.py` applied
+each such change to the older vectors (cpu, cpu+fpu system, serial, ALU);
+four translate vectors needed `--inferred`, the RTL's reading where no
+capture covers a repeat with its pointer in R1.
 
 ### Bus behaviour the vectors encode
 
@@ -196,6 +232,11 @@ vectors (`<TestName>.*.vec`) or the tb_cpu tolerance.
   (`sys_div_rr_r_large`); masked.
 * PUSHL with the pointer as the source pair's low word (@R3,RR2;
   segmented @RR2,RR2) pushes the decremented pointer: no capture.
+* Silicon traces to recapture on the current rig: MSET in normal mode
+  completes a read of the next word before the trap where the RTL runs
+  the aborted IF1 (item 12; one capture, no status recorded); trap
+  pushes show status 1011, the RTL drives 1001 (captured only on the rig
+  build whose B/W is wrong).
 * Needs a real CPU: items 42, 43, 45, 49.
 * INFERRED, unverified on silicon: items 12 (traps), 23, 41, 46, 47
   (timing), 48, 49, 50, 53 (clock placement).

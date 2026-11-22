@@ -7,7 +7,7 @@
 #   make gen        rebuild the generated RTL from its sources (tools/)
 #   make check-gen  fail if a generated RTL file differs from its source
 #   make test-<x>   one bench: decode | decode-table | mc-table | alu | regfile | serial | refresh | cpu |
-#                   cpu-combined | cpu-timing | cpu-cycles | seq-words | seq-paths | cond |
+#                   cpu-combined | cpu-timing | cpu-cycles | cpu-silicon | seq-words | seq-paths | cond |
 #                   mmu | scc | cio | fpu | fpu-dp | fpu-enc | fpu-fastd | fpu-slowd | cpu-fpu | <chip>-timing
 #   make test-timing        spec TIMING benches (CPU Z-Bus monitor + MMU/CIO/SCC/FPU strobes)
 #   make test-mclk          peripheral and FPU vectors at master-clock patterns 1, 2, 1,3, 3,1,2 (FPU also 3, 4)

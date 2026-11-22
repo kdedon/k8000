@@ -17,6 +17,7 @@
 | CPU vectors | `make test-cpu` | 3078 pass, 0 fail, 0 skip (Z8001 1298, Z8002 1758, Z8003 7, Z8004 15) |
 | CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 3078 pass, 0 fail, 0 skip |
 | CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks on Z8002, 14 on segmented Z8001 in segments 05 and 12 (I/O with /WAIT included, SN timing) |
+| CPU against a physical Z8001 | `make test-cpu-silicon` | non-segmented 1202 of 1202, segmented 1072 of 1072 (final registers, flags, memory, I/O; bus order and instruction clocks on the 197 traced tests) |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, Z8002 45 of 45, segmented Z8001 38 of 38 (SS and SL direct and indexed addresses, CALL, RET, long words) |
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
 | MMU timing | `make test-mmu-timing` | 22 of 22 |
@@ -90,6 +91,13 @@ utilization in those files, boundary flops included.
 
 ## Open
 
+- Silicon captures to retake on the current rig: MSET in normal mode
+  reads the next word before its trap (one capture, no status); trap
+  pushes show status 1011 (the RTL drives 1001) only on a rig build whose
+  B/W is wrong.
+- Silicon vectors: 848 coverage captures not converted, their program
+  words unconfirmed by an assembler listing (`silicon/dropped.txt`); they
+  pass when included.
 - DIV/DIVL case 3: the RTL's destination and S differ from the chip's
   (`sys_div_rr_r_large`, masked in the silicon vectors).
 - PUSHL with the pointer as the source pair's low word: no capture; the
@@ -114,6 +122,7 @@ utilization in those files, boundary flops included.
 | device | files | notes |
 |---|---|---|
 | CPU | 3078 | none skipped: a snapshot restore replays the source CPU's records, a pending refresh is a bench poke |
+| CPU silicon | 2 files: 1202 non-segmented, 1072 segmented tests | captured on a Z8001 (MIT, `silicon/LICENSE`); 848 coverage captures not converted; DIV case 3 destination and S masked |
 | CPU cycle counts | 45 + 38 segmented | Z8002 35 `exact`, 10 `approx`; Z8001 35 `exact`, 3 `approx` |
 | MMU | 77 | |
 | FPU | 1382 pin + 20 Data Processor + 474 system + decode digests | 1 `X unsupported`; dp 15 MB, queue sweeps 18 MB |

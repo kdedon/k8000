@@ -11,6 +11,7 @@ They are generated, never hand-written. `vectors/` is laid out by device, like `
 | `vectors/k800x_cpu/serial/`       | multiply, divide, shift operations        | `tb/k800x_cpu/tb_serial.sv`     |
 | `vectors/k800x_cpu/decode/`       | the decode ROM, every first word          | `tb/k800x_cpu/tb_decode.sv`     |
 | `vectors/k800x_cpu/cycles/`       | instruction cycle counts                  | `tb/k800x_cpu/tb_cpu_cycles.sv` |
+| `vectors/k800x_cpu/silicon/`      | programs captured on a physical Z8001     | `tb/k800x_cpu/tb_silicon.sv`    |
 | `vectors/k8010_mmu/*.vec`         | MMU pins                                  | `tb/k8010_mmu/tb_mmu.cpp`       |
 | `vectors/k8030_scc/*.vec`         | SCC pins                                  | `tb/k8030_scc/tb_scc.cpp`       |
 | `vectors/k8036_cio/*.vec`         | CIO pins                                  | `tb/k8036_cio/tb_cio.cpp`       |
@@ -161,6 +162,38 @@ asserts `<clocks>`.
 `variant Z8002` files run non-segmented; `variant Z8001` files run
 segmented in segment 0, pointers as register pairs. The bench fails
 without the variant line or the `END` count.
+
+## Silicon vectors (`K8000VEC 1 silicon`)
+
+Converted from captures (`tools/silicon_vectors.py`), not recorded from
+pins: final-state checks, and the bus trace where one was captured.
+
+```
+K8000VEC 1 silicon
+variant Z8001
+dump 0090 00B2                where the dump routine stores R0 and the FCW
+M 0006 0040                   before the first test: the base RAM image
+test sys_add_r_r_zero         RAM reset to the base image
+# hint: ADD R0, R1
+M 0200 8110                   RAM word (byte address 0000-1FFF)
+P 3 5555                      I/O register 0-B (kept from test to test)
+Q 6 1234                      a scripted read of an I/O register, up to 4
+F R0 1234                     final register; F R1 0042 00FF compares the
+F R2 ----                     bits of the mask only; ---- not at all
+F FCW 4040 FFFF               final FCW, under its mask
+F MEM 0400 1234               final RAM word
+F IO 3 A1B2                   final I/O register
+B 0202 0107 W B I 0 2         a /DS-completed cycle: address, data, R/W,
+                              B/W, M or I, SN0 and status (hex), - when
+                              not captured
+F ICC 31                      CLK rises from the test's first word to the
+                              dump routine's IF1
+E                             run the test to the HALT fetch and check
+END 1197
+```
+
+`z8001.vec` runs non-segmented (FCW 4000 at reset), `z8001-seg.vec`
+segmented; both on the Z8001 build.
 
 ## FPU vectors (`K8000VEC 1 fpu`, `K8000VEC 1 fpudp`)
 

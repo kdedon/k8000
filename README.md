@@ -73,7 +73,8 @@ rtl/k8070_fpu/        z8070_fpu.sv           floating-point unit: z8070_ip.sv (I
 
 tb/k800x_cpu/         tb_cpu.cpp (per-edge pin replay) + dut_access.h (the harness
                       contract); tb_decode, decode_table, mc_table, alu, regfile,
-                      serial, refresh, seq_words, seq_paths, cond, cpu_timing, cpu_cycles
+                      serial, refresh, seq_words, seq_paths, cond, cpu_timing, cpu_cycles,
+                      silicon (programs captured on a physical Z8001)
 tb/k8010_mmu/         tb_mmu.cpp + mmu_access.h, tb_mmu_timing.sv, tb_cpu_mmu_clk.sv
 tb/k8030_scc/         tb_scc.cpp + scc_access.h, tb_scc_timing.sv, tb_scc_iack.sv,
                       tb_scc_async_rx.sv
@@ -83,9 +84,9 @@ tb/k8070_fpu/         tb_fpu.cpp, tb_fpu_dp.cpp, tb_fpu_enc.sv, tb_fpu_timing.sv
 tb/common/            z8000_bus_monitor.sv   Z-Bus protocol checker, any DUT
 
 mk/                   per-chip Makefile fragments (k8010_mmu, k8030_scc, k8036_cio,
-                      k8070_fpu) hooked into lint/build/test
+                      k8070_fpu, silicon) hooked into lint/build/test
 vectors/              the specification, by chip:
-                      k800x_cpu/{cpu,alu,alu_from_cpu,serial,decode,cycles},
+                      k800x_cpu/{cpu,alu,alu_from_cpu,serial,decode,cycles,silicon},
                       k8010_mmu, k8030_scc, k8036_cio, k8070_fpu/{fpu,dp,enc,system}
 docs/                 STATUS.md (results), LADDER.md (build order and acceptance),
                       DECISIONS.md, RESEARCH.md, VECTOR_FORMAT.md, TIMING_TESTS.md,
@@ -94,7 +95,9 @@ docs/                 STATUS.md (results), LADDER.md (build order and acceptance
                       theory/ (Theory of Operation, one per chip)
 quartus/              build.sh <unit>: fit one unit on Cyclone V at 48 MHz;
                       measure/ wraps it in boundary flops
-tools/                gen_decode_rom.py, gen_mc_rom.py, gen_dp_rom.py (make gen)
+tools/                gen_decode_rom.py, gen_mc_rom.py, gen_dp_rom.py (make gen);
+                      silicon_vectors.py (captures to silicon vectors);
+                      update_cpu_vectors.py (a silicon behaviour change on older vectors)
 scripts/              run_vectors.sh <chip> (vector replays), run_sv_bench.sh (one
                       self-checking bench)
 ```
@@ -111,6 +114,7 @@ make cpu ONLY=TestNOP [VCD=1] [CONTEXT=20]   # one vector, full divergence repor
 make ladder     # every CPU vector, shortest first, with PASS/FAIL/SKIP
 make test-mmu | test-cio | test-scc | test-fpu   # one chip (also <chip> ONLY=..., ladder-<chip>)
 make test-timing                             # the datasheet timing benches
+make test-cpu-silicon                        # programs captured on a physical Z8001
 make test-mclk                               # peripheral and FPU vectors at master-clock patterns 1, 2, 1,3, 3,1,2
 make -jN build                               # N builds at once; replays share K8000_JOBS
 quartus/build.sh regfile|alu|serial|execute|cpu|mmu|cio|scc|fpudp|fpu [period_ns]  # area and Fmax
@@ -152,6 +156,36 @@ or `halted` means updating that file.
 - A behaviour change updates the affected vectors in the same change.
 - RTL lints clean under `-Wall` with no suppressions. An `unused_ok`
   waiver is a placeholder: delete it once its inputs gain consumers.
+
+## Thanks
+
+To Salvatore Paxia, whose z8000_test suite (github.com/tpaxia/z8000_test)
+captured thousands of programs on a physical Z8001. They are the vectors
+under `vectors/k800x_cpu/silicon`, converted under this licence:
+
+```
+MIT License
+
+Copyright (c) 2026 Salvatore Paxia
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## AI disclosure
 
