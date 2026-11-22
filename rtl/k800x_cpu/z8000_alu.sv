@@ -92,25 +92,17 @@ module z8000_alu
   end
 
   // ---- DAB ------------------------------------------------------------------
-  // b[0] = H and b[1] = D from the preceding op; table per Ref Manual p.85.
+  // b[0] = H and b[1] = D from the preceding op. One rule for both: the low
+  // digit is corrected if H or it is above 9, the high digit (C set) if C or
+  // the byte is above 0x99; after a subtraction the corrections subtract.
   logic [7:0] dab_v;
   logic       dab_c, add06, add60;
 
   always_comb begin
     add06 = (a[3:0] > 4'd9) || b[0];
     add60 = cin || (a[7:4] > 4'd9) || (a[7:4] == 4'd9 && a[3:0] > 4'd9);
-    if (b[1]) begin
-      unique case ({cin, b[0]})
-        2'b00:   dab_v = a[7:0];
-        2'b01:   dab_v = a[7:0] + 8'hFA;
-        2'b10:   dab_v = a[7:0] + 8'hA0;
-        default: dab_v = a[7:0] + 8'h9A;
-      endcase
-      dab_c = cin;
-    end else begin
-      dab_v = a[7:0] + (add06 ? 8'h06 : 8'h00) + (add60 ? 8'h60 : 8'h00);
-      dab_c = add60;
-    end
+    dab_v = a[7:0] + (add06 ? (b[1] ? 8'hFA : 8'h06) : 8'h00) + (add60 ? (b[1] ? 8'hA0 : 8'h60) : 8'h00);
+    dab_c = add60;
   end
 
   // ---- bit ops --------------------------------------------------------------

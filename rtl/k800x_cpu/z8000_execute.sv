@@ -84,7 +84,6 @@ module z8000_execute
   input  logic        io_wr,        // the I/O, block I/O or transfer cycle writes
   input  logic        io_spec,      // special I/O
   input  logic        block_decr,
-  input  logic        block_rept,
   output logic        blk_more,     // a repeated translate runs again
   input  logic        cc_held,      // the condition, as of the IF1's T3 edge
   input  logic        cnt_dec,      // decrement the port A word (MREQ's count)
@@ -101,6 +100,7 @@ module z8000_execute
   // memory operand
   input  logic        seg_mode,     // segmented mode on a Z8001
   input  logic [6:0]  pc_seg,       // the PC's segment (0 on a Z8002)
+  input  logic        pc_b15,       // bit 15 of the PC segment word last loaded
   input  logic [15:0] pc_off,       // the PC offset, past the instruction's words
   input  logic        cyc_end3,     // the third edge from now ends the bus cycle
   input  logic [22:0] ea_word,      // address from the address words
@@ -132,6 +132,7 @@ module z8000_execute
   // PC load
   output logic        pc_we,
   output logic [22:0] pc_d,
+  output logic        pc_b15_d,
 
   // flags
   input  logic [15:0] fcw,
@@ -366,9 +367,9 @@ module z8000_execute
   // the table byte at Rs + that byte, then write it back to @Rd (TR) or
   // take an internal operation (TRT). Rd steps by one in the table read's
   // last tail clock; in the next the count R(w1[11:8]) decrements and V
-  // (and Z) load; in the one after TRT puts the byte in RH1. A repeat runs
+  // (and Z) load; in the one after the table byte goes to RH1. A repeat runs
   // again while the count is not zero (TRT: and the byte is).
-  logic       tr, tr_test, tab_take, tr_a, tr_b, tr_h, blk_q, tw_zero_q, step_zero;
+  logic       tr, tr_test, tab_take, tr_a, tr_b, tr_h, blk_q, step_zero;
   logic [1:0] ec_q;     // the element's next cycle: dst read, table read, write
   logic [2:0] ph_q;     // clocks since the table read's word is in
   logic [3:0] tr_d, tr_off;
@@ -378,7 +379,7 @@ module z8000_execute
   assign tab_take = tr && opnd_take && ec_q == (tr_test ? 2'd0 : 2'd2);
   assign tr_a     = tr && ph_q == 3'd4;
   assign tr_b     = tr && ph_q == 3'd5;
-  assign tr_h     = tr && tr_test && ph_q == 3'd1;  // RH1 <- the table byte
+  assign tr_h     = tr && ph_q == 3'd6;  // RH1 <- the table byte
   assign tr_d     = w0[7:4];
   assign tr_off   = seg_mode ? {tr_d[3:1], 1'b1} : tr_d;
   assign blk_more = blk_q;
@@ -439,7 +440,6 @@ module z8000_execute
       ec_q      <= 2'd0;
       ph_q      <= 3'd0;
       blk_q     <= 1'b0;
-      tw_zero_q <= 1'b0;
       cmp_c_q   <= 1'b0;
       cmp_s_q   <= 1'b0;
       match_q   <= 1'b0;
@@ -449,7 +449,6 @@ module z8000_execute
       else if (blk && mem_take) ec_q <= {1'b0, ec_q == 2'd0 && !bc};
       if (tab_take || blk_take) ph_q <= 3'd1;
       else if (ph_q != 3'd0 && !ph_hold) ph_q <= ph_q == 3'd6 ? 3'd0 : ph_q + 3'd1;
-      if (tab_take)             tw_zero_q <= rdata == 16'h0000;
       if (tr_b && !ph_hold)     blk_q <= !step_zero && (!tr_test || opnd_q[7:0] == 8'h00);
       else if (bk_cnt && !ph_hold) blk_q <= !step_zero && !(cmp && match_q);
       if (bk_cmp && !ph_hold) begin
@@ -848,9 +847,13 @@ module z8000_execute
   assign lea_addr = {(mem_ra || mem_ba || mem_bx) ? ptr_seg : ea_word[22:16],
                      (mem_x || mem_ra || mem_ba || mem_bx) ? off_sum : ea_word[15:0]};
 
-  // Bit 15 of the segment word LDA writes: from the base register or the address word.
-  logic lea_seg15;
-  assign lea_seg15 = seg_ir ? rf_rdata[31] : !mem_ra && ea_long;
+  // The segment word LDA writes: bit 15 from the base register, the PC
+  // (LDAR) or the address word; a short address word's offset byte stays
+  // in bits 7:0.
+  logic       lea_seg15;
+  logic [7:0] lea_seglo;
+  assign lea_seg15 = seg_ir ? rf_rdata[31] : mem_ra ? pc_b15 : ea_long;
+  assign lea_seglo = (mem_ra || mem_ba || mem_bx || ea_long) ? 8'h00 : ea_word[7:0];
 
   // A pointer or base in R15 (RR14 segmented) addresses the stack; a
   // Z8003/Z8004 TSET reads with the bus-lock status.
@@ -882,19 +885,22 @@ module z8000_execute
   // verilator lint_on UNUSEDSIGNAL
   logic [15:0] wdata_q, nfcw_q;
   logic [6:0]  pcs_q;
+  logic        pcs15_q;
   always_comb begin
     if (exc) begin
       unique case (xi)
         3'd0:    mem_wdata = pc_off;
-        3'd1:    mem_wdata = {1'b1, pc_seg, 8'h00};
+        3'd1:    mem_wdata = {pc_b15, pc_seg, 8'h00};
         3'd2:    mem_wdata = ofcw_q;
         default: mem_wdata = id_word;
       endcase
-    end else if (br_call) mem_wdata = mcnt_q[0] ? {1'b1, pc_seg, 8'h00} : pc_off;
+    end else if (br_call) mem_wdata = mcnt_q[0] ? {pc_b15, pc_seg, 8'h00} : pc_off;
     else if (stk_opnd) mem_wdata = (stk_long && !nxt2_q) ? opnd_hi_q : opnd_q;
     else if (stk_imm) mem_wdata = w1;
     else if (io)      mem_wdata = !is_byte ? rf_rdata_b : {rf_rdata_b[7:0], rf_rdata_b[7:0]};
-    else if (stk)     mem_wdata = (stk_first && rf_rsel_b == sp_off) ? off_sum : rf_rdata_b;
+    // PUSH from the pointer register pushes the decremented pointer;
+    // PUSHL with the pointer as its high word pushes it as it was.
+    else if (stk)     mem_wdata = (stk_first && !stk_long && rf_rsel_b == sp_off) ? off_sum : rf_rdata_b;
     else if (xm)      mem_wdata = wdata_q;
     else if (ldm || ep_reg) mem_wdata = rf_rdata_b;
     else if (ep_fl)   mem_wdata = {8'h00, fcw[7:2], 2'b00};
@@ -913,6 +919,7 @@ module z8000_execute
       bx_dat_q  <= 1'b0;
       nfcw_q    <= 16'h0000;
       pcs_q     <= 7'd0;
+      pcs15_q   <= 1'b0;
       ldm_k_q   <= 4'd0;
       ldm_we_q  <= 1'b0;
       ep_fl_we_q <= 1'b0;
@@ -924,10 +931,10 @@ module z8000_execute
       if (first || mem_take)                bx_dat_q <= 1'b0;
       else if (mem_bx && mem_write && cyc_end3) bx_dat_q <= 1'b1;
       if (!exc && opnd_take && mcnt_q == (iret ? 2'd2 : 2'd1)) nfcw_q <= rdata;
-      if (!exc && opnd_take && mcnt_q == (iret ? 2'd3 : 2'd2)) pcs_q  <= rdata[14:8];
+      if (!exc && opnd_take && mcnt_q == (iret ? 2'd3 : 2'd2)) {pcs15_q, pcs_q} <= rdata[15:8];
       // The entry's FCW word, then (Z8001) the PC segment word.
       if (exc && opnd_take && xc_q == XPUSH + 3'd1) nfcw_q <= rdata;
-      if (exc && opnd_take && xc_q == 3'd6)         pcs_q  <= rdata[14:8];
+      if (exc && opnd_take && xc_q == 3'd6)         {pcs15_q, pcs_q} <= rdata[15:8];
       if (mem_take) nxt2_q <= (((uni || k_q.md) && is_long) || stk_long) && !nxt2_q;
       if (opnd_take && nxt2_q) opnd_hi_q <= rdata;
       else if (blk_take && bs) opnd_hi_q <= opnd_q;
@@ -1051,7 +1058,7 @@ module z8000_execute
       rf_we     = 1'b1;
       rf_wwidth = RF_WORD;
       rf_wsel   = seg_mode ? {w0[3:1], last} : w0[3:0];
-      rf_wdata  = (seg_mode && !last) ? {lea_seg15, lea_addr[22:16], 8'h00} : lea_addr[15:0];
+      rf_wdata  = (seg_mode && !last) ? {lea_seg15, lea_addr[22:16], lea_seglo} : lea_addr[15:0];
     end else if (pop_we) begin
       rf_we     = 1'b1;
       rf_wwidth = RF_WORD;
@@ -1135,6 +1142,14 @@ module z8000_execute
     else if (br_ir) pc_d = {sp_seg, tgt_off};
     else if (br_x)  pc_d = {ea_word[22:16], off_sum};
     else            pc_d = {pc_seg, off_sum};
+    // Bit 15 of the segment word comes with the segment; relative
+    // branches and non-segmented mode keep it.
+    if (!seg_mode)                 pc_b15_d = pc_b15;
+    else if (ps_ld || exc)         pc_b15_d = pcs15_q;
+    else if (br_ret)               pc_b15_d = opnd_q[15];
+    else if (br_da || br_x)        pc_b15_d = ea_long;
+    else if (br_ir)                pc_b15_d = rf_rdata[31];
+    else                           pc_b15_d = pc_b15;
   end
   assign pc_we = ((br && taken) || ps_ld || exc) && to_last;
 
@@ -1151,20 +1166,23 @@ module z8000_execute
     if (high) flags[6] = alu_flags[6] & z_lo_q;
     // V: either bit's step changed the sign.
     if (rot_hi) flags[4] = alu_flags[4] | fcw[4];
+    // RLDB/RRDB: Z and S from the link byte.
     if (bcd) begin
       flags_we   = last;
-      flags      = {9'h000, wdata_q[7:0] == 8'h00, 6'h00};
-      flags_mask = 16'h0040;
+      flags      = {9'h000, wdata_q[7:0] == 8'h00, wdata_q[7], 5'h00};
+      flags_mask = 16'h0060;
     end
     if (tr_b && !ph_hold) begin
       flags_we   = 1'b1;
-      flags      = {9'h000, tr_test ? opnd_q[7:0] == 8'h00 : tw_zero_q, 1'b0, step_zero, 4'h0};
-      flags_mask = (tr_test || !block_rept) ? 16'h0050 : 16'h0010;
+      flags      = {9'h000, opnd_q[7:0] == 8'h00, 1'b0, step_zero, 4'h0};
+      flags_mask = 16'h0050;
     end
+    // A block move or block I/O sets Z with V: the count reached 0.
     if (bk_cnt && !ph_hold) begin
       flags_we   = 1'b1;
-      flags      = {8'h00, cmp_c_q, match_q, cmp_s_q, step_zero, 4'h0};
-      flags_mask = cmp ? 16'h00F0 : 16'h0010;
+      flags      = cmp ? {8'h00, cmp_c_q, match_q, cmp_s_q, step_zero, 4'h0}
+                       : {9'h000, step_zero, 1'b0, step_zero, 4'h0};
+      flags_mask = cmp ? 16'h00F0 : 16'h0050;
     end
     if (ep_fl_we_q) begin
       flags_we   = 1'b1;
@@ -1172,7 +1190,8 @@ module z8000_execute
       flags_mask = 16'h00FC;
     end
     if (fop) begin
-      flags_mask = fcw_op == FCW_LOAD_LO ? 16'h00FC : fcw_mask;
+      // COMFLG complements H whatever its mask.
+      flags_mask = fcw_op == FCW_LOAD_LO ? 16'h00FC : fcw_op == FCW_TOGGLE ? fcw_mask | 16'h0004 : fcw_mask;
       unique case (fcw_op)
         FCW_SET:     flags = 16'hFFFF;
         FCW_TOGGLE:  flags = {8'h00, ~fcw[7:0]};

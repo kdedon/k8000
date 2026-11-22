@@ -63,7 +63,7 @@ struct BoardAccess {
         if (n.size() >= 2 && n[0] == 'R' && isdigit((unsigned char)n[1])) r->CPU_(u_regfile__DOT__r)[atoi(n.c_str() + 1)] = (uint16_t)v;
         else if (n == "FCW") r->CPU_(fcw) = (uint16_t)v;
         else if (n == "PC") r->CPU_(pc) = (uint32_t)v;
-        else if (n == "PSAP") r->CPU_(psap) = (uint32_t)v;
+        else if (n == "PSAP") r->CPU_(psap) = ((uint32_t)v & 0x7FFFFF) >> 8;   // bits 22:8
         else if (n == "NSPOFF") r->CPU_(nspoff) = (uint16_t)v;
         else if (n == "NSPSEG") r->CPU_(nspseg) = (uint16_t)v;
         else return false;
@@ -73,7 +73,7 @@ struct BoardAccess {
         auto* r = top->rootp;
         if (n == "FCW") v = r->CPU_(fcw);
         else if (n == "PC") v = r->CPU_(pc);
-        else if (n == "PSAP") v = r->CPU_(psap);
+        else if (n == "PSAP") v = (uint64_t)r->CPU_(psap) << 8;
         else if (n == "NSPOFF") v = r->CPU_(nspoff);
         else if (n == "NSPSEG") v = r->CPU_(nspseg);
         else if (n == "HALTED") v = r->CPU_(halted);

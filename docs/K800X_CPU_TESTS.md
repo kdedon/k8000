@@ -192,6 +192,10 @@ vectors (`<TestName>.*.vec`) or the tb_cpu tolerance.
 ## Known gaps
 
 * OPEN: items 13, 20 (one clock), 21, 24, 38, 39, 52 (unlisted encodings).
+* DIV/DIVL case 3: the destination and S differ from the chip
+  (`sys_div_rr_r_large`); masked.
+* PUSHL with the pointer as the source pair's low word (@R3,RR2;
+  segmented @RR2,RR2) pushes the decremented pointer: no capture.
 * Needs a real CPU: items 42, 43, 45, 49.
 * INFERRED, unverified on silicon: items 12 (traps), 23, 41, 46, 47
   (timing), 48, 49, 50, 53 (clock placement).

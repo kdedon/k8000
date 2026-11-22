@@ -5,12 +5,12 @@
 
 module z8000_execute_measure (
   input  logic         clk,
-  input  logic [340:0] in_i,
-  output logic [219:0] out_o
+  input  logic [341:0] in_i,
+  output logic [220:0] out_o
 );
 
-  logic [340:0] in_q;
-  logic [219:0] res;
+  logic [341:0] in_q;
+  logic [220:0] res;
 
   always_ff @(posedge clk) begin
     in_q  <= in_i;
@@ -60,7 +60,6 @@ module z8000_execute_measure (
     .io_wr       (in_q[187]),
     .io_spec     (in_q[186]),
     .block_decr  (in_q[185]),
-    .block_rept  (in_q[184]),
     .blk_more    (res[219]),
     .cc_held     (in_q[183]),
     .cnt_dec     (in_q[182]),
@@ -75,6 +74,7 @@ module z8000_execute_measure (
     .last_nx     (in_q[157]),
     .seg_mode    (in_q[156]),
     .pc_seg      (in_q[155:149]),
+    .pc_b15      (in_q[341]),
     .pc_off      (in_q[148:133]),
     .cyc_end3    (in_q[132]),
     .ea_word     (in_q[131:109]),
@@ -102,6 +102,7 @@ module z8000_execute_measure (
     .rf_wdata    (rf_wdata),
     .pc_we       (res[157]),
     .pc_d        (res[156:134]),
+    .pc_b15_d    (res[220]),
     .fcw         (in_q[86:71]),
     .exc         (in_q[70]),
     .af_done     (in_q[69]),

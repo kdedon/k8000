@@ -79,6 +79,7 @@ module z8000_sequencer
   output logic [15:0] fcw_d,
   output logic        pc_we,
   output logic [22:0] pc_d,
+  output logic        pc_seg_ld,   // pc_d takes the PC segment word (rdata bit 15 kept)
   output logic        halted,
 
   // decoder: fed the words as of the next edge, its result registered
@@ -491,8 +492,10 @@ module z8000_sequencer
     fcw_d  = bus_rdata;
     pc_we  = 1'b0;
     pc_d   = pc;
+    pc_seg_ld = 1'b0;
     if (state_q == SEQ_PSA_WAIT && bus_done && word_q == PSA_PC_SEG) begin
       pc_we = 1'b1;
+      pc_seg_ld = 1'b1;
       pc_d  = {bus_rdata[14:8], 16'h0000};
     end else if (psa_last) begin
       pc_we = 1'b1;

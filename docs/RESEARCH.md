@@ -195,7 +195,7 @@ Settled in DECISIONS (EPU trap with EPA clear; CPU-EPU transfer has I/O timing, 
 
 ## 5. Block, string and translate
 
-Settled in DECISIONS (translate per byte; block I/O leaves Z unchanged; "block and translate element tables"). Block repeats save the start PC for an interrupt; "seven cycles should be added ... for each interrupt request that is accepted" (Mar81 TM PDF p.131, printed 6-78).
+Settled in DECISIONS (translate per byte; block moves and block I/O set Z from the count (silicon); "block and translate element tables"). Block repeats save the start PC for an interrupt; "seven cycles should be added ... for each interrupt request that is accepted" (Mar81 TM PDF p.131, printed 6-78).
 
 ### 5.1 Exit `I4{BR+U}` (4 clocks)
 | clock | micro-op | confidence |
@@ -277,7 +277,8 @@ Per-clock tables for the remaining tails (heads, single internal-cycle register 
 
 ## 7. Open questions
 
-- DIVL case 3 and DIV case 3 destination: partial words stored or the destination left alone (section 1.7); and the exact -2^N boundary (same section). Both need the three silicon divides listed there.
+- DIVL case 3 and DIV case 3 destination: partial words stored or the destination left alone (section 1.7); and the exact -2^N boundary (same section). A Z8001 capture answers whether the passes write: `sys_div_rr_r_large`, 0x0001FFFE / 0xFFFF, leaves 0001/FFFD with S set (FCW 4030). The RTL gives 0004/FFF3, S clear: a known difference, masked in the silicon vectors. The -2^N boundary still needs its divides.
+- PUSHL with the pointer as the source pair's low word (@R3,RR2; segmented @RR2,RR2): the pushed word, the pointer as it was or decremented. A Z8001 capture has only the high-word case (pushed as it was).
 - Whether the packed internal-cycle stretches (MULT zero, MULTL finish and zero, DIV case 3, DIVL prologue and zero) should move to the unit's own cycle grid; this changes pins and requires regenerating vectors.
 - DIV BR2 and MULTL's second BR: accept the shared-routine readings (1.1, 1.2) or leave them tagged unexplained.
 - DIV's TEST versus MULT's TEST costs (1.6): the structural rule is a guess from three cases.

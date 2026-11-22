@@ -1,6 +1,6 @@
 # Status
 
-`make test`, 2026-11-14. Update when a bench moves.
+`make test`, 2026-11-21. Update when a bench moves.
 
 | bench | command | result |
 |---|---|---|
@@ -55,7 +55,7 @@ utilization in those files, boundary flops included.
 | MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8 driven from the /AS fall; slack 6.90 ns) | 2026-11-14 | 447 | 71.8 MHz |
 | CIO (bus interface, register file, ports A/B/C, counter/timers, pattern match, interrupts, handshakes) | 2026-11-14 | 1,260 | 59.3 MHz |
 | SCC (every mode built; seeds 1-3: 1,927-1,935) | 2026-11-14 | 1,932 | 51.38 MHz, median of seeds 1-3 (setup slack at 48 MHz: 0.87-1.87 ns, hold 0.18 ns; worst: the latched address through a WR9 reset command into the hunt latch) |
-| CPU, Z8001 (the program ROMs in logic, the serial unit included; seeds 1-3: 3,997-4,011) | 2026-11-15 | 4,000 | 51.18 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.17-1.71 ns, hold 0.16 ns; worst: the arriving word's program lookup into pass_lo, last into the register file) |
+| CPU, Z8001 (the program ROMs in logic, the serial unit included; seed 1) | 2026-11-21 | 3,986 | 50.88 MHz, seed 1 (setup slack at 48 MHz: 1.18 ns, hold 0.15 ns; worst: the block and translate element's clock count into the register file) |
 | FPU Data Processor alone (`fpudp`; F0-F7 in an MLAB) | 2026-11-14 | 1,958 | 52.8 MHz (setup slack at 48 MHz: 1.89 ns; worst: the microprogram counter through the ROM into the working significand) |
 | FPU, whole chip (`fpu`: F0-F7, FOP1 and FOP2 in one 16 x 80 MLAB, row 10 also holding the running operation's bus operand while a queued instruction needs the buffer; seeds 1-3: 2,733-2,758; no M10K, no DSP) | 2026-11-15 | 2,736 | 53.85 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.16-2.61 ns, hold 0.13 ns; worst: the microprogram counter through the ROM into the working significand) |
 
@@ -90,8 +90,10 @@ utilization in those files, boundary flops included.
 
 ## Open
 
-- Segmented LDA bits 23:16: written 0; the manual leaves them undefined
-  (DECISIONS).
+- DIV/DIVL case 3: the RTL's destination and S differ from the chip's
+  (`sys_div_rr_r_large`, masked in the silicon vectors).
+- PUSHL with the pointer as the source pair's low word: no capture; the
+  RTL pushes the decremented pointer.
 - SCC: /W//REQ pins not built; also not built: SDLC Loop in FM, the
   sync-mode loop, /SYNC as an output in SDLC and its input in async,
   parity in SDLC, Zero Count, the DTR/REQ request.

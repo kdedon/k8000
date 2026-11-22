@@ -69,7 +69,9 @@ module z8000_cpu
   // ---- architectural registers ----------------------------------------------
   logic [15:0] fcw;
   logic [22:0] pc;          // seg[22:16]:offset[15:0]; Z8002: segment 0
-  logic [22:0] psap;
+  logic        pc_b15;      // bit 15 of the segment word the PC segment came from
+  logic [22:8] psap;        // segment and offset bits 15:8; the offset's low byte reads 0
+  logic        psapseg15;   // PSAPSEG bit 15, read back by LDCTL
   logic [15:0] refresh;
   logic [15:0] nspoff;
   logic [15:0] nspseg;
@@ -121,6 +123,7 @@ module z8000_cpu
   ctrl_word_t  ctrl, ctrl_q;
   logic        ex_first, ex_last, ex_last2, ex_last_nx, ex_last2_nx, ex_to_last, ex_flags_we, ex_pc_we;
   logic [22:0] ex_pc_d;
+  logic        ex_pc_b15_d, pc_seg_ld;
   logic [15:0] ir_w0, ir_w1, ir_w2;
   logic [22:0] ir_ea;
   logic        ir_ea_long;
@@ -497,6 +500,7 @@ module z8000_cpu
     .fcw_d        (fcw_d),
     .pc_we        (pc_we),
     .pc_d         (pc_d),
+    .pc_seg_ld    (pc_seg_ld),
     .halted       (halted),
     .dec_w0       (dec_w0),
     .dec_w1_lo    (dec_w1_lo),
@@ -639,7 +643,6 @@ module z8000_cpu
     .io_wr      (ctrl_q.io_write),
     .io_spec    (ctrl_q.io_spec),
     .block_decr (ctrl_q.block_decr),
-    .block_rept (ctrl_q.block_rept),
     .blk_more   (blk_more),
     .cc_held    (cc_held_q),
     .cnt_dec    (mq_wb),
@@ -654,6 +657,7 @@ module z8000_cpu
     .last_nx    (ex_last_nx),
     .seg_mode   (SEGMENTED && fcw[15]),
     .pc_seg     (SEGMENTED ? pc[22:16] : 7'd0),
+    .pc_b15     (pc_b15),
     .pc_off     (pc[15:0]),
     .cyc_end3   (bus_cyc_end3),
     .ea_word    (ir_ea),
@@ -681,11 +685,12 @@ module z8000_cpu
     .rf_wdata   (ex_wdata),
     .pc_we      (ex_pc_we),
     .pc_d       (ex_pc_d),
+    .pc_b15_d   (ex_pc_b15_d),
     .fcw        (fcw),
     .exc        (seq_exc),
     .af_done    (af_done),
     .exc_vec    (exc_vec),
-    .psap       (psap),
+    .psap       ({psap, 8'h00}),
     .id_word    (exc_id),
     .exc_pcoff  (exc_pcoff),
 
@@ -706,8 +711,8 @@ module z8000_cpu
     unique case (ctl_rsel)
       3'd2:    ctl_rdata = fcw;
       3'd3:    ctl_rdata = refresh;
-      3'd4:    ctl_rdata = {1'b0, psap[22:16], 8'h00};
-      3'd5:    ctl_rdata = psap[15:0];
+      3'd4:    ctl_rdata = {psapseg15, psap[22:16], 8'h00};
+      3'd5:    ctl_rdata = {psap[15:8], 8'h00};
       3'd6:    ctl_rdata = nspseg;
       3'd7:    ctl_rdata = nspoff;
       default: ctl_rdata = 16'h0000;
@@ -824,6 +829,14 @@ module z8000_cpu
   end
 
   always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n)                        pc_b15 <= 1'b0;
+    else if (clk_en && SEGMENTED) begin
+      if (ex_pc_we)                      pc_b15 <= ex_pc_b15_d;
+      else if (pc_we && pc_seg_ld)       pc_b15 <= bus_rdata[15];
+    end
+  end
+
+  always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       refresh <= 16'h0;
     end else if (clk_en) if (ref_we) begin
@@ -834,21 +847,23 @@ module z8000_cpu
   end
 
   // `halted` is for the testbench; execute decodes priv, stk_mode and
-  // br_mode from the next-edge words, and the opcode bits are the decoder's.
+  // br_mode from the next-edge words, and the opcode bits are the decoder's;
+  // a block's repeat is the sequencer's.
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
-  assign unused_ok = ^{halted, ctrl_q.priv, ctrl_q.stk_mode, ctrl_q.br_mode, ir_w0[15:12]};
+  assign unused_ok = ^{halted, ctrl_q.priv, ctrl_q.stk_mode, ctrl_q.br_mode, ctrl_q.block_rept, ir_w0[15:12]};
   // verilator lint_on UNUSEDSIGNAL
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
-      psap       <= 23'h0;
+      psap       <= 15'h0;
+      psapseg15  <= 1'b0;
       nspoff     <= 16'h0;
       nspseg     <= 16'h0;
     end else if (clk_en) if (ctl_we) begin
       unique case (ctl_rsel)
-        3'd4:    psap[22:16] <= ctl_wd[14:8];
-        3'd5:    psap[15:0]  <= ctl_wd;
+        3'd4:    {psapseg15, psap[22:16]} <= ctl_wd[15:8];
+        3'd5:    psap[15:8]  <= ctl_wd[15:8];
         3'd6:    nspseg      <= ctl_wd;
         3'd7:    nspoff      <= ctl_wd;
         default: ;

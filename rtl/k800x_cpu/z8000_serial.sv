@@ -67,8 +67,8 @@
 // Shifts: one position per 3-clock cycle, in {r2,r3} masked to the width:
 // the position shifts as the cycle opens (the start edge shifts the first),
 // then DEC and BR, whose second clock ends the cycle and shifts the next.
-// A zero count runs one cycle, shifts nothing and leaves C. Flags: C the
-// last bit out, Z, S; V (SLA) a sign change at any step.
+// A zero count runs one cycle, shifts nothing and sets C. Flags: C the
+// last bit out, Z, S; V a sign change at any step.
 //
 // The result is final as the last clock's pass is written (`fin`); done
 // the clock after. Nothing moves on a clock without `tick`, but a shift
@@ -177,7 +177,7 @@ module z8000_serial
   logic        qneg_q, qneg_d, qzero_q, qzero_d;
   logic        zin_q, zin_d;       // DIV: the divisor came in as 0
   logic [1:0]  width_q;
-  logic        left_q, arith_q, zn_q;
+  logic        left_q, arith_q;
   logic        more_now, more_q;
   logic        ng_on, ng_first, ng_m, ng_c;   // the negate pass
   logic [2:0]  ng_w;               // 0-3 r0..r3, 4 B_L, 5 B_H
@@ -335,7 +335,7 @@ module z8000_serial
           else if (cnt_q == 6'd0)  u_d = U_DONE;
           else begin
             {r_d[2], r_d[3]} = rot_out; c_d = rot_bit;
-            if (left_q && rot_ovf) v_d = 1'b1;
+            if (rot_ovf) v_d = 1'b1;
             u_d = U_DEC;
           end
         end else if (div_q && cnt_q == 6'd15) begin
@@ -624,8 +624,8 @@ module z8000_serial
         {r_d[2], r_d[3]} = dst[31:0] & wmask;
         if (count != 6'd0) begin
           {r_d[2], r_d[3]} = rot_out; c_d = rot_bit;
-          v_d = rot_left && rot_ovf;
-        end
+          v_d = rot_ovf;
+        end else c_d = 1'b1;      // a zero count sets C
       end
     end
   end
@@ -638,7 +638,7 @@ module z8000_serial
       eq_q <= 1'b0; fc_q <= 1'b0;
       q_q <= 1'b0; f_q <= 1'b0; sd_q <= 1'b0; o_q <= 1'b0; od_q <= 1'b0; w_q <= 1'b0; l_q <= 1'b0;
       qneg_q <= 1'b0; qzero_q <= 1'b0; zin_q <= 1'b0;
-      width_q <= WIDTH_NONE; left_q <= 1'b0; arith_q <= 1'b0; zn_q <= 1'b0;
+      width_q <= WIDTH_NONE; left_q <= 1'b0; arith_q <= 1'b0;
     end else if (clk_en) if (tick || start) begin
       u_q <= u_d; tgt_q <= tgt_d; sub_q <= sub_d; cnt_q <= cnt_d;
       have_q <= have_d;
@@ -651,7 +651,6 @@ module z8000_serial
         width_q <= width;
         left_q  <= op == OP_SLL || op == OP_SLA;
         arith_q <= op == OP_SLA || op == OP_SRA;
-        zn_q    <= count == 6'd0;
       end
     end
   end
@@ -694,10 +693,8 @@ module z8000_serial
     if (sh_val == 32'd0)          sh_flags = sh_flags | F_Z;
     if (|(sh_val & sh_sign))      sh_flags = sh_flags | F_S;
     if (c_q)                      sh_flags = sh_flags | F_C;
-    if (arith_q && left_q && v_q) sh_flags = sh_flags | F_V;
-    sh_mask = F_Z | F_S;
-    if (!zn_q)   sh_mask = sh_mask | F_C;
-    if (arith_q) sh_mask = sh_mask | F_V;
+    if (v_q)                      sh_flags = sh_flags | F_V;   // the sign changed at a step
+    sh_mask = F_C | F_Z | F_S | F_V;
 
     // In MULTL's frame loop, short of frame 32's body (its DEC leaves the count 0).
     more_now = mul_q && long_q && cnt_q != 6'd0 &&

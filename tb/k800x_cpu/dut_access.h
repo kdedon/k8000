@@ -39,8 +39,9 @@ struct DutAccess {
     uint32_t pc() const                  { return top->rootp->z8000_cpu__DOT__pc; }
     void     set_pc(uint32_t v)          { top->rootp->z8000_cpu__DOT__pc = v & 0x7FFFFF; }
 
-    uint32_t psap() const                { return top->rootp->z8000_cpu__DOT__psap; }
-    void     set_psap(uint32_t v)        { top->rootp->z8000_cpu__DOT__psap = v & 0x7FFFFF; }
+    // psap holds bits 22:8; the offset's low byte is not stored.
+    uint32_t psap() const                { return (uint32_t)top->rootp->z8000_cpu__DOT__psap << 8; }
+    void     set_psap(uint32_t v)        { top->rootp->z8000_cpu__DOT__psap = (v & 0x7FFFFF) >> 8; }
 
     uint16_t refresh() const             { return top->rootp->z8000_cpu__DOT__refresh; }
     // RATE and ROW; RE is set by its bit 15 or kept from REFRESH_EN, in
