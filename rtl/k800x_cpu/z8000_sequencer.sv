@@ -163,6 +163,7 @@ module z8000_sequencer
   output logic [3:0]  bus_len,
   output logic        bus_unit,     // the internal operation is ended by the serial unit
   output logic [2:0]  bus_tail,
+  output logic        bus_pc,       // the request is at the PC
   input  logic        bus_cyc_end,
   input  logic        bus_cyc_end3,
   input  logic        bus_done,
@@ -362,6 +363,8 @@ module z8000_sequencer
     next = NEXT_NONE;
     unique case (state_q)
       SEQ_PSA_REQ: next = NEXT_PSA;
+      // The first IF1 is asked for during the last read, for its early SN.
+      SEQ_PSA_WAIT: if (word_q == PSA_PC_OFF) next = NEXT_IF1;
       SEQ_FETCH:   next = NEXT_IF1;
       SEQ_PROG: begin
         if (rf_go || stop_go_q)     next = NEXT_REFRESH;
@@ -420,6 +423,7 @@ module z8000_sequencer
   end
 
   assign bus_mem    = next == NEXT_MEM;
+  assign bus_pc     = next == NEXT_IF1 || next == NEXT_AF || next == NEXT_FETCH;
   assign bus_nodata = next == NEXT_AF;
   assign bus_write = bus_mem && (nxt.kind == MC_W || ((nxt.kind == MC_IO || nxt.kind == MC_EPU) && io_write));
 
@@ -557,6 +561,8 @@ module z8000_sequencer
 
   // Address words: nonsegmented, the address in the PC's segment; segmented,
   // the segment word (with a short offset in its low byte), then a long offset.
+  // Nonsegmented, the segment follows the PC before the word too, so the
+  // SN sent out ahead of its read is right.
   always_comb begin
     ea_d = ea_q;
     if (word_addr) begin
@@ -565,6 +571,8 @@ module z8000_sequencer
         MC_COL_SL: ea_d = {ea_q[22:16], bus_rdata};
         default:   ea_d = {SEGMENTED ? pc[22:16] : 7'd0, bus_rdata};
       endcase
+    end else if (col_q == MC_COL_NS) begin
+      ea_d[22:16] = SEGMENTED ? pc[22:16] : 7'd0;
     end
   end
 

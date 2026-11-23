@@ -32,11 +32,12 @@ Design Handbook" (1982).
 ```
 make lint               # verilator -Wall on every RTL module
 make test-cpu           # replay every cpu/ vector on its variant's build
-make test-cpu-combined  # the same, CLK rise and fall in one master clock
+make test-cpu-combined  # the same, CLK rise and fall in one master clock; pairs of 1, 2 and 1,2,1,3 master clocks
 make cpu ONLY=TestNOP [VCD=1]   # one vector with full divergence context
 make ladder             # cpu/ vectors shortest-first with PASS/FAIL
 make test-cpu-timing    # Z-Bus monitor against the AC table (docs/TIMING_TESTS.md)
 make test-cpu-cycles    # instruction cycle counts against TM Mar81 sec 6.7
+make test-cpu-late-read # memory and I/O drive read data only between T3's rise and fall
 make test-decode        # the decode ROM against decode.vec
 make test-decode-table  # the decode ROM against z8000_decode_table.txt
 make test-mc-table      # the machine-cycle ROM against z8000_mc_table.txt
@@ -46,7 +47,8 @@ make test-cpu-silicon   # programs captured on a physical Z8001
 
 `tb_cpu` takes `--mclk P` / `K8000_MCLK` (comma list of master clocks per
 record, cycled; default `1,2,1,3`) and `--combined` / `K8000_COMBINED=1`.
-Results land in `results/cpu.txt` and `results/cpu_combined.txt`.
+Results land in `results/cpu.txt` and `results/cpu_combined.txt`
+(`cpu_combined_mclkP.txt` for the other combined patterns).
 
 ### Reviewing the ROM tables
 
@@ -74,8 +76,8 @@ State advances on the CLK rise. The strobes the AC table times from the
 CLK fall change on the CLK = 0 record (1988 DB PDF p.47-48): /AS rise
 (#26), /MREQ fall and rise (#18, #23), DS(write) and DS(I/O) fall (#39,
 #42), /DS rise (#34). WAIT and STOP are sampled on the fall (#60, #62) and
-acted on at the next rise. Read data is taken at the T3 opening rise
-(ledger 24). Per half clock (value just after the edge):
+acted on at the next rise. Read data is taken as CLK falls in T3 (#12,
+ledger 24). Per half clock (value just after the edge):
 
 | edge | AS | MREQ (memory/refresh) | DS read | DS write | DS I/O | DS INTACK | AD |
 |------|----|-----------------------|---------|----------|--------|-----------|----|
@@ -84,12 +86,14 @@ acted on at the next rise. Read data is taken at the T3 opening rise
 | T2 rise | 1 | 0 | 0 | 1 | 1 | 1 | read: released; write: data |
 | T2 fall | 1 | 0 | 0 | 0 | 0 | 1 | as T2 rise; WAIT sampled |
 | TWA / TW | 1 | 0 | 0 | 0 | 0 | 0 from the 4th TWA rise | as T2 |
-| T3 rise | 1 | 0 | 0 | 0 | 0 | 0 | read data captured |
-| T3 fall | 1 | 1 | 1 | 1 | 1 | 1 | write: data still driven |
+| T3 rise | 1 | 0 | 0 | 0 | 0 | 0 | read data on AD |
+| T3 fall | 1 | 1 | 1 | 1 | 1 | 1 | read data captured (the T3 rise record's AD); write: data still driven |
 | next rise | (T1 of the next cycle may start here) | 1 | 1 | 1 | 1 | 1 | released / next address |
 
-Sampling read data at the T3 fall instead also passes: recorded memory
-responses hold while DS is Low.
+A record's inputs are those after its edge, so the word as CLK falls is
+the T3 rise record's AD; the T3 fall record may already show memory
+released. A vector that ends on the rise opening a read's T3 gets that
+fall, inputs held, before its final state is read.
 
 ### Tolerances in tb_cpu
 
@@ -139,9 +143,9 @@ capture covers a repeat with its pointer in R1.
 
 ### Bus behaviour the vectors encode
 
-- T3 falls through: read data is captured at the T3 opening edge, the
-  sequencer's post-transaction step runs on that edge, and the strobes
-  release on the next edge, which may be the next T1 (Fig 19).
+- T3 falls through: read data is captured as CLK falls in T3, the
+  sequencer's post-transaction step runs then, and the strobes release on
+  the next edge, which may be the next T1 (Fig 19).
 - Every instruction runs its machine-cycle program: one /AS per machine
   cycle, tails hold the bus outputs, internal cycles per ledger 15.
 - BUSREQ is sampled at each T1 and the bus given up after that T3, the
@@ -193,7 +197,7 @@ vectors (`<TestName>.*.vec`) or the tb_cpu tolerance.
 | 21 | SN valid about one clock before the address (TdC(SNv) 130 ns after a clock rise), may change from TdC(SNn) after the T2 rise | PS p.150; AC 6/7 | OPEN | the vectors drive SN with the address at T1; the RTL drives it on the fall in the clock before T1, in time for the Z8010's SN sample at the T1 rise (#18). tb compares SN only while AS is Low |
 | 22 | Status, B/W, N/S valid early in T1 and stable through T3 (TdC(S), TdDS(S)); "same as previous cycle" between transactions and after a bus grant | Fig 12/15 | SPEC | the last values hold between transactions |
 | 23 | Interrupt request sampling while running: VI/NVI/SEGT levels and the NMI latch sampled at T3 of the last machine cycle of the instruction (the third clock of an internal cycle); the aborted IF1 starts after that whole cycle, tail included. Fawcett p.90: "sampled at the beginning of T3 of the last machine cycle"; 1988 DB p.152: "at the end of T2 in the last machine cycle", the same instant | Fawcett p.77, p.90 (PDF 88, 101); 1988 DB p.152 (PDF 159); TM Mar81 9-11 (PDF 246) | CONFLICT; INFERRED | TestMachineCycleInterruptSample. TM Mar81 9.6.1: "At the beginning of the last clock cycle in the last machine cycle"; they differ only when that cycle has a tail |
-| 24 | Data sample point: silicon T3 falling edge; the vectors and RTL take the word at the T3 rising (opening) edge, half a clock early; read data must be valid half a clock after the silicon's (TdDSR(DR) = TcC+TwCh-150 ns) | Fig 12; AC 12/33 | OPEN | harness memories respond while DS is Low, so either T3 edge matches |
+| 24 | Data sample point: the T3 CLK fall, #12 TsDR(C) "Read Data to Clock ↓ Setup time" 20/10 ns, #15 ThDR(DS) "Read Data to DS ↑ Hold Time" 0. The RTL takes AD as CLK falls in T3: AD in the master clock before the fall's pulse, the vectors' T3 rise record. With CLK rise and fall in one master clock that is the T3 rise's master clock | 1988 DB PDF p.47 (printed 40) #12, #15; Fig 12 | SPEC | tb_cpu_late_read (memory and I/O drive the word only after the T3 rise: fetches, operands, I/O, the VI acknowledge, a read with two waits) |
 | 25 | Chained T3/T1: a transaction's T1 never shares a clock with the previous T3 (3-clock cycles back-to-back) | Fig 19; RM 9.4.2 | SPEC | all back-to-back vectors, including the STOP stream and the VMPU abort re-fetch |
 | 26 | Z8003/4 ABORT sampled at T2 and each Tw with WAIT | 1985 DB p.448 Fig 7 | SPEC | TestAbort* |
 | 27 | Refresh prescaler CLK/4, row +2, RE bit; a write loads bits 15:1 (bit 0 stays 0, AD0 Low even on the first refresh after it); refresh after the whole IF1 or internal machine cycle (tail included), and in HALT | PS Fig 4 p.133, p.149, p.155, p.156; Fawcett p.66 (PDF 77); TM 6-74, 6-76 | SPEC | TestRefresh*, TestMachineCycleRefresh; items 35, 36, 43 |
@@ -227,7 +231,7 @@ vectors (`<TestName>.*.vec`) or the tb_cpu tolerance.
 
 ## Known gaps
 
-* OPEN: items 13, 20 (one clock), 21, 24, 38, 39, 52 (unlisted encodings).
+* OPEN: items 13, 20 (one clock), 21, 38, 39, 52 (unlisted encodings).
 * DIV/DIVL case 3: the destination and S differ from the chip
   (`sys_div_rr_r_large`); masked.
 * PUSHL with the pointer as the source pair's low word (@R3,RR2;

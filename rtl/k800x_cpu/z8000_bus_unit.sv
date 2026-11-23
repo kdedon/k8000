@@ -12,9 +12,8 @@
 //   TAW      automatic waits: one for I/O, five for an acknowledge (/DS
 //            falls on the rise opening the fourth)
 //   T3 rise  /WAIT as sampled on the fall before; Low holds the cycle
-//            here as a TW. Read data is taken at this edge and `done` is
-//            raised in the same clock.
-//   T3 fall  /DS /MREQ High
+//            here as a TW. `done` is raised in the same clock.
+//   T3 fall  /DS /MREQ High; the CPU top takes the read word
 //   next     a write's data released: the trail. If the next machine
 //            cycle opens on this edge its T1 overrides the release.
 //   tail `tail` more clocks after the T3 clock, given by the requester
@@ -97,6 +96,7 @@ module z8000_bus_unit
   output logic        away,           // the bus is granted, or given up as this clock ends
   output logic        cyc_iop,        // this clock is an internal operation's
   output logic        cyc_tail,       // this clock is a transaction's tail
+  output logic        cyc_read,       // the transaction in flight takes a word
   output logic [15:0] rdata,          // read data, valid with done
 
   // pins
@@ -212,6 +212,7 @@ module z8000_bus_unit
   assign twait = state_q == BUS_T3 && !wait_s;
   assign lost  = gnt_q || tw_q;
   assign rdata = ad_in;
+  assign cyc_read = !cyc_write_q && !cyc_refresh && !cyc_nod_q;
 
   // /ABORT is sampled as a memory transaction's T2 opens and at each wait
   // after it; not for I/O, an acknowledge, refresh, an EPU transfer or an
@@ -501,6 +502,11 @@ module z8000_bus_unit
     // The program's last end comes two edges ahead, for its last clocks.
     if (cyc_iop && unit_end2 && t_q != 3'd0 && unit_last) begin
       $display("%%Error: %m: unit's last end from a pass");
+      check_q <= 1'b1;
+    end
+    // A memory cycle's SN is out by the fall before its T1, for an MMU.
+    if (SEGMENTED && start_txn && req_st[3] && !clk_fall && sn != sn_d) begin
+      $display("%%Error: %m: SN %02h -> %02h at a memory T1 rise", sn, sn_d);
       check_q <= 1'b1;
     end
   end

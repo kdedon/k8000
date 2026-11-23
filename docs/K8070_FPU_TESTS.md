@@ -161,7 +161,7 @@ inputs come from the records.
 | CPU outputs | every C record, the CPU bench's rules |
 | STOP, /WAIT | at each CLK fall, as the CPU took them |
 | /VI | at a CLK rise that takes it (an instruction's or HALT's sample) |
-| AD in | at a read's T3 rise (the rise before the fall that raises /DS) |
+| AD in | at a read's T3 rise record: AD as CLK falls in T3, where the CPU takes it |
 | FPU ADDrive, BSY_n, INT_n, IEO, AD | at each CLK.I = 1 E record: what the CPU sees next |
 | memory | changed words in order against W; final memory, CPU and FPU registers |
 | AD drivers | two at once fails, but for an EPU store's data from the /AS rise over the CPU's address until it floats at T2 (spec p.546 drive edge), counted as `store-overlap` |

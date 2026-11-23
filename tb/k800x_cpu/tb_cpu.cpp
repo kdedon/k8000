@@ -323,6 +323,13 @@ int main(int argc, char** argv) {
             if (stopFirst && firstTick >= 0) break;
         } else if (tag == "F") {
             flushFall();
+            // A vector ending on the rise that opens a read's T3: the CPU
+            // takes the word on the T3 fall, so that fall comes first.
+            if (dut.t3_wait()) {
+                top->clk_fall = 1; top->eval();
+                for (int k = mclkSeq[mclkIdx]; k > 0; k--) { mtick(); top->clk_fall = 0; }
+                mclkIdx = (mclkIdx + 1) % mclkSeq.size();
+            }
             if (!checkFinal) continue;
             std::string what; ss >> what;
             auto fail = [&](const std::string& m) { finalFails++; if (finalFails <= 20) finalMsg += "  final " + m + "\n"; };

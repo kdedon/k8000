@@ -3,7 +3,7 @@
 // Both chips run on the master clock `mclk` and see the same CLK
 // rising-edge pulse, made by a board divider flop in the master domain; the
 // CPU also takes the falling-edge pulse. The CPU raises /AS on T1's CLK
-// fall and samples read data on the CLK rise opening T3; the MMU latches
+// fall and takes read data as CLK falls in T3; the MMU latches
 // the offset at the /AS rise (z8010_mmu.pdf p.571, p.573 #13/#14) and
 // drives A23-A8 from it, so that CLK rise must already see the right
 // physical address.

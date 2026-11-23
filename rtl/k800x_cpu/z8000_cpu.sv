@@ -4,7 +4,8 @@
 // VMPU=1: Z8003/Z8004 (ABORT pin).
 //
 // AD is split into ad_in / ad_out / ad_drive. ad_in must come straight from
-// a register (the read-data capture): its decode look-ahead takes the clock.
+// a register (the read-data capture): with CLK rise and fall in one master
+// clock its decode look-ahead takes the clock.
 // The test harness reads and pokes u_regfile.r, fcw, pc, psap, refresh,
 // nspoff, nspseg and halted by name.
 
@@ -56,6 +57,8 @@ module z8000_cpu
   // ---- CLK pin: the rising-edge pulse is the clock enable ---------------------
   logic clk_en;
   assign clk_en = clk_rise;
+  logic core_en;   // the edge the CPU past the bus unit acts on
+  logic t3_q;      // a read's T3 rise waits for its fall
 
   // STOP is sampled on the CLK fall and acted on at the next rise; a rise
   // in the fall's master clock sees that sample.
@@ -98,7 +101,7 @@ module z8000_cpu
 
   z8000_regfile u_regfile (
     .clk     (clk),
-    .clk_en  (clk_en),
+    .clk_en  (core_en),
     .we      (rf_we),
     .wwidth  (rf_wwidth),
     .wsel    (rf_wsel),
@@ -146,6 +149,11 @@ module z8000_cpu
   logic        cc_met, more;
   logic        blk_cls;   // block and translate: elements, each a repetition
   logic [4:0]  iter;
+  logic        bu_cyc_end, bu_bound, bu_cyc_end3, bu_twait, bu_abt_smp, bu_held, bu_lost, bu_away;
+  logic        bu_iop, bu_tail_on, bu_done, bu_read, bus_pc;
+  logic [22:0] bus_req_addr;
+  logic [15:0] bu_rdata;
+  logic        nmi_c, nvi_c, vi_c, segt_c, mi_c;   // the pins as of the edge the CPU acts on
 
   z8000_decode u_decode (
     .w0    (dec_w0),
@@ -164,7 +172,7 @@ module z8000_cpu
   assign ctrl_k   = kill_nx ? '0 : ctrl;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) ctrl_q <= '0;
-    else if (clk_en)          ctrl_q <= ctrl_k;
+    else if (core_en)         ctrl_q <= ctrl_k;
   end
 
   // Sequencer inputs from the units.
@@ -182,12 +190,12 @@ module z8000_cpu
   assign nvie = ex_flags_we && ex_flags_mask[11] ? ex_flags[11] : fcw[11];
   z8000_int_unit u_int (
     .clk       (clk),
-    .clk_en    (clk_en),
+    .clk_en    (core_en),
     .reset_n   (reset_n),
-    .nmi_n     (nmi_n),
-    .nvi_n     (nvi_n),
-    .vi_n      (vi_n),
-    .segt_n    (segt_n || !SEGMENTED),
+    .nmi_n     (nmi_c),
+    .nvi_n     (nvi_c),
+    .vi_n      (vi_c),
+    .segt_n    (segt_c || !SEGMENTED),
     .vie       (vie),
     .nvie      (nvie),
     .smp_end   (smp_end),
@@ -254,7 +262,7 @@ module z8000_cpu
     if (!reset_n) begin
       md_pick_q <= 1'b0;
       md_seen_q <= 1'b0;
-    end else if (clk_en) begin
+    end else if (core_en) begin
       md_pick_q <= (md_start && md_reg) || (md_pick_q && !md_tick);
       if (ex_first)     md_seen_q <= 1'b0;
       else if (md_data) md_seen_q <= 1'b1;
@@ -274,7 +282,7 @@ module z8000_cpu
     if (!reset_n) begin
       md_hiz_q <= 1'b0;
       md_rs_q  <= 4'd0;
-    end else if (clk_en) begin
+    end else if (core_en) begin
       if (md_src_hi && !md_reg)  md_hiz_q <= md_bz;
       if (md_start && md_reg)    md_rs_q  <= ir_w0[7:4];
     end
@@ -302,7 +310,7 @@ module z8000_cpu
       md_mul_q  <= 1'b0;
       md_long_q <= 1'b0;
       md_dst_q  <= 4'd0;
-    end else if (clk_en) if (md_start) begin
+    end else if (core_en) if (md_start) begin
       md_pend_q <= 1'b1;
       md_mul_q  <= md_mul;
       md_long_q <= md_long;
@@ -357,7 +365,7 @@ module z8000_cpu
       sh_arm_q    <= 1'b0;
       sh_cnt_q    <= 7'd0;
       sh_cnt_ok_q <= 1'b0;
-    end else if (clk_en) if (ex_first) begin
+    end else if (core_en) if (ex_first) begin
       sh_arm_q    <= 1'b0;
       sh_cnt_ok_q <= 1'b0;
     end else begin
@@ -389,7 +397,7 @@ module z8000_cpu
       sh_pend_q   <= 1'b0;
       sh_dst_q    <= 4'd0;
       sh_wwidth_q <= RF_BYTE;
-    end else if (clk_en) if (sh_start) begin
+    end else if (core_en) if (sh_start) begin
       sh_pend_q   <= 1'b1;
       sh_dst_q    <= ir_w0[7:4];
       sh_wwidth_q <= sh_rwidth;
@@ -402,7 +410,7 @@ module z8000_cpu
   // One serial unit runs the multiplies, divides and shifts.
   z8000_serial u_serial (
     .clk         (clk),
-    .clk_en      (clk_en),
+    .clk_en      (core_en),
     .reset_n     (reset_n),
     .tick        (md_tick),
     .start       (md_start || sh_start),
@@ -436,7 +444,7 @@ module z8000_cpu
 
   // ---- multi-micro: MSET, MRES, MBIT, MREQ -------------------------------------
   // MSET/MRES drive /MO and MBIT sets S if /MI is High as the last clock
-  // opens. MREQ (F1+2 . n x I7 . I7) samples /MI as its word is taken: High
+  // opens. MREQ (F1+2 . n x I7 . I7) samples /MI on the rise after its word: High
   // drives /MO Low and counts Rd down, one I7 each: port A reads Rd, which
   // each I7's first clock writes back less one through the execute unit's
   // step adder. Low clears S and Z and skips the count. As the last clock
@@ -452,19 +460,24 @@ module z8000_cpu
   assign mq_end    = mp_on && ex_to_last;
   assign mq_go     = ex_word && fcw[14] && ctrl.valid && ctrl.exec == CLS_MULTI_PROC && ctrl.mp_op == MPREQ;
 
+  // MREQ samples /MI and moves /MO on the CLK rise ending its IF1's T3,
+  // the first rise after its word is taken (`mq_pend_q` between).
+  logic mq_pend_q, mq_take, mq_req_c;
+  assign mq_take  = clk_en && mq_pend_q;
+  assign mq_req_c = mq_take ? mi_n : mq_req_q;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       mo_q      <= 1'b1;
       mq_req_q  <= 1'b0;
-      mq_more_q <= 1'b0;
-      mq_dec_q  <= 1'b0;
-    end else if (clk_en) begin
-      mq_dec_q <= mq_on && int_take && more;
+      mq_pend_q <= 1'b0;
+    end else begin
+      if (core_en && mq_go) mq_pend_q <= 1'b1;
+      else if (clk_en)      mq_pend_q <= 1'b0;
       // Only a word that runs: in normal mode MREQ traps and /MO holds.
-      if (mq_go) begin
+      if (mq_take) begin
         mq_req_q <= mi_n;
         mo_q     <= !mi_n;
-      end else if (mq_end) begin
+      end else if (clk_en && mq_end) begin
         unique case (ctrl_q.mp_op)
           MPSET:   mo_q <= 1'b0;
           MPRES:   mo_q <= 1'b1;
@@ -472,7 +485,16 @@ module z8000_cpu
           default: ;
         endcase
       end
-      if (mq_on && ex_first) mq_more_q <= mq_req_q && rf_rdata[15:0] != 16'h0000;
+    end
+  end
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      mq_more_q <= 1'b0;
+      mq_dec_q  <= 1'b0;
+    end else if (core_en) begin
+      mq_dec_q <= mq_on && int_take && more;
+      if (mq_on && ex_first) mq_more_q <= mq_req_c && rf_rdata[15:0] != 16'h0000;
       else if (mq_wb)        mq_more_q <= mq_cnt != 16'h0000;
     end
   end
@@ -491,7 +513,7 @@ module z8000_cpu
 
   z8000_sequencer #(.SEGMENTED(SEGMENTED)) u_sequencer (
     .clk          (clk),
-    .clk_en       (clk_en),
+    .clk_en       (core_en),
     .reset_n      (reset_n),
     .fcw_sys      (fcw[14]),
     .fcw_seg      (fcw[15]),
@@ -572,6 +594,7 @@ module z8000_cpu
     .bus_len      (bus_len),
     .bus_unit     (bus_unit),
     .bus_tail     (bus_tail),
+    .bus_pc       (bus_pc),
     .bus_cyc_end  (bus_cyc_end),
     .bus_cyc_end3 (bus_cyc_end3),
     .bus_done     (bus_done),
@@ -591,7 +614,7 @@ module z8000_cpu
   );
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)     cc_held_q <= 1'b0;
-    else if (clk_en) if (ex_word) cc_held_q <= cc_met;
+    else if (core_en) if (ex_word) cc_held_q <= cc_met;
   end
 
   // The serial unit's cycle ends, for the instruction running it.
@@ -625,7 +648,7 @@ module z8000_cpu
 
   z8000_execute #(.SEGMENTED(SEGMENTED), .VMPU(VMPU)) u_execute (
     .clk        (clk),
-    .clk_en     (clk_en),
+    .clk_en     (core_en),
     .reset_n    (reset_n),
     .w0         (ir_w0[11:0]),
     .ctrl_nx    (ctrl_k),
@@ -723,7 +746,7 @@ module z8000_cpu
 
   z8000_refresh u_refresh (
     .clk      (clk),
-    .clk_en   (clk_en),
+    .clk_en   (core_en),
     .reset_n  (reset_n),
     .enable   (refresh[15]),
     .rate     (refresh[14:9]),
@@ -750,7 +773,7 @@ module z8000_cpu
   logic lock_q;
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)     lock_q <= 1'b0;
-    else if (clk_en)  lock_q <= bus_lock_nx;
+    else if (core_en) lock_q <= bus_lock_nx;
   end
 
 
@@ -761,7 +784,7 @@ module z8000_cpu
     .reset_n        (reset_n),
     .req            (bus_req),
     .req_internal   (bus_internal),
-    .req_addr       (bus_addr),
+    .req_addr       (bus_req_addr),
     .req_wdata      (ex_mem_wdata),
     .req_st         (bus_st),
     .req_write      (bus_write),
@@ -777,18 +800,19 @@ module z8000_cpu
     .tail           (bus_tail),
     .lock           (lock_q),
     .busreq         (!busreq_n),
-    .cyc_end        (bus_cyc_end),
-    .cyc_bound      (bus_bound),
-    .cyc_end3       (bus_cyc_end3),
-    .twait          (bus_twait),
-    .abt_smp        (bus_abt_smp),
-    .held           (bus_held),
-    .lost           (bus_lost),
-    .away           (bus_away),
-    .cyc_iop        (bus_iop),
-    .cyc_tail       (bus_tail_on),
-    .done           (bus_done),
-    .rdata          (bus_rdata),
+    .cyc_end        (bu_cyc_end),
+    .cyc_bound      (bu_bound),
+    .cyc_end3       (bu_cyc_end3),
+    .twait          (bu_twait),
+    .abt_smp        (bu_abt_smp),
+    .held           (bu_held),
+    .lost           (bu_lost),
+    .away           (bu_away),
+    .cyc_iop        (bu_iop),
+    .cyc_tail       (bu_tail_on),
+    .done           (bu_done),
+    .cyc_read       (bu_read),
+    .rdata          (bu_rdata),
     .wait_n         (wait_n),
     .ad_in          (ad_in),
     .ad_out         (ad_out),
@@ -805,6 +829,61 @@ module z8000_cpu
     .bus_drive      (bus_drive)
   );
 
+  // ---- read data on the T3 fall --------------------------------------------
+  // A read's word is AD as CLK falls in T3 (1988 DB #12): AD in the master
+  // clock before the fall's pulse. The rise opening T3 moves the bus unit
+  // and its pins; the rest of the CPU takes that edge with the fall's pulse,
+  // seeing the bus and the input pins as they were at the rise, and the
+  // word. A rise in the fall's master clock leaves no clock for that, but
+  // there the T3 rise's master clock is the one before the T3 fall: the
+  // word is taken as T3 opens.
+  logic        t3_late, lost_q;
+  logic [4:0]  pin_q;       // /NMI /NVI /VI /SEGT /MI as of the last rise
+  logic [15:0] ad_q;        // AD in the last master clock
+  assign t3_late = clk_en && !clk_fall && bu_done && bu_read;
+  assign core_en = (clk_en && !t3_late) || (clk_fall && t3_q);
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+      t3_q   <= 1'b0;
+      lost_q <= 1'b0;
+      pin_q  <= 5'h1F;
+    end else if (clk_en) begin
+      t3_q   <= t3_late;
+      lost_q <= bu_lost;
+      pin_q  <= {nmi_n, nvi_n, vi_n, segt_n, mi_n};
+    end else if (clk_fall) begin
+      t3_q   <= 1'b0;
+    end
+  end
+
+  always_ff @(posedge clk or negedge reset_n) begin
+    if (!reset_n) ad_q <= 16'h0000;
+    else          ad_q <= ad_in;
+  end
+
+  // The bus as of the T3 rise until the fall takes it.
+  assign bus_cyc_end  = bu_cyc_end  && !t3_q;
+  assign bus_bound    = bu_bound    && !t3_q;
+  assign bus_cyc_end3 = bu_cyc_end3 && !t3_q;
+  assign bus_twait    = bu_twait    && !t3_q;
+  assign bus_abt_smp  = bu_abt_smp  && !t3_q;
+  assign bus_held     = bu_held     && !t3_q;
+  assign bus_away     = bu_away     && !t3_q;
+  assign bus_iop      = bu_iop      && !t3_q;
+  assign bus_tail_on  = bu_tail_on  && !t3_q;
+  assign bus_done     = bu_done     || t3_q;
+  assign bus_lost     = t3_q ? lost_q : bu_lost;
+  assign bus_rdata    = t3_q ? ad_q : bu_rdata;
+  assign {nmi_c, nvi_c, vi_c, segt_c, mi_c} = t3_q ? pin_q : {nmi_n, nvi_n, vi_n, segt_n, mi_n};
+
+  // SN goes out on the T3 fall for a T1 at the next rise, before the CPU
+  // has acted on the word: a PC-addressed request takes the PC that fall
+  // loads.
+  logic [6:0] pc_seg_nx;
+  assign pc_seg_nx    = ex_pc_we ? ex_pc_d[22:16] : pc_we ? pc_d[22:16] : pc[22:16];
+  assign bus_req_addr = {t3_q && bus_pc ? pc_seg_nx : bus_addr[22:16], bus_addr[15:0]};
+
   assign mo_n     = mo_q;
 
 
@@ -812,16 +891,16 @@ module z8000_cpu
     if (!reset_n) begin
       fcw <= 16'h0000;
       pc  <= 23'h0;
-    end else if (clk_en) begin
+    end else if (core_en) begin
       if (fcw_we)           fcw <= fcw_d;
       else if (ex_fcw_we)   fcw <= ex_fcw_d;
       else if (ex_flags_we) fcw <= (fcw & ~ex_flags_mask) | (ex_flags & ex_flags_mask);
       else if (md_wb)       fcw <= {fcw[15:8], md_flags, fcw[3:0]};
       else if (sh_wb)       fcw <= (fcw & ~sh_fmask) | (sh_flags & sh_fmask);
-      else if (mq_end && ctrl_q.mp_op == MPBIT) fcw[5] <= mi_n;
+      else if (mq_end && ctrl_q.mp_op == MPBIT) fcw[5] <= mi_c;
       else if (mq_end && ctrl_q.mp_op == MPREQ) begin
-        fcw[6] <= mq_req_q;
-        fcw[5] <= mq_req_q && !mi_n;
+        fcw[6] <= mq_req_c;
+        fcw[5] <= mq_req_c && !mi_c;
       end
       if (ex_pc_we)         pc  <= ex_pc_d;
       else if (pc_we)       pc  <= pc_d;
@@ -830,7 +909,7 @@ module z8000_cpu
 
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)                        pc_b15 <= 1'b0;
-    else if (clk_en && SEGMENTED) begin
+    else if (core_en && SEGMENTED) begin
       if (ex_pc_we)                      pc_b15 <= ex_pc_b15_d;
       else if (pc_we && pc_seg_ld)       pc_b15 <= bus_rdata[15];
     end
@@ -839,7 +918,7 @@ module z8000_cpu
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n) begin
       refresh <= 16'h0;
-    end else if (clk_en) if (ref_we) begin
+    end else if (core_en) if (ref_we) begin
       refresh <= {ctl_wd[15:9], rf_take ? rf_row_next : ctl_wd[8:1], 1'b0};
     end else if (rf_take) begin
       refresh <= {refresh[15:9], rf_row_next, 1'b0};
@@ -860,7 +939,7 @@ module z8000_cpu
       psapseg15  <= 1'b0;
       nspoff     <= 16'h0;
       nspseg     <= 16'h0;
-    end else if (clk_en) if (ctl_we) begin
+    end else if (core_en) if (ctl_we) begin
       unique case (ctl_rsel)
         3'd4:    {psapseg15, psap[22:16]} <= ctl_wd[15:8];
         3'd5:    psap[15:8]  <= ctl_wd[15:8];
@@ -880,7 +959,7 @@ module z8000_cpu
   logic        last_d1_q = 1'b0, sh_run_q = 1'b0, sh_prev_q = 1'b0;
   // CLK rises and falls in turn; a pulse pair in one master clock is a fall
   // then a rise.
-  logic        pulse_seen_q = 1'b0, rose_q = 1'b0, pulse_bad_q = 1'b0;
+  logic        pulse_seen_q = 1'b0, rose_q = 1'b0, pulse_bad_q = 1'b0, t3_both_q = 1'b0;
   always_ff @(posedge clk or negedge reset_n)
     if (!reset_n) pulse_seen_q <= 1'b0;
     else if (clk_en || clk_fall) begin
@@ -889,10 +968,17 @@ module z8000_cpu
                  clk_fall ? "rise" : "fall");
         pulse_bad_q <= 1'b1;
       end
+      // A read's T3 rise and T3 fall, one alone in its master clock and
+      // the other sharing it with a pulse of the other kind.
+      if ((clk_en && clk_fall && t3_q) || (clk_fall && !clk_en && t3_both_q)) begin
+        $display("%%Error: %m: one-master-clock and longer CLK periods mixed at a T3");
+        pulse_bad_q <= 1'b1;
+      end
+      t3_both_q <= clk_en && clk_fall && bu_done && bu_read;
       pulse_seen_q <= 1'b1;
       rose_q       <= clk_en;
     end
-  always_ff @(posedge clk) if (clk_en) begin
+  always_ff @(posedge clk) if (core_en) begin
     if (pulse_bad_q) check_q <= 1'b1;
     // Port A reads the destination as the unit starts: no operand address
     // is formed from it on that clock.

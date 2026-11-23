@@ -7,7 +7,7 @@
 #   make gen        rebuild the generated RTL from its sources (tools/)
 #   make check-gen  fail if a generated RTL file differs from its source
 #   make test-<x>   one bench: decode | decode-table | mc-table | alu | regfile | serial | refresh | cpu |
-#                   cpu-combined | cpu-timing | cpu-cycles | cpu-silicon | seq-words | seq-paths | cond |
+#                   cpu-combined (also gapped: --mclk 2, 1,2,1,3) | cpu-timing | cpu-cycles | cpu-silicon | cpu-late-read | seq-words | seq-paths | cond |
 #                   mmu | scc | cio | fpu | fpu-dp | fpu-enc | fpu-fastd | fpu-slowd | cpu-fpu | <chip>-timing
 #   make test-timing        spec TIMING benches (CPU Z-Bus monitor + MMU/CIO/SCC/FPU strobes)
 #   make test-mclk          peripheral and FPU vectors at master-clock patterns 1, 2, 1,3, 3,1,2 (FPU also 3, 4)
@@ -58,7 +58,7 @@ VBUILD := MAKEFLAGS= $(VERILATOR) --build-jobs $(VERILATOR_JOBS)
 
 .PHONY: all \
         lint lint-measure build test test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu \
-        test-cpu-combined test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond test-timing test-mclk cpu ladder clean help \
+        test-cpu-combined test-cpu-timing test-cpu-cycles test-cpu-late-read test-seq-words test-seq-paths test-cond test-timing test-mclk cpu ladder clean help \
         gen check-gen
 all: build
 
@@ -121,7 +121,8 @@ build: $(CHIP_BUILD) $(OBJ)/tb_decode/tb_decode $(OBJ)/tb_decode_table/tb_decode
        $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004 \
        $(OBJ)/tb_cpu_timing/tb_cpu_timing $(OBJ)/tb_cpu_cycles/tb_cpu_cycles $(OBJ)/tb_seq_words/tb_seq_words \
        $(OBJ)/tb_seq_paths/tb_seq_paths $(OBJ)/tb_cond/tb_cond \
-       $(OBJ)/tb_cpu_timing_z8001/tb_cpu_timing_z8001 $(OBJ)/tb_cpu_cycles_z8001/tb_cpu_cycles_z8001 $(OBJ)/tb_seq_paths_z8001/tb_seq_paths_z8001
+       $(OBJ)/tb_cpu_timing_z8001/tb_cpu_timing_z8001 $(OBJ)/tb_cpu_cycles_z8001/tb_cpu_cycles_z8001 $(OBJ)/tb_seq_paths_z8001/tb_seq_paths_z8001 \
+       $(OBJ)/tb_cpu_late_read/tb_cpu_late_read
 
 $(OBJ)/tb_decode/tb_decode: $(PKG_SRCS) $(GEN_SRCS) rtl/k800x_cpu/z8000_decode.sv tb/k800x_cpu/tb_decode.sv
 	@mkdir -p $(dir $@)
@@ -170,6 +171,11 @@ $(OBJ)/tb_cpu_timing/tb_cpu_timing: $(CPU_SRCS) tb/common/z8000_bus_monitor.sv t
 	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_cpu_timing \
 	  $(CPU_SRCS) tb/common/z8000_bus_monitor.sv tb/k800x_cpu/tb_cpu_timing.sv -o tb_cpu_timing >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
+$(OBJ)/tb_cpu_late_read/tb_cpu_late_read: $(CPU_SRCS) tb/k800x_cpu/tb_cpu_late_read.sv
+	@mkdir -p $(dir $@)
+	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_cpu_late_read \
+	  $(CPU_SRCS) tb/k800x_cpu/tb_cpu_late_read.sv -o tb_cpu_late_read >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
 $(OBJ)/tb_cpu_cycles/tb_cpu_cycles: $(CPU_SRCS) tb/k800x_cpu/tb_cpu_cycles.sv
 	@mkdir -p $(dir $@)
 	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_cpu_cycles \
@@ -216,7 +222,7 @@ $(eval $(call CPU_BUILD,z8003,1,1,Z8003))
 $(eval $(call CPU_BUILD,z8004,0,1,Z8004))
 
 # ---- run -------------------------------------------------------------------
-test: check-gen test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-combined test-cpu-timing test-cpu-cycles test-seq-words test-seq-paths test-cond $(CHIP_TEST) test-mclk
+test: check-gen test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-combined test-cpu-timing test-cpu-cycles test-cpu-late-read test-seq-words test-seq-paths test-cond $(CHIP_TEST) test-mclk
 
 # Spec-timing ladder: everything that checks the datasheet's timing rather than
 # equality with the vectors.
@@ -248,6 +254,8 @@ test-cpu: $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 $(OB
 
 test-cpu-combined: $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004
 	@scripts/run_vectors.sh cpu --combined
+	@scripts/run_vectors.sh cpu --combined-mclk 2
+	@scripts/run_vectors.sh cpu --combined-mclk 1,2,1,3
 
 test-cpu-timing: $(OBJ)/tb_cpu_timing/tb_cpu_timing $(OBJ)/tb_cpu_timing_z8001/tb_cpu_timing_z8001
 	@scripts/run_sv_bench.sh $(OBJ)/tb_cpu_timing/tb_cpu_timing
@@ -256,6 +264,22 @@ test-cpu-timing: $(OBJ)/tb_cpu_timing/tb_cpu_timing $(OBJ)/tb_cpu_timing_z8001/t
 test-cpu-cycles: $(OBJ)/tb_cpu_cycles/tb_cpu_cycles $(OBJ)/tb_cpu_cycles_z8001/tb_cpu_cycles_z8001
 	@scripts/run_sv_bench.sh -t 50 $(OBJ)/tb_cpu_cycles/tb_cpu_cycles +vec=vectors/k800x_cpu/cycles/cycles.vec
 	@scripts/run_sv_bench.sh -t 50 $(OBJ)/tb_cpu_cycles_z8001/tb_cpu_cycles_z8001 +vec=vectors/k800x_cpu/cycles/cycles_z8001.vec
+
+# Read data late in T3, taken on the CLK fall: late at 2, 3 and 2,3,4 master
+# clocks per CLK half, only in the master clock before the fall at 3 and
+# 3,4,5, late for one kind of read at a time, normal memory at 1 and 1,2,
+# and turbo (rise and fall in every master clock). The mixed clockings must
+# fail with the CPU's check.
+LATE_RUNS := +half=2 +half=3 +half=2,3,4 +edge:+half=3 +edge:+half=3,4,5 \
+             +only=fetch +only=data +only=io +only=ack \
+             +normal:+half=1 +normal:+half=1,2 +turbo
+LATE_BAD  := +mixed:+half=2 +unmix:+half=2
+test-cpu-late-read: $(OBJ)/tb_cpu_late_read/tb_cpu_late_read
+	@for a in $(LATE_RUNS); do scripts/run_sv_bench.sh -t 1 $< $$(echo $$a | tr : ' ') || exit 1; done
+	@for a in $(LATE_BAD); do out=$$(timeout $${K8000_TIMEOUT:-1800} $< $$(echo $$a | tr : ' ') 2>&1); \
+	  if printf '%s\n' "$$out" | grep -q 'mixed at a T3' && printf '%s\n' "$$out" | grep -q '^RESULT FAIL'; then \
+	    printf '%s\n' "$$out" | grep '^RESULT FAIL' | sed 's/^RESULT FAIL/RESULT EXPECTED FAIL/'; \
+	  else printf '%s\n' "$$out"; echo "RESULT FAIL $$a: the mixed clocking was not flagged"; exit 1; fi; done
 
 test-seq-words: $(OBJ)/tb_seq_words/tb_seq_words
 	@scripts/run_sv_bench.sh $(OBJ)/tb_seq_words/tb_seq_words

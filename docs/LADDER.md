@@ -136,7 +136,7 @@ sequencer, per rising edge:
 |---|---|
 | T1 | /AS Low, address on AD, `ad_drive`=1, ST valid, /MREQ + /DS High |
 | T2 | /AS High; /MREQ Low; read: /DS Low and AD released; write: AD holds data, /DS still High |
-| T3 | read data captured at this edge; /DS + /MREQ (and write data) STILL asserted |
+| T3 | read data on AD, captured as CLK falls in T3; /DS + /MREQ (and write data) STILL asserted |
 | next | /DS + /MREQ released -- possibly the same edge as the next T1 (Fig 19) |
 
 Plus the reset sequence: three PSA reads on the Z8001 (FCW, PC segment, PC

@@ -13,6 +13,7 @@
 //   u_refresh.owed_q count_q
 //   u_execute.sp_we_q/sp_sel_q/sp_d_q
 //   u_execute.tset_rmw/wr_next_q  mem_take  bus_done   (TSET bus lock)
+//   t3_q   (a read's word waits for the T3 fall)
 
 #pragma once
 #include <cstdint>
@@ -67,6 +68,7 @@ struct DutAccess {
     bool     rmw_lock() const            { auto* r = top->rootp; return r->z8000_cpu__DOT__u_execute__DOT__tset_rmw && r->z8000_cpu__DOT__u_execute__DOT__wr_next_q; }
     bool     mem_take() const            { return top->rootp->z8000_cpu__DOT__mem_take; }
     bool     bus_done() const            { return top->rootp->z8000_cpu__DOT__bus_done; }
+    bool     t3_wait() const             { return top->rootp->z8000_cpu__DOT__t3_q; }
 
     // A simulation-only execute check failed.
     bool     execute_check() const       { return top->rootp->z8000_cpu__DOT__u_execute__DOT__check_q || top->rootp->z8000_cpu__DOT__u_sequencer__DOT__check_q || top->rootp->z8000_cpu__DOT__check_q; }

@@ -1,6 +1,6 @@
 # Status
 
-`make test`, 2026-11-21. Update when a bench moves.
+`make test`, 2026-11-22. Update when a bench moves.
 
 | bench | command | result |
 |---|---|---|
@@ -15,9 +15,10 @@
 | Program paths and repeats | `make test-seq-paths` | PASS, 20 cases on Z8002 and segmented Z8001 (JP/RET cc taken and not taken, shift counts, LDM counts and lengths) |
 | Condition codes | `make test-cond` | PASS, 256 checks (16 codes, every C Z S P/V) |
 | CPU vectors | `make test-cpu` | 3078 pass, 0 fail, 0 skip (Z8001 1298, Z8002 1758, Z8003 7, Z8004 15) |
-| CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 3078 pass, 0 fail, 0 skip |
+| CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 3078 pass, 0 fail, 0 skip, at record pairs of 1, 2 and 1,2,1,3 master clocks |
 | CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks on Z8002, 14 on segmented Z8001 in segments 05 and 12 (I/O with /WAIT included, SN timing) |
 | CPU against a physical Z8001 | `make test-cpu-silicon` | non-segmented 1202 of 1202, segmented 1072 of 1072 (final registers, flags, memory, I/O; bus order and instruction clocks on the 197 traced tests) |
+| CPU read data late in T3 | `make test-cpu-late-read` | PASS, segmented Z8001; memory and I/O drive the word only between T3's rise and fall: fetches, operands, a byte, IN, a cross-segment CALL and RET with refresh on, MREQ with /MI High and Low (the other level at the T3 rise and fall; /MO checked on the rise ending T3), the VI acknowledge, a read with two waits; at 2, 3 and 2,3,4 master clocks per CLK half, only in the master clock before the fall at 3 and 3,4,5, one kind of read at a time, plus normal memory and turbo; fails on any CPU simulation check; both mixed clockings fail as they must |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, Z8002 45 of 45, segmented Z8001 38 of 38 (SS and SL direct and indexed addresses, CALL, RET, long words) |
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
 | MMU timing | `make test-mmu-timing` | 22 of 22 |
@@ -56,7 +57,7 @@ utilization in those files, boundary flops included.
 | MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8 driven from the /AS fall; slack 6.90 ns) | 2026-11-14 | 447 | 71.8 MHz |
 | CIO (bus interface, register file, ports A/B/C, counter/timers, pattern match, interrupts, handshakes) | 2026-11-14 | 1,260 | 59.3 MHz |
 | SCC (every mode built; seeds 1-3: 1,927-1,935) | 2026-11-14 | 1,932 | 51.38 MHz, median of seeds 1-3 (setup slack at 48 MHz: 0.87-1.87 ns, hold 0.18 ns; worst: the latched address through a WR9 reset command into the hunt latch) |
-| CPU, Z8001 (the program ROMs in logic, the serial unit included; seed 1) | 2026-11-21 | 3,986 | 50.88 MHz, seed 1 (setup slack at 48 MHz: 1.18 ns, hold 0.15 ns; worst: the block and translate element's clock count into the register file) |
+| CPU, Z8001 (the program ROMs in logic, the serial unit included; read data on the T3 fall; seed 1) | 2026-11-22 | 4,000 | 52.99 MHz, seed 1; seeds 2 and 3: 3,988 and 3,996 ALMs, 51.31 and 51.44 MHz (setup slack at 48 MHz: 1.96, 1.35, 1.39 ns, hold 0.16 ns; worst: the first word into the interrupt requests, FCW into the register file) |
 | FPU Data Processor alone (`fpudp`; F0-F7 in an MLAB) | 2026-11-14 | 1,958 | 52.8 MHz (setup slack at 48 MHz: 1.89 ns; worst: the microprogram counter through the ROM into the working significand) |
 | FPU, whole chip (`fpu`: F0-F7, FOP1 and FOP2 in one 16 x 80 MLAB, row 10 also holding the running operation's bus operand while a queued instruction needs the buffer; seeds 1-3: 2,733-2,758; no M10K, no DSP) | 2026-11-15 | 2,736 | 53.85 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.16-2.61 ns, hold 0.13 ns; worst: the microprogram counter through the ROM into the working significand) |
 
@@ -67,8 +68,8 @@ utilization in those files, boundary flops included.
   interrupts (NMI, VI, NVI, SEGT/SAT), /ABORT, refresh (two owed, issued
   back to back after a grant or wait), STOP, /BUSREQ, multi-micro and EPU
   transfers included. The serial unit runs MULT/MULTL/DIV/DIVL and the
-  shifts as microroutines on the program's clocks. Closes 48 MHz with its
-  ROMs in logic.
+  shifts as microroutines on the program's clocks. A read's word is taken
+  as CLK falls in T3 (#12). Closes 48 MHz with its ROMs in logic.
 - MMU: translation, all 22 commands, violations and the segment trap
   acknowledge (one AD line per MMU, for several MMUs on one bus), DMASYNC.
   A23:8 drive from the /AS fall (AC #28). A system top resolves several MMUs

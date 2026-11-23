@@ -298,6 +298,14 @@ int main(int argc, char** argv) {
     auto settle = [&]() {
         if (settled) return;
         settled = true;
+        // A vector ending on the rise that opens a read's T3: the CPU takes
+        // the word on the T3 fall, so that fall comes first.
+        if (top->rootp->CPU_(t3_q)) {
+            top->clk_fall = 1;
+            for (int k = mclkSeq[mclkIdx]; k > 0; k--) { mtick(false); top->clk_fall = 0; }
+            mclkIdx = (mclkIdx + 1) % mclkSeq.size();
+            prevClk = false;
+        }
         if (freeD) {
             uint64_t h = 0;
             for (int c = 0; c < 20000 * (slowd ? slowd : 1) && !(dut.cpuGet("HALTED", h) && h); c++) idleClk(1);

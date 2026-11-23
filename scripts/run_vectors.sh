@@ -10,6 +10,7 @@
 #   --ladder               shortest-first list with status; reuses the last
 #                          results unless a binary or vector is newer
 #   --combined             cpu only: CLK rise and fall in one master clock
+#   --combined-mclk P      the same, each record pair P master clocks long
 #   --mclk P               full run at master-clock pattern P (results/<out>_mclkP.txt)
 #   --one NAME [--vcd] [--context N] [--mclk P] [--fclk P]   one vector, verbose
 #
@@ -106,6 +107,10 @@ case ${1:-} in
   --combined) [ "$CHIP" = cpu ] || { echo "--combined is cpu only"; exit 4; }
               own_flag --mclk --combined
               OUT=cpu_combined; MODE=(--combined --mclk 1) ;;
+  --combined-mclk)
+              [ "$CHIP" = cpu ] || { echo "--combined-mclk is cpu only"; exit 4; }
+              own_flag --mclk --combined
+              MODE=(--combined --mclk "${2:?--combined-mclk needs a value}"); OUT=cpu_combined_mclk${2//,/_}; nargs=2 ;;
   --mclk)     own_flag --mclk; MODE=(--mclk "${2:?--mclk needs a value}"); OUT=${OUT}_mclk${2//,/_}; nargs=2 ;;
   "")         nargs=0 ;;
   *) echo "unknown mode $1"; exit 4 ;;
