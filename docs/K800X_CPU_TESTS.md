@@ -14,7 +14,7 @@ docs/VECTOR_FORMAT.md.
 | `serial/random.vec` | 1 | `tb_serial.sv` |
 | `cycles/cycles.vec`, `cycles/cycles_z8001.vec` | 2 (Z8002; Z8001 segmented) | `tb_cpu_cycles.sv` |
 | `silicon/z8001.vec`, `silicon/z8001-seg.vec` | 2 (1202 and 1072 programs captured on a Z8001, non-segmented and segmented) | `tb_silicon.sv` |
-| `programs/z8001.vec`, `programs/z8001-seg.vec` | 2 (8 and 27 hand-written programs: register overlaps with address registers) | `tb_silicon.sv` |
+| `programs/z8001.vec`, `programs/z8001-seg.vec` | 2 (14 and 33 hand-written programs: register overlaps with address or source registers) | `tb_silicon.sv` |
 
 Sources (printed page numbers of the 1988 Z8000 Family Data Book,
 `1988_Zilog_Z8000_Family_Data_Book.pdf`; PDF page = printed + 7 in the
@@ -235,8 +235,12 @@ vectors (`<TestName>.*.vec`) or the tb_cpu tolerance.
 * OPEN: items 13, 20 (one clock), 21, 38, 39, 52 (unlisted encodings).
 * DIV/DIVL case 3: the destination and S differ from the chip
   (`sys_div_rr_r_large`); masked.
-* PUSHL with the pointer as the source pair's low word (@R3,RR2;
-  segmented @RR2,RR2) pushes the decremented pointer: no capture.
+* PUSHL with the pointer as the source pair's low word (@R3,RR2; segmented
+  @RR12,RR12) pushes the pointer as the instruction began: observed on the
+  Olivetti M40 BCOS, no capture. Word PUSH @Rd,Rd (legal; the manual
+  forbids the overlap only for PUSHL, RefMan 1982 PDF p.167) pushes the
+  register as read before the pointer write: interpretation by analogy
+  with cov_299, against the manual's literal order.
 * Silicon traces to recapture on the current rig: MSET in normal mode
   completes a read of the next word before the trap where the RTL runs
   the aborted IF1 (item 12; one capture, no status recorded); trap

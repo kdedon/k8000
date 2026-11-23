@@ -778,7 +778,8 @@ module z8000_execute
 
   // A CALL through or indexed by R15 takes R15 from before its push; a POP
   // whose destination pointer or index is its stack pointer, the pointer
-  // from before its pop.
+  // from before its pop; PUSHL's low word, when it is the pointer, the
+  // pointer from before its push.
   logic [15:0] sp0_q, tgt_off;
   logic        tgt_sp, pop_m;
   assign pop_m   = stk_opnd && !stk_push;
@@ -787,7 +788,7 @@ module z8000_execute
   assign tgt_off = tgt_sp ? sp0_q : rf_rdata[15:0];
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)                                   sp0_q <= 16'h0000;
-    else if (clk_en) if ((br_call || pop_m) && stk_first && mcnt_q == 2'd0) sp0_q <= rf_rdata[15:0];
+    else if (clk_en) if ((br_call || stk) && stk_first && mcnt_q == 2'd0) sp0_q <= rf_rdata[15:0];
   end
 
   // Pushes step down, pops up; a long by 4. JR's displacement adds, CALR's
@@ -903,9 +904,8 @@ module z8000_execute
     else if (stk_opnd) mem_wdata = (stk_long && !nxt2_q) ? opnd_hi_q : opnd_q;
     else if (stk_imm) mem_wdata = w1;
     else if (io)      mem_wdata = !is_byte ? rf_rdata_b : {rf_rdata_b[7:0], rf_rdata_b[7:0]};
-    // PUSH from the pointer register pushes the decremented pointer;
-    // PUSHL with the pointer as its high word pushes it as it was.
-    else if (stk)     mem_wdata = (stk_first && !stk_long && rf_rsel_b == sp_off) ? off_sum : rf_rdata_b;
+    // A push of the pointer register pushes it as it was.
+    else if (stk)     mem_wdata = (nxt2_q && {rb[3:1], 1'b1} == sp_off) ? sp0_q : rf_rdata_b;
     else if (xm)      mem_wdata = wdata_q;
     else if (ldm || ep_reg) mem_wdata = rf_rdata_b;
     else if (ep_fl)   mem_wdata = {8'h00, fcw[7:2], 2'b00};

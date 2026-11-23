@@ -278,7 +278,7 @@ Per-clock tables for the remaining tails (heads, single internal-cycle register 
 ## 7. Open questions
 
 - DIVL case 3 and DIV case 3 destination: partial words stored or the destination left alone (section 1.7); and the exact -2^N boundary (same section). A Z8001 capture answers whether the passes write: `sys_div_rr_r_large`, 0x0001FFFE / 0xFFFF, leaves 0001/FFFD with S set (FCW 4030). The RTL gives 0004/FFF3, S clear: a known difference, masked in the silicon vectors. The -2^N boundary still needs its divides.
-- PUSHL with the pointer as the source pair's low word (@R3,RR2; segmented @RR2,RR2): the pushed word, the pointer as it was or decremented. A Z8001 capture has only the high-word case (pushed as it was).
+- PUSHL with the pointer as the source pair's low word (@R3,RR2; segmented @RR12,RR12): taken as the pointer as it was, which the Olivetti M40 BCOS needs (`PUSHL @RR12,RR12`, then `POPL RR4,@RR12` as a frame pointer). A Z8001 capture has only the high-word case (pushed as it was); a low-word capture would confirm it.
 - Whether the packed internal-cycle stretches (MULT zero, MULTL finish and zero, DIV case 3, DIVL prologue and zero) should move to the unit's own cycle grid; this changes pins and requires regenerating vectors.
 - DIV BR2 and MULTL's second BR: accept the shared-routine readings (1.1, 1.2) or leave them tagged unexplained.
 - DIV's TEST versus MULT's TEST costs (1.6): the structural rule is a guess from three cases.

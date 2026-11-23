@@ -19,7 +19,7 @@
 | CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 3078 pass, 0 fail, 0 skip, at record pairs of 1, 2 and 1,2,1,3 master clocks |
 | CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks on Z8002, 14 on segmented Z8001 in segments 05 and 12 (I/O with /WAIT included, SN timing) |
 | CPU against a physical Z8001 | `make test-cpu-silicon` | non-segmented 1202 of 1202, segmented 1072 of 1072 (final registers, flags, memory, I/O; bus order and instruction clocks on the 197 traced tests) |
-| CPU hand-written programs | `make test-cpu-programs` | non-segmented 8 of 8, segmented 27 of 27 (register overlaps with address registers: LDA, POP, POPL, PUSH, EX, LDL, LDM, LDI, CPI, CPSI, INI, OUTI) |
+| CPU hand-written programs | `make test-cpu-programs` | non-segmented 14 of 14, segmented 33 of 33 (register overlaps with address or source registers: LDA, POP, POPL, PUSH, PUSHL, EX, LDL, LDM, LDI, CPI, CPSI, INI, OUTI) |
 | CPU read data late in T3 | `make test-cpu-late-read` | PASS, segmented Z8001; memory and I/O drive the word only between T3's rise and fall: fetches, operands, a byte, IN, a cross-segment CALL and RET with refresh on, MREQ with /MI High and Low (the other level at the T3 rise and fall; /MO checked on the rise ending T3), the VI acknowledge, a read with two waits; at 2, 3 and 2,3,4 master clocks per CLK half, only in the master clock before the fall at 3 and 3,4,5, one kind of read at a time, plus normal memory and turbo; fails on any CPU simulation check; both mixed clockings fail as they must |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, Z8002 45 of 45, segmented Z8001 38 of 38 (SS and SL direct and indexed addresses, CALL, RET, long words) |
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
@@ -103,8 +103,12 @@ utilization in those files, boundary flops included.
   pass when included.
 - DIV/DIVL case 3: the RTL's destination and S differ from the chip's
   (`sys_div_rr_r_large`, masked in the silicon vectors).
-- PUSHL with the pointer as the source pair's low word: no capture; the
-  RTL pushes the decremented pointer.
+- PUSHL with the pointer as the source pair's low word pushes the
+  pointer as the instruction began: observed on the Olivetti M40 BCOS
+  (`PUSHL @RR12,RR12`), no capture. Word PUSH @Rd,Rd (legal; the manual
+  forbids the overlap only for PUSHL) pushes the register as read before
+  the pointer write: interpretation by analogy with cov_299, against the
+  manual's literal order.
 - Segmented LDA X with the index as the destination's high word: observed
   on the Olivetti M40 floppy OS, no capture. POP/POPL to memory through
   their own stack pointer: no capture; the address uses the pointer as
@@ -132,7 +136,7 @@ utilization in those files, boundary flops included.
 | device | files | notes |
 |---|---|---|
 | CPU | 3078 | none skipped: a snapshot restore replays the source CPU's records, a pending refresh is a bench poke |
-| CPU hand-written programs | 2 files: 8 non-segmented, 27 segmented tests | silicon schema; final state reasoned or the RTL's order, not captured |
+| CPU hand-written programs | 2 files: 14 non-segmented, 33 segmented tests | silicon schema; final state reasoned or the RTL's order, not captured |
 | CPU silicon | 2 files: 1202 non-segmented, 1072 segmented tests | captured on a Z8001 (MIT, `silicon/LICENSE`); 848 coverage captures not converted; DIV case 3 destination and S masked |
 | CPU cycle counts | 45 + 38 segmented | Z8002 35 `exact`, 10 `approx`; Z8001 35 `exact`, 3 `approx` |
 | MMU | 77 | |
