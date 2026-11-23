@@ -1,7 +1,7 @@
 # k8000 vector file formats (v1)
 
 The committed vectors are the specification the benches judge against.
-They are generated, never hand-written. `vectors/` is laid out by device, like `rtl/` and `tb/`:
+They are generated, never hand-written, except `vectors/k800x_cpu/programs/`. `vectors/` is laid out by device, like `rtl/` and `tb/`:
 
 | directory                         | content                                   | consumer                        |
 |-----------------------------------|-------------------------------------------|---------------------------------|
@@ -12,6 +12,7 @@ They are generated, never hand-written. `vectors/` is laid out by device, like `
 | `vectors/k800x_cpu/decode/`       | the decode ROM, every first word          | `tb/k800x_cpu/tb_decode.sv`     |
 | `vectors/k800x_cpu/cycles/`       | instruction cycle counts                  | `tb/k800x_cpu/tb_cpu_cycles.sv` |
 | `vectors/k800x_cpu/silicon/`      | programs captured on a physical Z8001     | `tb/k800x_cpu/tb_silicon.sv`    |
+| `vectors/k800x_cpu/programs/`     | hand-written programs, silicon schema     | `tb/k800x_cpu/tb_silicon.sv`    |
 | `vectors/k8010_mmu/*.vec`         | MMU pins                                  | `tb/k8010_mmu/tb_mmu.cpp`       |
 | `vectors/k8030_scc/*.vec`         | SCC pins                                  | `tb/k8030_scc/tb_scc.cpp`       |
 | `vectors/k8036_cio/*.vec`         | CIO pins                                  | `tb/k8036_cio/tb_cio.cpp`       |
@@ -193,7 +194,10 @@ END 1197
 ```
 
 `z8001.vec` runs non-segmented (FCW 4000 at reset), `z8001-seg.vec`
-segmented; both on the Z8001 build.
+segmented; both on the Z8001 build. `programs/` holds hand-written
+programs in this schema, on the captures' base image; their final state
+is not captured: the address rule of docs/DECISIONS.md, or, where the
+manual forbids the form, the RTL's order recorded there.
 
 ## FPU vectors (`K8000VEC 1 fpu`, `K8000VEC 1 fpudp`)
 

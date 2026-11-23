@@ -18,6 +18,7 @@
 | CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 3078 pass, 0 fail, 0 skip, at record pairs of 1, 2 and 1,2,1,3 master clocks |
 | CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks on Z8002, 14 on segmented Z8001 in segments 05 and 12 (I/O with /WAIT included, SN timing) |
 | CPU against a physical Z8001 | `make test-cpu-silicon` | non-segmented 1202 of 1202, segmented 1072 of 1072 (final registers, flags, memory, I/O; bus order and instruction clocks on the 197 traced tests) |
+| CPU hand-written programs | `make test-cpu-programs` | non-segmented 8 of 8, segmented 27 of 27 (register overlaps with address registers: LDA, POP, POPL, PUSH, EX, LDL, LDM, LDI, CPI, CPSI, INI, OUTI) |
 | CPU read data late in T3 | `make test-cpu-late-read` | PASS, segmented Z8001; memory and I/O drive the word only between T3's rise and fall: fetches, operands, a byte, IN, a cross-segment CALL and RET with refresh on, MREQ with /MI High and Low (the other level at the T3 rise and fall; /MO checked on the rise ending T3), the VI acknowledge, a read with two waits; at 2, 3 and 2,3,4 master clocks per CLK half, only in the master clock before the fall at 3 and 3,4,5, one kind of read at a time, plus normal memory and turbo; fails on any CPU simulation check; both mixed clockings fail as they must |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, Z8002 45 of 45, segmented Z8001 38 of 38 (SS and SL direct and indexed addresses, CALL, RET, long words) |
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
@@ -57,7 +58,7 @@ utilization in those files, boundary flops included.
 | MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8 driven from the /AS fall; slack 6.90 ns) | 2026-11-14 | 447 | 71.8 MHz |
 | CIO (bus interface, register file, ports A/B/C, counter/timers, pattern match, interrupts, handshakes) | 2026-11-14 | 1,260 | 59.3 MHz |
 | SCC (every mode built; seeds 1-3: 1,927-1,935) | 2026-11-14 | 1,932 | 51.38 MHz, median of seeds 1-3 (setup slack at 48 MHz: 0.87-1.87 ns, hold 0.18 ns; worst: the latched address through a WR9 reset command into the hunt latch) |
-| CPU, Z8001 (the program ROMs in logic, the serial unit included; read data on the T3 fall; seed 1) | 2026-11-22 | 4,000 | 52.99 MHz, seed 1; seeds 2 and 3: 3,988 and 3,996 ALMs, 51.31 and 51.44 MHz (setup slack at 48 MHz: 1.96, 1.35, 1.39 ns, hold 0.16 ns; worst: the first word into the interrupt requests, FCW into the register file) |
+| CPU, Z8001 (the program ROMs in logic, the serial unit included; read data on the T3 fall; seed 1) | 2026-11-22 | 4,047 | 51.91 MHz, seed 1; seeds 2 and 3: 4,038 and 4,025 ALMs, 52.68 and 51.80 MHz (setup slack at 48 MHz: 1.57, 1.85, 1.53 ns, hold 0.16 ns; worst: the sequencer into the register file, a divide step into the FCW) |
 | FPU Data Processor alone (`fpudp`; F0-F7 in an MLAB) | 2026-11-14 | 1,958 | 52.8 MHz (setup slack at 48 MHz: 1.89 ns; worst: the microprogram counter through the ROM into the working significand) |
 | FPU, whole chip (`fpu`: F0-F7, FOP1 and FOP2 in one 16 x 80 MLAB, row 10 also holding the running operation's bus operand while a queued instruction needs the buffer; seeds 1-3: 2,733-2,758; no M10K, no DSP) | 2026-11-15 | 2,736 | 53.85 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.16-2.61 ns, hold 0.13 ns; worst: the microprogram counter through the ROM into the working significand) |
 
@@ -103,6 +104,13 @@ utilization in those files, boundary flops included.
   (`sys_div_rr_r_large`, masked in the silicon vectors).
 - PUSHL with the pointer as the source pair's low word: no capture; the
   RTL pushes the decremented pointer.
+- Segmented LDA X with the index as the destination's high word: observed
+  on the Olivetti M40 floppy OS, no capture. POP/POPL to memory through
+  their own stack pointer: no capture; the address uses the pointer as
+  the instruction began.
+- LDI with source = destination and OUTI with port = source pointer use
+  the stepped register for the element's later address: RTL order; no
+  capture; the manual forbids it (CPU RefMan 1982 PDF p.135).
 - SCC: /W//REQ pins not built; also not built: SDLC Loop in FM, the
   sync-mode loop, /SYNC as an output in SDLC and its input in async,
   parity in SDLC, Zero Count, the DTR/REQ request.
@@ -123,6 +131,7 @@ utilization in those files, boundary flops included.
 | device | files | notes |
 |---|---|---|
 | CPU | 3078 | none skipped: a snapshot restore replays the source CPU's records, a pending refresh is a bench poke |
+| CPU hand-written programs | 2 files: 8 non-segmented, 27 segmented tests | silicon schema; final state reasoned or the RTL's order, not captured |
 | CPU silicon | 2 files: 1202 non-segmented, 1072 segmented tests | captured on a Z8001 (MIT, `silicon/LICENSE`); 848 coverage captures not converted; DIV case 3 destination and S masked |
 | CPU cycle counts | 45 + 38 segmented | Z8002 35 `exact`, 10 `approx`; Z8001 35 `exact`, 3 `approx` |
 | MMU | 77 | |

@@ -772,17 +772,22 @@ module z8000_execute
   logic tset_rmw;
   assign tset_rmw    = uni && mem_rmw && alu_op == OP_TSET;
   assign bus_lock_nx = tset_rmw && (wr_next_q || opnd_take);
-  logic [15:0] idx_q, off_a, off_b, off_sum, sp_step, disp;
+  logic [15:0] idx_q;  // a BX or LDPS index, or segmented LDA's offset
+  logic [15:0] off_a, off_b, off_sum, sp_step, disp;
   logic [6:0]  sp_seg;
 
-  // A CALL through or indexed by R15 takes R15 from before its push.
+  // A CALL through or indexed by R15 takes R15 from before its push; a POP
+  // whose destination pointer or index is its stack pointer, the pointer
+  // from before its pop.
   logic [15:0] sp0_q, tgt_off;
-  logic        tgt_sp;
-  assign tgt_sp  = br_call && (w0[7:4] == 4'd15 || (br_ir && seg_mode && w0[7:4] == 4'd14));
+  logic        tgt_sp, pop_m;
+  assign pop_m   = stk_opnd && !stk_push;
+  assign tgt_sp  = (br_call && (w0[7:4] == 4'd15 || (br_ir && seg_mode && w0[7:4] == 4'd14))) ||
+                   (pop_m && (mem_ir || mem_x) && {w0[3:1], w0[0] || (mem_ir && seg_mode)} == sp_off);
   assign tgt_off = tgt_sp ? sp0_q : rf_rdata[15:0];
   always_ff @(posedge clk or negedge reset_n) begin
     if (!reset_n)                                   sp0_q <= 16'h0000;
-    else if (clk_en) if (br_call && stk_first && mcnt_q == 2'd0) sp0_q <= rf_rdata[15:0];
+    else if (clk_en) if ((br_call || pop_m) && stk_first && mcnt_q == 2'd0) sp0_q <= rf_rdata[15:0];
   end
 
   // Pushes step down, pops up; a long by 4. JR's displacement adds, CALR's
@@ -836,7 +841,7 @@ module z8000_execute
     else if (x_rd)   mem_addr_c = {SEGMENTED ? psap[22:16] : 7'd0, off_sum};
     else if (stk_first)
                      mem_addr_c = {sp_seg, (stk_push || br_call || exc) ? off_sum : rf_rdata[15:0]};
-    else if (mem_ir) mem_addr_c = {ptr_seg, rf_rdata[15:0]};
+    else if (mem_ir) mem_addr_c = {ptr_seg, tgt_off};
     else if (mem_x || mem_ra || mem_ba || mem_bx)
                      mem_addr_c = {mem_x ? ea_word[22:16] : ptr_seg, off_sum};
     else             mem_addr_c = ea_word;
@@ -947,6 +952,8 @@ module z8000_execute
   always_ff @(posedge clk) if (clk_en) begin
     if (idx_read) idx_q <= rf_rdata_b;
     if (ldps_idx) idx_q <= rf_rdata_b + {14'd0, seg_mode, 1'b0};
+    // Segmented LDA's offset, formed before its segment word is written.
+    if (lea && seg_mode && last2) idx_q <= lea_addr[15:0];
     if (mem_take) addr_q <= mem_addr;
     if (rmw_pass || dj_pass) wdata_q <= is_byte ? {value[7:0], value[7:0]} : value;
     if (xm_pass)             wdata_q <= is_byte ? {rf_rdata_b[7:0], rf_rdata_b[7:0]} : rf_rdata_b;
@@ -1000,7 +1007,7 @@ module z8000_execute
       $display("%%Error: %m: long op ends without its high pass");
       check_q <= 1'b1;
     end
-    if (lea && (last || last2) && lea_addr != mem_addr) begin
+    if (lea && (seg_mode ? last2 : last) && lea_addr != mem_addr) begin
       $display("%%Error: %m: LDA address differs from the operand address");
       check_q <= 1'b1;
     end
@@ -1058,7 +1065,7 @@ module z8000_execute
       rf_we     = 1'b1;
       rf_wwidth = RF_WORD;
       rf_wsel   = seg_mode ? {w0[3:1], last} : w0[3:0];
-      rf_wdata  = (seg_mode && !last) ? {lea_seg15, lea_addr[22:16], lea_seglo} : lea_addr[15:0];
+      rf_wdata  = !seg_mode ? lea_addr[15:0] : last ? idx_q : {lea_seg15, lea_addr[22:16], lea_seglo};
     end else if (pop_we) begin
       rf_we     = 1'b1;
       rf_wwidth = RF_WORD;

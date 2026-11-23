@@ -14,6 +14,7 @@ docs/VECTOR_FORMAT.md.
 | `serial/random.vec` | 1 | `tb_serial.sv` |
 | `cycles/cycles.vec`, `cycles/cycles_z8001.vec` | 2 (Z8002; Z8001 segmented) | `tb_cpu_cycles.sv` |
 | `silicon/z8001.vec`, `silicon/z8001-seg.vec` | 2 (1202 and 1072 programs captured on a Z8001, non-segmented and segmented) | `tb_silicon.sv` |
+| `programs/z8001.vec`, `programs/z8001-seg.vec` | 2 (8 and 27 hand-written programs: register overlaps with address registers) | `tb_silicon.sv` |
 
 Sources (printed page numbers of the 1988 Z8000 Family Data Book,
 `1988_Zilog_Z8000_Family_Data_Book.pdf`; PDF page = printed + 7 in the
@@ -43,6 +44,7 @@ make test-decode-table  # the decode ROM against z8000_decode_table.txt
 make test-mc-table      # the machine-cycle ROM against z8000_mc_table.txt
 make test-alu | test-regfile | test-serial | test-refresh | test-seq-words | test-seq-paths | test-cond
 make test-cpu-silicon   # programs captured on a physical Z8001
+make test-cpu-programs  # hand-written programs in the silicon schema
 ```
 
 `tb_cpu` takes `--mclk P` / `K8000_MCLK` (comma list of master clocks per
