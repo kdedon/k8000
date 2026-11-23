@@ -1,7 +1,8 @@
 // tb_decode -- exhaustive decode-ROM equivalence.
 //
-// Replays vectors/k800x_cpu/decode/decode.vec through z8000_decode. A '-'
-// w1 nibble means the result does not depend on word 2; both 0 and F are then applied.
+// Replays vectors/k800x_cpu/decode/decode.vec through z8000_decode. The
+// decoder takes no second word, so each record's word 2 nibble must not
+// change the result.
 // Reports every mismatch (capped) with the field-by-field diff of the
 // packed control word, then PASS/FAIL. Run: make test-decode  (or
 // obj_dir/tb_decode +vec=vectors/k800x_cpu/decode/decode.vec)
@@ -10,16 +11,14 @@ module tb_decode
   import z8000_ctrl_pkg::*;
 ;
   logic [15:0] w0;
-  logic [3:0]  w1_lo;
   ctrl_word_t  ctrl;
 
-  z8000_decode dut (.w0(w0), .w1_lo(w1_lo), .ctrl(ctrl));
+  z8000_decode dut (.w0(w0), .ctrl(ctrl));
 
   string vecfile;
   int fd, n, total, bad, shown;
   string line;
   logic [15:0] r_w0;
-  logic [3:0]  r_w1v;
   string r_w1;
   logic [CTRL_W-1:0] want;
 
@@ -45,21 +44,19 @@ module tb_decode
     if (e.io_write    != g.io_write)    $display("      io_write    exp=%0d got=%0d", e.io_write, g.io_write);
     if (e.io_spec     != g.io_spec)     $display("      io_spec     exp=%0d got=%0d", e.io_spec, g.io_spec);
     if (e.block_decr  != g.block_decr)  $display("      block_decr  exp=%0d got=%0d", e.block_decr, g.block_decr);
-    if (e.block_rept  != g.block_rept)  $display("      block_rept  exp=%0d got=%0d", e.block_rept, g.block_rept);
     if (e.mp_op       != g.mp_op)       $display("      mp_op       exp=%0d got=%0d", e.mp_op, g.mp_op);
     if (e.epu_kind    != g.epu_kind)    $display("      epu_kind    exp=%0d got=%0d", e.epu_kind, g.epu_kind);
   endfunction
 
-  task automatic check_one(input logic [15:0] tw0, input logic [3:0] tw1);
+  task automatic check_one(input logic [15:0] tw0, input string tw1);
     w0 = tw0;
-    w1_lo = tw1;
     #1;
     total++;
     if (ctrl !== ctrl_word_t'(want)) begin
       bad++;
       if (shown < 20) begin
         shown++;
-        $display("  MISMATCH w0=%04X w1_lo=%X exp=%h got=%h", tw0, tw1, want, ctrl);
+        $display("  MISMATCH w0=%04X w1_lo=%s exp=%h got=%h", tw0, tw1, want, ctrl);
         show_diff(want, ctrl);
       end
     end
@@ -82,13 +79,7 @@ module tb_decode
         $display("RESULT FAIL tb_decode: bad line: %s", line);
         $finish;
       end
-      if (r_w1 == "-") begin
-        check_one(r_w0, 4'h0);
-        check_one(r_w0, 4'hF);
-      end else begin
-        r_w1v = 4'(r_w1.atohex());
-        check_one(r_w0, r_w1v);
-      end
+      check_one(r_w0, r_w1);
     end
     $fclose(fd);
     if (total == 0) $display("RESULT FAIL tb_decode: no records");

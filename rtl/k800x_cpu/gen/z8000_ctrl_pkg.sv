@@ -1,6 +1,6 @@
 // z8000_ctrl_pkg: the decode-ROM control word
 // as a packed struct, plus every enum it references. Field order below is
-// MSB first; CTRL_W = 69 bits. The decode table, the .vec files and the
+// MSB first; CTRL_W = 68 bits. The decode table, the .vec files and the
 // generated decoder use exactly this packing and these names.
 
 // A constants package is a library: most members are unused by any one
@@ -8,7 +8,7 @@
 /* verilator lint_off UNUSEDPARAM */
 package z8000_ctrl_pkg;
 
-  localparam int CTRL_W = 69;
+  localparam int CTRL_W = 68;
 
   // ---- instruction class (28 values, 5 bits) ----
   localparam int CLS_W = 5;
@@ -198,31 +198,29 @@ package z8000_ctrl_pkg;
     logic        io_write;     // I/O direction / LDM store
     logic        io_spec;      // special I/O (status 0011)
     logic        block_decr;   // block op: decrement pointers
-    logic        block_rept;   // block op: repeat
     logic [1:0]  mp_op;        // multi-micro operation (CLS_MULTI_PROC)
     logic [1:0]  epu_kind;     // EPU transfer kind (CLS_EPU)
   } ctrl_word_t;
 
   // LSB position of each field inside the packed word (for tb/tools):
-  localparam int CTRL_POS_VALID = 68;
-  localparam int CTRL_POS_EXEC = 63;
-  localparam int CTRL_POS_ALU_OP = 58;
-  localparam int CTRL_POS_WIDTH = 56;
-  localparam int CTRL_POS_PRIV = 55;
-  localparam int CTRL_POS_SRC2 = 50;
-  localparam int CTRL_POS_DST = 46;
-  localparam int CTRL_POS_COUNT = 41;
-  localparam int CTRL_POS_SRC1_NIB = 39;
-  localparam int CTRL_POS_SRC2_NIB = 37;
-  localparam int CTRL_POS_DST_NIB = 35;
-  localparam int CTRL_POS_FCW_OP = 32;
-  localparam int CTRL_POS_FCW_MASK = 16;
-  localparam int CTRL_POS_STK_MODE = 12;
-  localparam int CTRL_POS_BR_MODE = 8;
-  localparam int CTRL_POS_IO_WRITE = 7;
-  localparam int CTRL_POS_IO_SPEC = 6;
-  localparam int CTRL_POS_BLOCK_DECR = 5;
-  localparam int CTRL_POS_BLOCK_REPT = 4;
+  localparam int CTRL_POS_VALID = 67;
+  localparam int CTRL_POS_EXEC = 62;
+  localparam int CTRL_POS_ALU_OP = 57;
+  localparam int CTRL_POS_WIDTH = 55;
+  localparam int CTRL_POS_PRIV = 54;
+  localparam int CTRL_POS_SRC2 = 49;
+  localparam int CTRL_POS_DST = 45;
+  localparam int CTRL_POS_COUNT = 40;
+  localparam int CTRL_POS_SRC1_NIB = 38;
+  localparam int CTRL_POS_SRC2_NIB = 36;
+  localparam int CTRL_POS_DST_NIB = 34;
+  localparam int CTRL_POS_FCW_OP = 31;
+  localparam int CTRL_POS_FCW_MASK = 15;
+  localparam int CTRL_POS_STK_MODE = 11;
+  localparam int CTRL_POS_BR_MODE = 7;
+  localparam int CTRL_POS_IO_WRITE = 6;
+  localparam int CTRL_POS_IO_SPEC = 5;
+  localparam int CTRL_POS_BLOCK_DECR = 4;
   localparam int CTRL_POS_MP_OP = 2;
   localparam int CTRL_POS_EPU_KIND = 0;
 

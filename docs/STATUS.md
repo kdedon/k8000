@@ -4,8 +4,8 @@
 
 | bench | command | result |
 |---|---|---|
-| decode ROM | `make test-decode` | PASS, 135552 checks |
-| decode ROM vs table | `make test-decode-table` | PASS, 1048576 checks |
+| decode ROM | `make test-decode` | PASS, 70336 checks |
+| decode ROM vs table | `make test-decode-table` | PASS, 65536 checks |
 | program ROM vs table | `make test-mc-table` | PASS, 1053342 checks (434 forms, 206 programs) |
 | register file | `make test-regfile` | PASS, 4056 checks (port B on the byte and word cases) |
 | ALU | `make test-alu` | PASS, 450 of 450 vector files (89267 records, 16739 in two passes: longs as two words, rotates by 2 as two by 1; 39 out-of-contract skipped) |

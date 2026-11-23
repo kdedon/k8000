@@ -122,7 +122,6 @@ module z8000_cpu
   logic [15:0] fcw_d;
   logic [22:0] pc_d;
   logic [15:0] dec_w0;
-  logic [3:0]  dec_w1_lo;
   ctrl_word_t  ctrl, ctrl_q;
   logic        ex_first, ex_last, ex_last2, ex_last_nx, ex_last2_nx, ex_to_last, ex_flags_we, ex_pc_we;
   logic [22:0] ex_pc_d;
@@ -156,9 +155,8 @@ module z8000_cpu
   logic        nmi_c, nvi_c, vi_c, segt_c, mi_c;   // the pins as of the edge the CPU acts on
 
   z8000_decode u_decode (
-    .w0    (dec_w0),
-    .w1_lo (dec_w1_lo),
-    .ctrl  (ctrl)
+    .w0   (dec_w0),
+    .ctrl (ctrl)
   );
 
   // Decoded from the words as of the next edge: ctrl_q decodes the words in.
@@ -350,7 +348,7 @@ module z8000_cpu
   logic        sh_on, sh_reg, sh_start, sh_arm_q, sh_step, sh_cnt_ok_q, sh_pend_q, sh_wb;
   logic [1:0]  sh_rwidth, sh_wwidth_q;
   logic [3:0]  sh_dst_q;
-  logic [15:0] sh_flags, sh_fmask;
+  logic [15:0] sh_flags;
   logic [6:0]  sh_cnt_q;   // a register count's sign and low six bits
   logic [ALUOP_W-1:0] sh_op;
 
@@ -436,7 +434,6 @@ module z8000_cpu
     .quot_neg    (d_qneg),
     .quot_zero   (d_qzero),
     .sh_flags    (sh_flags),
-    .sh_mask     (sh_fmask),
     .end3        (s_end3),
     .end2        (s_end2),
     .last        (s_last)
@@ -525,7 +522,6 @@ module z8000_cpu
     .pc_seg_ld    (pc_seg_ld),
     .halted       (halted),
     .dec_w0       (dec_w0),
-    .dec_w1_lo    (dec_w1_lo),
     .dec_valid    (ctrl_q.valid),
     .dec_exec     (ctrl_q.exec),
     .dec_blk      (blk_cls),
@@ -896,7 +892,7 @@ module z8000_cpu
       else if (ex_fcw_we)   fcw <= ex_fcw_d;
       else if (ex_flags_we) fcw <= (fcw & ~ex_flags_mask) | (ex_flags & ex_flags_mask);
       else if (md_wb)       fcw <= {fcw[15:8], md_flags, fcw[3:0]};
-      else if (sh_wb)       fcw <= (fcw & ~sh_fmask) | (sh_flags & sh_fmask);
+      else if (sh_wb)       fcw <= (fcw & ~(F_C | F_Z | F_S | F_V)) | sh_flags;
       else if (mq_end && ctrl_q.mp_op == MPBIT) fcw[5] <= mi_c;
       else if (mq_end && ctrl_q.mp_op == MPREQ) begin
         fcw[6] <= mq_req_c;
@@ -926,11 +922,10 @@ module z8000_cpu
   end
 
   // `halted` is for the testbench; execute decodes priv, stk_mode and
-  // br_mode from the next-edge words, and the opcode bits are the decoder's;
-  // a block's repeat is the sequencer's.
+  // br_mode from the next-edge words, and the opcode bits are the decoder's.
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
-  assign unused_ok = ^{halted, ctrl_q.priv, ctrl_q.stk_mode, ctrl_q.br_mode, ctrl_q.block_rept, ir_w0[15:12]};
+  assign unused_ok = ^{halted, ctrl_q.priv, ctrl_q.stk_mode, ctrl_q.br_mode, ir_w0[15:12]};
   // verilator lint_on UNUSEDSIGNAL
 
   always_ff @(posedge clk or negedge reset_n) begin

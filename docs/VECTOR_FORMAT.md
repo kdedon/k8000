@@ -133,8 +133,9 @@ masked to 2*width bits; divisor is the low n bits of the sign-extended value.
 ## Decode vectors (`K8000VEC 1 decode`)
 
 `D <w0:4hex> <w1_lo:1hex | -> <ctrl:CTRL_W bits hex>` -- `-` means word 2
-is irrelevant (tb applies 0 and F). Packing per
-`rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv` (`ctrl_word_t`, MSB first).
+is irrelevant. The decoder takes no second word, so every nibble must give
+the same word. Packing per `rtl/k800x_cpu/gen/z8000_ctrl_pkg.sv`
+(`ctrl_word_t`, MSB first).
 
 ## Cycle-count vectors (`K8000VEC 1 cycles`)
 

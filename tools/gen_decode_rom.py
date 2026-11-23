@@ -74,7 +74,7 @@ def pack_fields(text, fields, consts, where):
 
 def parse_table(path, total, fields, consts):
     words = {}
-    tbl = [[None] * 16 for _ in range(65536)]
+    tbl = [None] * 65536
     pending = None
     with open(path, encoding="utf-8") as f:
         for n, line in enumerate(f, 1):
@@ -96,23 +96,20 @@ def parse_table(path, total, fields, consts):
                     raise Fail(f"{where}: bad or repeated ctrl {fl[1]}")
                 words[fl[1]] = val
                 pending = (fl[1], val)
-            elif fl[0] == "range" and len(fl) == 5:
+            elif fl[0] == "range" and len(fl) == 4:
                 lo, hi = int(fl[1], 16), int(fl[2], 16)
-                if fl[4] not in words:
-                    raise Fail(f"{where}: unknown ctrl {fl[4]}")
-                nibs = range(16) if fl[3] == "-" else [int(fl[3], 16)]
+                if fl[3] not in words:
+                    raise Fail(f"{where}: unknown ctrl {fl[3]}")
                 for w0 in range(lo, hi + 1):
-                    for k in nibs:
-                        if tbl[w0][k] is not None:
-                            raise Fail(f"{where}: {w0:04X}/{k:X} decoded twice")
-                        tbl[w0][k] = words[fl[4]]
+                    if tbl[w0] is not None:
+                        raise Fail(f"{where}: {w0:04X} decoded twice")
+                    tbl[w0] = words[fl[3]]
             elif fl == ["END"]:
                 break
             else:
                 raise Fail(f"{where}: unknown record")
-    for w0 in range(65536):
-        if None in tbl[w0]:
-            raise Fail(f"{SRC}: {w0:04X}/{tbl[w0].index(None):X} has no range")
+    if None in tbl:
+        raise Fail(f"{SRC}: {tbl.index(None):04X} has no range")
     return tbl
 
 
@@ -150,11 +147,9 @@ def generate(root):
 
     p = [HEADER]
     p.append("""//
-// z8000_decode_rom_gen: reference decode ROM, f(w0[15:0], w1[3:0]) -> ctrl.
-// Only bits 3:0 of the second word ever influence the control word (the
-// 3A/3B/BA/BB/1C/5C sub-decoders); everything else is a function of w0.
-// Case on the high byte, then (only where the entry is a sub-decoder) on
-// the low byte and the w1 nibble. Synthesis minimizes the constant tables.
+// z8000_decode_rom_gen: reference decode ROM, f(w0[15:0]) -> ctrl.
+// Case on the high byte, then (where it matters) on the low byte.
+// Synthesis minimizes the constant tables.
 
 `default_nettype none
 
@@ -162,7 +157,6 @@ module z8000_decode_rom_gen
   import z8000_ctrl_pkg::*;
 (
   input  logic [15:0] w0,      // instruction first word
-  input  logic [3:0]  w1_lo,   // second word bits 3:0 (0 if not yet fetched)
   output ctrl_word_t  ctrl
 );
 
@@ -173,19 +167,7 @@ module z8000_decode_rom_gen
     case (w0[15:8])
 """)
     for hi in range(256):
-        texts = []
-        for lo in range(256):
-            row = tbl[hi << 8 | lo]
-            if all(v == row[0] for v in row):
-                texts.append(f"ctrl = {lit(row[0])};")
-                continue
-            order, members = group(row)
-            s = ["case (w1_lo)\n"]
-            for v in order[1:]:
-                labels = ", ".join(f"4'h{k:X}" for k in members[v])
-                s.append(f"            {labels}: ctrl = {lit(v)};\n")
-            s.append(f"            default: ctrl = {lit(order[0])};\n          endcase")
-            texts.append("".join(s))
+        texts = [f"ctrl = {lit(tbl[hi << 8 | lo])};" for lo in range(256)]
         order, members = group(texts)
         if len(order) == 1:
             p.append(f"      8'h{hi:02X}: {order[0]}\n")

@@ -606,13 +606,6 @@ module z8010_mmu (
     data_drive = (data_drive_q | {8{rd_now}} | (id_now ? id_line : 8'h00)) & {8{reset_n}};
   end
 
-  // verilator lint_off UNUSEDSIGNAL
-  logic unused_ok;
-  always_comb begin
-    unused_ok = ^t_attr[7:6];
-  end
-  // verilator lint_on UNUSEDSIGNAL
-
 endmodule
 
 `default_nettype wire

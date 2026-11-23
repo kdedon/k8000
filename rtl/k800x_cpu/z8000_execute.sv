@@ -886,7 +886,7 @@ module z8000_execute
   // A segment word's other bits are not part of the address.
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
-  assign unused_ok = ^{rf_rdata[31], rf_rdata[23:16]};
+  assign unused_ok = ^rf_rdata[23:16];
   // verilator lint_on UNUSEDSIGNAL
   logic [15:0] wdata_q, nfcw_q;
   logic [6:0]  pcs_q;

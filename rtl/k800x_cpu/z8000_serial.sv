@@ -112,7 +112,6 @@ module z8000_serial
   output logic               quot_neg,
   output logic               quot_zero,
   output logic [15:0]        sh_flags,
-  output logic [15:0]        sh_mask,
   output logic               end3,        // a cycle-end microword two clocks ahead
   output logic               end2,        // ... one clock ahead, from this pass
   output logic               last         // the internal cycle in flight is the program's last
@@ -694,7 +693,6 @@ module z8000_serial
     if (|(sh_val & sh_sign))      sh_flags = sh_flags | F_S;
     if (c_q)                      sh_flags = sh_flags | F_C;
     if (v_q)                      sh_flags = sh_flags | F_V;   // the sign changed at a step
-    sh_mask = F_C | F_Z | F_S | F_V;
 
     // In MULTL's frame loop, short of frame 32's body (its DEC leaves the count 0).
     more_now = mul_q && long_q && cnt_q != 6'd0 &&

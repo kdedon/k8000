@@ -1039,7 +1039,7 @@ module z8036_cio (
   // verilator lint_off UNUSEDSIGNAL
   logic unused_ok;
   assign unused_ok = ^{as_ad[7], cs_new[0], port_cs_wr[0], in_c8[7:4], pb_live[4], pb_live[0],
-                       pc_live[7:4], pc_live[0],
+                       pc_live[7:4],
                        pcpol_p[7:4], pcsio_p[7:4], pcdir_p[7:4]};
   // verilator lint_on UNUSEDSIGNAL
 

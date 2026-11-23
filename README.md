@@ -45,8 +45,8 @@ rtl/k800x_cpu/        the CPU -- Z8001/2/3/4 in one core
   z8000_alu.sv          combinational ALU
   z8000_serial.sv       serial unit: multiply, divide, shifts on one adder and rotate
   z8000_decode.sv       decode wrapper around the generated ROM
-  z8000_decode_table.txt  the decode ROM symbolically: 478 control words,
-                        every field named, over 8417 range records
+  z8000_decode_table.txt  the decode ROM symbolically: 446 control words,
+                        every field named, over 3617 range records
                         (make test-decode-table)
   z8000_mc_table.txt    the machine-cycle program ROM: 434 forms, 206 programs
                         (make test-mc-table)

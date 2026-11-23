@@ -36,7 +36,8 @@ module tb_serial
   logic [ALUOP_W-1:0] s_op;
   logic [31:0] s_val, s_result;
   logic [5:0]  s_count;
-  logic [15:0] s_flags, s_mask;
+  logic [15:0] s_flags;
+  wire  [15:0] s_mask = F_C | F_Z | F_S | F_V;   // the flags a shift writes
   logic        x_end3, x_end2, x_last;   // CPU hookup only
   z8000_serial u_serial (.clk(clk), .clk_en(1'b1), .reset_n(reset_n), .tick(1'b1), .start(m_start || d_start || s_start),
                          .mul(kind == 1), .div(kind == 2), .wide(kind == 1 ? m_width32 : d_n32),
@@ -47,7 +48,7 @@ module tb_serial
                          .done(x_done), .fin(x_fin), .words(x_words), .flag_c(m_flag_c), .flag_z(m_flag_z),
                          .more(m_more), .div_by_zero(d_dbz), .overflow(d_ovf),
                          .wide_quot(d_wide), .quot_neg(d_qneg), .quot_zero(d_qzero),
-                         .sh_flags(s_flags), .sh_mask(s_mask), .end3(x_end3), .end2(x_end2), .last(x_last));
+                         .sh_flags(s_flags), .end3(x_end3), .end2(x_end2), .last(x_last));
   logic [31:0] x_src32;
   assign x_src32   = kind == 1 ? m_src : d_divisor;
   assign m_done    = x_done;

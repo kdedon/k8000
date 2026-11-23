@@ -4,11 +4,11 @@
 module z8000_serial_measure (
   input  logic         clk,
   input  logic [116:0] in_i,
-  output logic [109:0] out_o
+  output logic [93:0]  out_o
 );
 
   logic [116:0] in_q;
-  logic [109:0] res;
+  logic [93:0]  res;
 
   always_ff @(posedge clk) begin
     in_q  <= in_i;
@@ -31,19 +31,18 @@ module z8000_serial_measure (
     .width       (in_q[28:27]),
     .op          (in_q[26:22]),
     .count       (in_q[21:16]),
-    .done        (res[109]),
-    .fin         (res[108]),
-    .words       (res[107:44]),
-    .flag_c      (res[43]),
-    .flag_z      (res[42]),
-    .more        (res[41]),
-    .div_by_zero (res[40]),
-    .overflow    (res[39]),
-    .wide_quot   (res[38]),
-    .quot_neg    (res[37]),
-    .quot_zero   (res[36]),
-    .sh_flags    (res[35:20]),
-    .sh_mask     (res[19:4]),
+    .done        (res[93]),
+    .fin         (res[92]),
+    .words       (res[91:28]),
+    .flag_c      (res[27]),
+    .flag_z      (res[26]),
+    .more        (res[25]),
+    .div_by_zero (res[24]),
+    .overflow    (res[23]),
+    .wide_quot   (res[22]),
+    .quot_neg    (res[21]),
+    .quot_zero   (res[20]),
+    .sh_flags    (res[19:4]),
     .end3        (res[3]),
     .end2        (res[2]),
     .last        (res[1])

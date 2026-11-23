@@ -55,14 +55,13 @@ Results land in `results/cpu.txt` and `results/cpu_combined.txt`
 ### Reviewing the ROM tables
 
 Decoder changes are made in `rtl/k800x_cpu/z8000_decode_table.txt`, then
-`make gen`: the ROM (`gen/z8000_decode_rom_gen.sv`, 1649 lines of 69-bit hex) as 478
+`make gen`: the ROM (`gen/z8000_decode_rom_gen.sv`, 1557 lines of 68-bit hex) as 446
 control words with non-default fields named (`alu_op=OP_SUB
-width=WIDTH_BYTE src2=SRC_IMM ...`) over 8417 range records. Kept
+width=WIDTH_BYTE src2=SRC_IMM ...`) over 3617 first-word range records. Kept
 honest by:
 
 * `make test-decode-table`, which checks the ROM against every range
-  (1048576 checks). A `-` in the w1 column claims word 2's low nibble is
-  irrelevant, so all 16 nibbles are checked.
+  (65536 checks).
 
 The decoder gives no instruction length: each instruction's machine-cycle
 program does. Program changes are reviewed in

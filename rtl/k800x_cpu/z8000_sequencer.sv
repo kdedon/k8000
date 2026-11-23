@@ -84,7 +84,6 @@ module z8000_sequencer
 
   // decoder: fed the words as of the next edge, its result registered
   output logic [15:0] dec_w0,
-  output logic [3:0]  dec_w1_lo,
   input  logic        dec_valid,
   input  logic [4:0]  dec_exec,
   input  logic        dec_blk,      // a block or translate class
@@ -762,7 +761,6 @@ module z8000_sequencer
   end
 
   assign dec_w0    = ir0_d;
-  assign dec_w1_lo = ir1_d[3:0];
   assign ir_w0     = ir0_q;
   assign ir_w1     = ir1_q;
   assign ir_w2     = ir2_q;

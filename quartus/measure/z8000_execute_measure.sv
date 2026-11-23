@@ -5,11 +5,11 @@
 
 module z8000_execute_measure (
   input  logic         clk,
-  input  logic [341:0] in_i,
+  input  logic [339:0] in_i,
   output logic [220:0] out_o
 );
 
-  logic [341:0] in_q;
+  logic [339:0] in_q;
   logic [220:0] res;
 
   always_ff @(posedge clk) begin
@@ -43,23 +43,23 @@ module z8000_execute_measure (
   z8000_execute dut (
     .clk         (clk),
     .clk_en      (1'b1),
-    .reset_n     (in_q[340]),
-    .w0          (in_q[339:328]),
-    .ctrl_nx     (in_q[327:259]),
-    .w0_nx       (in_q[258:247]),
-    .alu_op      (in_q[246:242]),
-    .width       (in_q[241:240]),
-    .src2        (in_q[239:235]),
-    .count       (in_q[234:230]),
-    .dst         (in_q[229:226]),
-    .src1_nib    (in_q[225:224]),
-    .src2_nib    (in_q[223:222]),
-    .dst_nib     (in_q[221:220]),
-    .w1          (in_q[219:204]),
-    .w2          (in_q[203:188]),
-    .io_wr       (in_q[187]),
-    .io_spec     (in_q[186]),
-    .block_decr  (in_q[185]),
+    .reset_n     (in_q[338]),
+    .w0          (in_q[337:326]),
+    .ctrl_nx     (in_q[325:258]),
+    .w0_nx       (in_q[257:246]),
+    .alu_op      (in_q[245:241]),
+    .width       (in_q[240:239]),
+    .src2        (in_q[238:234]),
+    .count       (in_q[233:229]),
+    .dst         (in_q[228:225]),
+    .src1_nib    (in_q[224:223]),
+    .src2_nib    (in_q[222:221]),
+    .dst_nib     (in_q[220:219]),
+    .w1          (in_q[218:203]),
+    .w2          (in_q[202:187]),
+    .io_wr       (in_q[186]),
+    .io_spec     (in_q[185]),
+    .block_decr  (in_q[184]),
     .blk_more    (res[219]),
     .cc_held     (in_q[183]),
     .cnt_dec     (in_q[182]),
@@ -74,7 +74,7 @@ module z8000_execute_measure (
     .last_nx     (in_q[157]),
     .seg_mode    (in_q[156]),
     .pc_seg      (in_q[155:149]),
-    .pc_b15      (in_q[341]),
+    .pc_b15      (in_q[339]),
     .pc_off      (in_q[148:133]),
     .cyc_end3    (in_q[132]),
     .ea_word     (in_q[131:109]),
