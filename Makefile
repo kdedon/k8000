@@ -58,7 +58,7 @@ VBUILD := MAKEFLAGS= $(VERILATOR) --build-jobs $(VERILATOR_JOBS)
 
 .PHONY: all \
         lint lint-measure build test test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu \
-        test-cpu-combined test-cpu-timing test-cpu-cycles test-cpu-late-read test-seq-words test-seq-paths test-cond test-timing test-mclk cpu ladder clean help \
+        test-cpu-combined test-cpu-timing test-cpu-cycles test-cpu-late-read test-seq-words test-abort-mreq test-seq-paths test-cond test-timing test-mclk cpu ladder clean help \
         gen check-gen
 all: build
 
@@ -119,7 +119,7 @@ lint-measure:
 build: $(CHIP_BUILD) $(OBJ)/tb_decode/tb_decode $(OBJ)/tb_decode_table/tb_decode_table $(OBJ)/tb_mc_table/tb_mc_table $(OBJ)/tb_alu/tb_alu $(OBJ)/tb_regfile/tb_regfile $(OBJ)/tb_serial/tb_serial $(OBJ)/tb_refresh/tb_refresh \
        $(OBJ)/tb_cpu_z8001/tb_cpu_z8001 $(OBJ)/tb_cpu_z8002/tb_cpu_z8002 \
        $(OBJ)/tb_cpu_z8003/tb_cpu_z8003 $(OBJ)/tb_cpu_z8004/tb_cpu_z8004 \
-       $(OBJ)/tb_cpu_timing/tb_cpu_timing $(OBJ)/tb_cpu_cycles/tb_cpu_cycles $(OBJ)/tb_seq_words/tb_seq_words \
+       $(OBJ)/tb_cpu_timing/tb_cpu_timing $(OBJ)/tb_cpu_cycles/tb_cpu_cycles $(OBJ)/tb_seq_words/tb_seq_words $(OBJ)/tb_abort_mreq/tb_abort_mreq \
        $(OBJ)/tb_seq_paths/tb_seq_paths $(OBJ)/tb_cond/tb_cond \
        $(OBJ)/tb_cpu_timing_z8001/tb_cpu_timing_z8001 $(OBJ)/tb_cpu_cycles_z8001/tb_cpu_cycles_z8001 $(OBJ)/tb_seq_paths_z8001/tb_seq_paths_z8001 \
        $(OBJ)/tb_cpu_late_read/tb_cpu_late_read
@@ -186,6 +186,11 @@ $(OBJ)/tb_seq_words/tb_seq_words: $(CPU_SRCS) tb/k800x_cpu/tb_seq_words.sv
 	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_seq_words \
 	  $(CPU_SRCS) tb/k800x_cpu/tb_seq_words.sv -o tb_seq_words >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
 
+$(OBJ)/tb_abort_mreq/tb_abort_mreq: $(CPU_SRCS) tb/k800x_cpu/tb_abort_mreq.sv
+	@mkdir -p $(dir $@)
+	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_abort_mreq \
+	  $(CPU_SRCS) tb/k800x_cpu/tb_abort_mreq.sv -o tb_abort_mreq >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
 $(OBJ)/tb_seq_paths/tb_seq_paths: $(CPU_SRCS) tb/k800x_cpu/tb_seq_paths.sv
 	@mkdir -p $(dir $@)
 	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_seq_paths \
@@ -222,7 +227,7 @@ $(eval $(call CPU_BUILD,z8003,1,1,Z8003))
 $(eval $(call CPU_BUILD,z8004,0,1,Z8004))
 
 # ---- run -------------------------------------------------------------------
-test: check-gen test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-combined test-cpu-timing test-cpu-cycles test-cpu-late-read test-seq-words test-seq-paths test-cond $(CHIP_TEST) test-mclk
+test: check-gen test-decode test-decode-table test-mc-table test-alu test-regfile test-serial test-refresh test-cpu test-cpu-combined test-cpu-timing test-cpu-cycles test-cpu-late-read test-seq-words test-abort-mreq test-seq-paths test-cond $(CHIP_TEST) test-mclk
 
 # Spec-timing ladder: everything that checks the datasheet's timing rather than
 # equality with the vectors.
@@ -283,6 +288,9 @@ test-cpu-late-read: $(OBJ)/tb_cpu_late_read/tb_cpu_late_read
 
 test-seq-words: $(OBJ)/tb_seq_words/tb_seq_words
 	@scripts/run_sv_bench.sh $(OBJ)/tb_seq_words/tb_seq_words
+
+test-abort-mreq: $(OBJ)/tb_abort_mreq/tb_abort_mreq
+	@scripts/run_sv_bench.sh $(OBJ)/tb_abort_mreq/tb_abort_mreq
 
 test-seq-paths: $(OBJ)/tb_seq_paths/tb_seq_paths $(OBJ)/tb_seq_paths_z8001/tb_seq_paths_z8001
 	@scripts/run_sv_bench.sh $(OBJ)/tb_seq_paths/tb_seq_paths

@@ -458,7 +458,7 @@ module z8000_cpu
   assign mreq_more = mq_more_q;
   assign mq_wb     = mq_on && mq_dec_q;
   assign mq_end    = mp_on && ex_to_last;
-  assign mq_go     = ex_word && fcw[14] && ctrl.valid && ctrl.exec == CLS_MULTI_PROC && ctrl.mp_op == MPREQ;
+  assign mq_go     = ex_word && fcw[14] && ctrl_k.valid && ctrl_k.exec == CLS_MULTI_PROC && ctrl_k.mp_op == MPREQ;
 
   // MREQ samples /MI and moves /MO on the CLK rise ending its IF1's T3,
   // the first rise after its word is taken (`mq_pend_q` between).
@@ -473,7 +473,7 @@ module z8000_cpu
     end else begin
       if (core_en && mq_go) mq_pend_q <= 1'b1;
       else if (clk_en)      mq_pend_q <= 1'b0;
-      // Only a word that runs: in normal mode MREQ traps and /MO holds.
+      // Only a word that runs: trapped in normal mode or aborted, /MO holds.
       if (mq_take) begin
         mq_req_q <= mi_n;
         mo_q     <= !mi_n;

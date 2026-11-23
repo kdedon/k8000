@@ -12,6 +12,7 @@
 | Serial unit (MULT/DIV/SHIFT) | `make test-serial` | PASS, 5182 operations (2,136 divides at the case 3/4 edges) |
 | Refresh prescaler | `make test-refresh` | PASS, 7 checks |
 | Instruction word capture | `make test-seq-words` | PASS, 17 cases (address register and words 1, 2) |
+| MREQ in an aborted IF1 | `make test-abort-mreq` | PASS, Z8003: /MO held when /ABORT kills MREQ's IF1, Low without the abort |
 | Program paths and repeats | `make test-seq-paths` | PASS, 20 cases on Z8002 and segmented Z8001 (JP/RET cc taken and not taken, shift counts, LDM counts and lengths) |
 | Condition codes | `make test-cond` | PASS, 256 checks (16 codes, every C Z S P/V) |
 | CPU vectors | `make test-cpu` | 3078 pass, 0 fail, 0 skip (Z8001 1298, Z8002 1758, Z8003 7, Z8004 15) |

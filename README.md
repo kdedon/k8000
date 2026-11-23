@@ -73,8 +73,9 @@ rtl/k8070_fpu/        z8070_fpu.sv           floating-point unit: z8070_ip.sv (I
 
 tb/k800x_cpu/         tb_cpu.cpp (per-edge pin replay) + dut_access.h (the harness
                       contract); tb_decode, decode_table, mc_table, alu, regfile,
-                      serial, refresh, seq_words, seq_paths, cond, cpu_timing, cpu_cycles,
-                      silicon (programs captured on a physical Z8001)
+                      serial, refresh, seq_words, abort_mreq, seq_paths, cond,
+                      cpu_timing, cpu_cycles, silicon (programs captured on a
+                      physical Z8001)
 tb/k8010_mmu/         tb_mmu.cpp + mmu_access.h, tb_mmu_timing.sv, tb_cpu_mmu_clk.sv
 tb/k8030_scc/         tb_scc.cpp + scc_access.h, tb_scc_timing.sv, tb_scc_iack.sv,
                       tb_scc_async_rx.sv

@@ -42,7 +42,7 @@ make test-cpu-late-read # memory and I/O drive read data only between T3's rise 
 make test-decode        # the decode ROM against decode.vec
 make test-decode-table  # the decode ROM against z8000_decode_table.txt
 make test-mc-table      # the machine-cycle ROM against z8000_mc_table.txt
-make test-alu | test-regfile | test-serial | test-refresh | test-seq-words | test-seq-paths | test-cond
+make test-alu | test-regfile | test-serial | test-refresh | test-seq-words | test-abort-mreq | test-seq-paths | test-cond
 make test-cpu-silicon   # programs captured on a physical Z8001
 make test-cpu-programs  # hand-written programs in the silicon schema
 ```
