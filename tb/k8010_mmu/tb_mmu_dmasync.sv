@@ -7,6 +7,8 @@
 // being latched and translated. A DMA cycle with DMASYNC dropped after the
 // address sample keeps PA and /SUP to its /DS rise; one whose master drives
 // /AS across that Low sample raises no /SEGT (p.565).
+// With DMASYNC = /BUSACK, a /AS after the second DMASYNC-High rise is the
+// CPU's (p.566).
 //
 // Every case runs at 1, 2, 3, 5 and 8 master clocks per CLK.
 //
@@ -99,9 +101,10 @@ module tb_mmu_dmasync;
   endtask
 
   // DMASYNC at its active level for `n` CLK rises with a DMA master's word
-  // on AD, then back at `idle`. With `then_as` the CPU's /AS falls right
-  // after the rise that first sees DMASYNC back.
-  task automatic pulse(input logic idle, input int n, input bit then_as,
+  // on AD, then back at `idle` for `gap` more rises before the CPU cycle's
+  // T1 rise. With `then_as` the CPU's /AS falls right after the rise that
+  // first sees DMASYNC back.
+  task automatic pulse(input logic idle, input int n, input int gap, input bit then_as,
                        input logic [6:0] seg, input logic [7:0] page, input logic [15:0] want,
                        input string what);
     dmasync = idle;
@@ -110,7 +113,7 @@ module tb_mmu_dmasync;
     repeat (n) rise();
     dmasync = idle;
     rise();
-    if (idle) rise();      // /AS falls after the third DMASYNC-High rise
+    repeat (gap) rise();
     cpu_read(then_as, seg, page, want, what);
     cpu_read(1'b0, seg, page, want, {what, ", next cycle"});
   endtask
@@ -177,14 +180,16 @@ module tb_mmu_dmasync;
       div = DIVS[i];
       repeat (4) rise();
       // DMASYNC Low between pulses
-      pulse(1'b0, 1, 1'b0, 7'h00, 8'hF5, 16'h0115, "one-CLK pulse");
-      pulse(1'b0, 2, 1'b0, 7'h00, 8'hF5, 16'h0115, "two-CLK pulse");
-      pulse(1'b0, 5, 1'b0, 7'h00, 8'hF5, 16'h0115, "long pulse");
-      pulse(1'b0, 1, 1'b1, 7'h00, 8'hF5, 16'h0115, "one-CLK pulse ending just before /AS");
-      pulse(1'b0, 2, 1'b1, 7'h00, 8'hF5, 16'h0115, "two-CLK pulse ending just before /AS");
+      pulse(1'b0, 1, 0, 1'b0, 7'h00, 8'hF5, 16'h0115, "one-CLK pulse");
+      pulse(1'b0, 2, 0, 1'b0, 7'h00, 8'hF5, 16'h0115, "two-CLK pulse");
+      pulse(1'b0, 5, 0, 1'b0, 7'h00, 8'hF5, 16'h0115, "long pulse");
+      pulse(1'b0, 1, 0, 1'b1, 7'h00, 8'hF5, 16'h0115, "one-CLK pulse ending just before /AS");
+      pulse(1'b0, 2, 0, 1'b1, 7'h00, 8'hF5, 16'h0115, "two-CLK pulse ending just before /AS");
       // DMASYNC = /BUSACK (p.571): High in CPU cycles, Low through the grant
-      pulse(1'b1, 1, 1'b0, 7'h00, 8'h34, 16'h0054, "/BUSACK one-CLK grant");
-      pulse(1'b1, 4, 1'b0, 7'h00, 8'h34, 16'h0054, "/BUSACK long grant");
+      pulse(1'b1, 1, 1, 1'b0, 7'h00, 8'h34, 16'h0054, "/BUSACK one-CLK grant");
+      pulse(1'b1, 4, 1, 1'b0, 7'h00, 8'h34, 16'h0054, "/BUSACK long grant");
+      // /AS after the second DMASYNC-High rise (p.566)
+      pulse(1'b1, 4, 0, 1'b0, 7'h00, 8'h34, 16'h0054, "/BUSACK long grant, /AS after the second High rise");
       // DMA cycles
       dma_cycle(7'h00, 8'h14, 1'b1, 16'h0034, 1'b0, "DMA read");
       dma_cycle(7'h01, 8'h22, 1'b0, 16'h0122, 1'b1, "DMA write to read-only");

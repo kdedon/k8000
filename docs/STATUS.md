@@ -24,7 +24,7 @@
 | CPU cycle counts | `make test-cpu-cycles` | PASS, Z8002 45 of 45, segmented Z8001 38 of 38 (SS and SL direct and indexed addresses, CALL, RET, long words) |
 | MMU vectors | `make test-mmu` | 77 of 77, every record exact |
 | MMU timing | `make test-mmu-timing` | 22 of 22 |
-| MMU DMASYNC hand-back | `make test-mmu-dmasync` | 190 of 190 at master:CLK 1, 2, 3, 5, 8 |
+| MMU DMASYNC hand-back | `make test-mmu-dmasync` | 210 of 210 at master:CLK 1, 2, 3, 5, 8 |
 | CPU and MMU on one CLK | `make test-cpu-mmu-clk` | PASS at master:CLK 2:1, 3:1, 4:1, 5:1, 7:1 and 2,3,2,4 (49 PA checks each, plus PA checks in every /AS-Low master clock), and 1:1 with both CLK pulses every master clock (94) |
 | CIO vectors | `make test-cio` | 138 of 138 (53 partial) |
 | CIO timing | `make test-cio-timing` | 19 of 19 |
@@ -57,7 +57,7 @@ utilization in those files, boundary flops included.
 | register file (two read ports, byte nonzero bits) | 2026-11-02 | 451 | 123 MHz |
 | ALU | 2026-10-27 | 205 | 101 MHz |
 | serial unit (multiply, divide, shifts on one adder and rotate) | 2026-11-02 | 658 | 72.4 MHz |
-| MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8 driven from the /AS fall; seed 1, slack 8.11 ns) | 2026-11-24 | 447 | 78.6 MHz |
+| MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8 driven from the /AS fall; seed 1, slack 6.94 ns) | 2026-11-24 | 448 | 72.0 MHz |
 | CIO (bus interface, register file, ports A/B/C, counter/timers, pattern match, interrupts, handshakes) | 2026-11-14 | 1,260 | 59.3 MHz |
 | SCC (every mode built; seeds 1-3: 1,927-1,935) | 2026-11-14 | 1,932 | 51.38 MHz, median of seeds 1-3 (setup slack at 48 MHz: 0.87-1.87 ns, hold 0.18 ns; worst: the latched address through a WR9 reset command into the hunt latch) |
 | CPU, Z8001 (the program ROMs in logic, the serial unit included; read data on the T3 fall; seed 1) | 2026-11-22 | 4,047 | 51.91 MHz, seed 1; seeds 2 and 3: 4,038 and 4,025 ALMs, 52.68 and 51.80 MHz (setup slack at 48 MHz: 1.57, 1.85, 1.53 ns, hold 0.16 ns; worst: the sequencer into the register file, a divide step into the FCW) |
