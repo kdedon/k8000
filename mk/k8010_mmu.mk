@@ -69,3 +69,20 @@ $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk: $(CPU_SRCS) $(MMU_SRCS) tb/k8010_mmu/tb_cp
 
 test-cpu-mmu-clk: $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk
 	@scripts/run_sv_bench.sh $(OBJ)/tb_cpu_mmu_clk/tb_cpu_mmu_clk
+
+# ---- DMASYNC hand-back (SystemVerilog) ---------------------------------------
+# tb/k8010_mmu/tb_mmu_dmasync.sv: DMASYNC pulses of one, two and many CLK
+# rises, then a CPU cycle that must be latched and translated on its /AS;
+# DMA cycles keep PA and /SUP to their /DS rise.
+CHIP_BUILD += $(OBJ)/tb_mmu_dmasync/tb_mmu_dmasync
+CHIP_TEST  += test-mmu-dmasync
+CHIP_TIMING_TEST += test-mmu-dmasync
+.PHONY: test-mmu-dmasync
+
+$(OBJ)/tb_mmu_dmasync/tb_mmu_dmasync: $(MMU_SRCS) tb/k8010_mmu/tb_mmu_dmasync.sv
+	@mkdir -p $(dir $@)
+	$(VBUILD) --binary --timing $(VFLAGS) $(TB_W) --Mdir $(dir $@) --top-module tb_mmu_dmasync \
+	  $(MMU_SRCS) tb/k8010_mmu/tb_mmu_dmasync.sv -o tb_mmu_dmasync >$(dir $@)build.log 2>&1 || (cat $(dir $@)build.log; exit 1)
+
+test-mmu-dmasync: $(OBJ)/tb_mmu_dmasync/tb_mmu_dmasync
+	@scripts/run_sv_bench.sh $(OBJ)/tb_mmu_dmasync/tb_mmu_dmasync

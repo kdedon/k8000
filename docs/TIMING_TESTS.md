@@ -14,7 +14,7 @@ modules keep the short `tb_<chip>_timing` names, like the make targets.
 
 `make test-timing` runs every spec bench plus the cycle bench; individually:
 `make test-cpu-timing`, `make test-cpu-cycles`, `make test-mmu-timing`,
-`make test-cpu-mmu-clk`, `make test-cio-timing`, `make test-cio-iack`,
+`make test-cpu-mmu-clk`, `make test-mmu-dmasync`, `make test-cio-timing`, `make test-cio-iack`,
 `make test-scc-timing`, `make test-scc-iack`, `make test-fpu-timing`.
 `make test` runs them too.
 
@@ -153,6 +153,12 @@ the same back-to-back rule as the CIO.
 latch and memory on {A23:A8, A7:A0}; at every CLK rise while /DS is Low in a
 memory cycle the physical address must be driven and equal the bench's own
 translation. Runs master:CLK 2:1, 3:1, 4:1, 5:1, 7:1, 2,3,2,4 and 1:1.
+
+`tb_mmu_dmasync.sv` (Z8010, p.565-566, p.571-573): DMASYNC High for one, two
+or five CLK rises, then a CPU cycle that must be latched and translated on
+its own `/AS`; DMASYNC as `/BUSACK`; DMA cycles holding PA and `/SUP` to the
+`/DS` rise, and one whose master drives `/AS` raising no `/SEGT`. Runs
+master:CLK 1:1, 2:1, 3:1, 5:1 and 8:1.
 
 `tb_cio_iack.sv`, `tb_scc_iack.sv`: two chips on one daisy chain. A chip
 with IEI Low keeps /INT High, and a request arriving after an acknowledge's

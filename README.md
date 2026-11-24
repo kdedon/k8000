@@ -76,7 +76,8 @@ tb/k800x_cpu/         tb_cpu.cpp (per-edge pin replay) + dut_access.h (the harne
                       serial, refresh, seq_words, abort_mreq, seq_paths, cond,
                       cpu_timing, cpu_cycles, silicon (programs captured on a
                       physical Z8001)
-tb/k8010_mmu/         tb_mmu.cpp + mmu_access.h, tb_mmu_timing.sv, tb_cpu_mmu_clk.sv
+tb/k8010_mmu/         tb_mmu.cpp + mmu_access.h, tb_mmu_timing.sv, tb_cpu_mmu_clk.sv,
+                      tb_mmu_dmasync.sv
 tb/k8030_scc/         tb_scc.cpp + scc_access.h, tb_scc_timing.sv, tb_scc_iack.sv,
                       tb_scc_async_rx.sv
 tb/k8036_cio/         tb_cio.cpp, tb_cio_timing.sv, tb_cio_iack.sv

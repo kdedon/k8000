@@ -164,8 +164,8 @@ module z8010_mmu (
   logic        pa_drive_q;
 
   // DMA: DMASYNC rising after two or more Low samples presents a DMA address.
-  // The DMA cycle owns the bus until its /DS rise, or until DMASYNC has been
-  // High for two more samples.
+  // The DMA cycle holds off the /AS latch until its /DS rise, a DMASYNC-Low
+  // sample with /AS High, or two more DMASYNC-High samples.
   logic [1:0]  dma_low;
   logic        dma_active;
   logic        dma_high;
@@ -451,12 +451,16 @@ module z8010_mmu (
       if (clk_in) begin
         dma_low  <= dmasync ? 2'd0 : (dma_low[1] ? 2'd2 : dma_low + 2'd1);
         dma_high <= dmasync & dma_active & ~dma_go;
-        // The DMA cycle ends, and its suppress with it (p.565: "during
-        // that cycle only").
+        // The DMA cycle ends, and its suppress with it (p.565: "asserted
+        // during that cycle only").
         if (dmasync && dma_active && dma_high) begin
           dma_active <= 1'b0;
           sup_held   <= 1'b0;
         end
+        // DMASYNC Low with /AS High: the next /AS is a new cycle. PA and
+        // /SUP hold to /DS.
+        if (!dmasync && as_n)
+          dma_active <= 1'b0;
       end
       if (dma_go) begin
         latched_ad   <= ad;
