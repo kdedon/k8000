@@ -271,6 +271,11 @@ module tb_cpu_timing
   // ---- run ----------------------------------------------------------------------
   int unsigned i;
   logic reset_st_ok, reset_strobe_ok, reset_sn_ok, reset_addr_ok;
+  logic rel_p_ok, rel_e_ok, rel_hold_ok, rel_t1_ok, rel_re_ok;
+  string rel_hold_msg;
+  logic [3:0] gnt_st;
+  logic [6:0] gnt_sn;
+  logic gnt_rw, gnt_bw, gnt_ns;
 
   initial begin
     checks = 0; fails = 0;
@@ -359,6 +364,69 @@ module tb_cpu_timing
        "see the per-violation citations printed above (a run with zero transactions proves nothing)",
        $sformatf("%0d violation(s) over %0d transactions", mon.errors, mon.transactions));
     $display("      transactions observed: %0d", mon.transactions);
+
+    // ---- bus request release (Fig 15): /BUSREQ seen High at rise P, /BUSACK
+    // High at P+1 = E, the held pins re-driven and AD floating through E and
+    // E+1, the next T1 at E+2. The halted CPU runs internal operations, so a
+    // cycle is always ready to open.
+    $display("");
+    $display("[4] bus request release");
+    @(negedge clk); busreq_n = 1'b0;
+    for (i = 0; i < 40 && busack_n; i++) @(posedge clk);
+    repeat (4) @(posedge clk);
+    #2;
+    gnt_st = st; gnt_rw = r_w; gnt_bw = b_w; gnt_ns = n_s; gnt_sn = sn;
+    @(negedge clk); busreq_n = 1'b1;
+    @(posedge clk); #2;                       // P
+    rel_p_ok = !busack_n;
+    @(posedge clk); #2;                       // E
+    rel_e_ok = busack_n;
+    rel_hold_ok = 1'b1;
+    rel_hold_msg = "";
+    // E, its fall, E+1, its fall. SN may go out for the next T1 on E+1's fall.
+    for (i = 0; i < 4; i++) begin
+      if (rel_hold_ok &&
+          !(as_n && ds_n && mreq_n && !ad_drive && bus_drive && st == gnt_st && r_w == gnt_rw &&
+            b_w == gnt_bw && n_s == gnt_ns && (!SEGMENTED || i == 3 || sn == gnt_sn))) begin
+        rel_hold_ok = 1'b0;
+        rel_hold_msg = $sformatf("sample %0d: as_n=%0b ds_n=%0b mreq_n=%0b ad_drive=%0b bus_drive=%0b st=%04b r_w=%0b b_w=%0b n_s=%0b sn=%02h (held st=%04b r_w=%0b b_w=%0b n_s=%0b sn=%02h)",
+                                 i, as_n, ds_n, mreq_n, ad_drive, bus_drive, st, r_w, b_w, n_s, sn,
+                                 gnt_st, gnt_rw, gnt_bw, gnt_ns, gnt_sn);
+      end
+      if (i[0]) @(posedge clk); else @(negedge clk);
+      #2;
+    end
+    rel_t1_ok = !as_n;                        // E+2
+    ck(rel_p_ok && rel_e_ok, "/BUSACK rises one clock after /BUSREQ is seen High",
+       "1988 DB p.34 (Fig 15): when BUSREQ is released ... the BUSACK output goes High one clock period later",
+       $sformatf("busack_n at P=%0b, at P+1=%0b", !rel_p_ok, rel_e_ok));
+    ck(rel_hold_ok, "two clocks of held pins after /BUSACK rises, AD floating",
+       "1988 DB Fig 15 / Jan83 TM Fig 9-9: MREQ, DS, ST, B/W, R/W, N/S \"same as previous cycle\" for two clocks; AD 3-stated",
+       rel_hold_msg);
+    ck(rel_t1_ok, "the next T1 opens two clocks after /BUSACK rises",
+       "Jan83 TM 9.6.2: the CPU regains control of the bus two clock cycles after BUSREQ rises; Fig 9-9",
+       $sformatf("as_n=%0b at E+2", as_n));
+
+    // /BUSREQ Low again on E's fall: sampled at the T1 at E+2, so the bus is
+    // given again only as that cycle's T3 ends (E+5). TM 9.6.2 tells a
+    // requester to wait two cycles after releasing /BUSREQ, so this case is
+    // outside the manual; the check pins the RTL's choice.
+    @(negedge clk); busreq_n = 1'b0;
+    for (i = 0; i < 40 && busack_n; i++) begin @(posedge clk); #2; end
+    repeat (2) @(posedge clk);
+    @(negedge clk); busreq_n = 1'b1;
+    for (i = 0; i < 4 && !busack_n; i++) begin @(posedge clk); #2; end   // E
+    @(negedge clk); busreq_n = 1'b0;
+    @(posedge clk); #2;                       // E+1
+    rel_re_ok = busack_n && as_n;
+    @(posedge clk); #2;                       // E+2
+    rel_re_ok = rel_re_ok && busack_n && !as_n;
+    for (i = 0; i < 20 && busack_n; i++) begin @(posedge clk); #2; end
+    rel_re_ok = rel_re_ok && !busack_n && i == 3;   // E+5
+    @(negedge clk); busreq_n = 1'b1;
+    ck(rel_re_ok, "/BUSREQ again in the two clocks: T1 at E+2, the next grant as its T3 ends",
+       "1988 DB p.34: BUSREQ is synchronized at the beginning of any machine cycle; Fig 15",
+       $sformatf("busack_n=%0b, %0d clocks after E+2 (want Low at 3)", busack_n, i));
 
     $display("");
     if (fails == 0) $display("RESULT PASS  tb_cpu_timing  %0d checks", checks);

@@ -1,6 +1,6 @@
 # Status
 
-`make test`, 2026-11-22. Update when a bench moves.
+`make test`, 2026-11-24. Update when a bench moves.
 
 | bench | command | result |
 |---|---|---|
@@ -17,7 +17,7 @@
 | Condition codes | `make test-cond` | PASS, 256 checks (16 codes, every C Z S P/V) |
 | CPU vectors | `make test-cpu` | 3078 pass, 0 fail, 0 skip (Z8001 1298, Z8002 1758, Z8003 7, Z8004 15) |
 | CPU vectors, CLK rise and fall in one master clock | `make test-cpu-combined` | 3078 pass, 0 fail, 0 skip, at record pairs of 1, 2 and 1,2,1,3 master clocks |
-| CPU Z-Bus timing | `make test-cpu-timing` | PASS, 13 checks on Z8002, 14 on segmented Z8001 in segments 05 and 12 (I/O with /WAIT included, SN timing) |
+| CPU Z-Bus timing | `make test-cpu-timing` | PASS, 17 checks on Z8002, 18 on segmented Z8001 in segments 05 and 12 (I/O with /WAIT included, SN timing, the bus back from a grant: next T1 two clocks after /BUSACK rises) |
 | CPU against a physical Z8001 | `make test-cpu-silicon` | non-segmented 1202 of 1202, segmented 1072 of 1072 (final registers, flags, memory, I/O; bus order and instruction clocks on the 197 traced tests) |
 | CPU hand-written programs | `make test-cpu-programs` | non-segmented 14 of 14, segmented 33 of 33 (register overlaps with address or source registers: LDA, POP, POPL, PUSH, PUSHL, EX, LDL, LDM, LDI, CPI, CPSI, INI, OUTI) |
 | CPU read data late in T3 | `make test-cpu-late-read` | PASS, segmented Z8001; memory and I/O drive the word only between T3's rise and fall: fetches, operands, a byte, IN, a cross-segment CALL and RET with refresh on, MREQ with /MI High and Low (the other level at the T3 rise and fall; /MO checked on the rise ending T3), the VI acknowledge, a read with two waits; at 2, 3 and 2,3,4 master clocks per CLK half, only in the master clock before the fall at 3 and 3,4,5, one kind of read at a time, plus normal memory and turbo; fails on any CPU simulation check; both mixed clockings fail as they must |
@@ -60,7 +60,7 @@ utilization in those files, boundary flops included.
 | MMU (64 descriptors in four MLAB RAMs, 1,920 bits; A23:8 driven from the /AS fall; seed 1, slack 6.94 ns) | 2026-11-24 | 448 | 72.0 MHz |
 | CIO (bus interface, register file, ports A/B/C, counter/timers, pattern match, interrupts, handshakes) | 2026-11-14 | 1,260 | 59.3 MHz |
 | SCC (every mode built; seeds 1-3: 1,927-1,935) | 2026-11-14 | 1,932 | 51.38 MHz, median of seeds 1-3 (setup slack at 48 MHz: 0.87-1.87 ns, hold 0.18 ns; worst: the latched address through a WR9 reset command into the hunt latch) |
-| CPU, Z8001 (the program ROMs in logic, the serial unit included; read data on the T3 fall; seed 1) | 2026-11-22 | 4,047 | 51.91 MHz, seed 1; seeds 2 and 3: 4,038 and 4,025 ALMs, 52.68 and 51.80 MHz (setup slack at 48 MHz: 1.57, 1.85, 1.53 ns, hold 0.16 ns; worst: the sequencer into the register file, a divide step into the FCW) |
+| CPU, Z8001 (the program ROMs in logic, the serial unit included; read data on the T3 fall; seed 1) | 2026-11-24 | 4,042 | 51.36 MHz, seed 1; seeds 2 and 3: 4,030 and 4,021 ALMs, 50.32 and 52.95 MHz (setup slack at 48 MHz: 1.36, 0.96, 1.95 ns, hold 0.13 ns; worst on seed 1: the execute unit's `k_q` into `match_q`) |
 | FPU Data Processor alone (`fpudp`; F0-F7 in an MLAB) | 2026-11-14 | 1,958 | 52.8 MHz (setup slack at 48 MHz: 1.89 ns; worst: the microprogram counter through the ROM into the working significand) |
 | FPU, whole chip (`fpu`: F0-F7, FOP1 and FOP2 in one 16 x 80 MLAB, row 10 also holding the running operation's bus operand while a queued instruction needs the buffer; seeds 1-3: 2,733-2,758; no M10K, no DSP) | 2026-11-15 | 2,736 | 53.85 MHz, median of seeds 1-3 (setup slack at 48 MHz: 1.16-2.61 ns, hold 0.13 ns; worst: the microprogram counter through the ROM into the working significand) |
 

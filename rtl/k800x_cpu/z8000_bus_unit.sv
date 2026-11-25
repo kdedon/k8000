@@ -48,10 +48,12 @@
 // internal operation's third clock) unless `lock` holds; the strobes stay
 // High and AD is released; ST, N/S, R/W, B/W and SN hold. The cycle's
 // later clocks (tail, internal operation) run on; the next cycle waits.
-// /BUSACK rises on the second edge that sees /BUSREQ High, and the next
-// cycle opens on the edge after at the earliest. `bus_drive` is Low while
-// granted: a system top floats /AS, /DS, /MREQ, ST, R/W, B/W, N/S and SN
-// with it.
+// /BUSACK rises on the second edge that sees /BUSREQ High; the pins are
+// driven again with their held values and AD stays released for two
+// clocks, so the next cycle opens two edges after at the earliest (SN for
+// a transaction still goes out on the fall before it).
+// `bus_drive` is Low while granted: a system top floats /AS, /DS, /MREQ,
+// ST, R/W, B/W, N/S and SN with it.
 
 `default_nettype none
 
@@ -138,7 +140,7 @@ module z8000_bus_unit
   logic        ue2_q, ue2_d, ue1_q, ue1_d;  // the unit's end two edges, one edge ahead
   logic        brq_q, brq_d;         // /BUSREQ as of the running cycle's T1 edge
   logic        gnt_q, gnt_d;         // the bus is granted
-  logic        back_q, back_d;       // /BUSACK High again this clock
+  logic [1:0]  back_q, back_d;       // /BUSACK High again: this clock, the one before
   logic        rel_q, rel_d;         // /BUSREQ seen High while granted
   logic        tw_q;                 // this clock is a wait state
   logic        wait_q;               // /WAIT as of the last CLK fall
@@ -168,7 +170,7 @@ module z8000_bus_unit
     endcase
   end
   assign give    = brq_q && !lock && (state_q == BUS_T3CLK || (state_q == BUS_HOLD && iop_q && t_q == 3'd2));
-  assign cyc_end = bound && !give && !gnt_q;
+  assign cyc_end = bound && !give && !gnt_q && !back_q[0];
   assign cyc_bound = bound;
 
   // The unit's end, taken in an internal operation from its T1: the end it
@@ -203,7 +205,7 @@ module z8000_bus_unit
   // Write data, held at every cycle end and read only in a write's T2. A
   // byte comes on both halves (the EPU flag byte on AD7:AD0 alone).
 
-  assign held    = (gnt_q || back_q) && state_q == BUS_IDLE;
+  assign held    = (gnt_q || back_q != 2'b00) && state_q == BUS_IDLE;
   assign away    = give || gnt_q;
   assign cyc_iop = state_q == BUS_HOLD && iop_q;
   assign cyc_tail = state_q == BUS_HOLD && !iop_q;
@@ -298,15 +300,15 @@ module z8000_bus_unit
   always_comb begin
     brq_d  = start ? busreq : brq_q;
     gnt_d  = gnt_q;
-    back_d = 1'b0;
+    back_d = {back_q[0], 1'b0};
     rel_d  = 1'b0;
     if (give) begin
       gnt_d = 1'b1;
     end else if (gnt_q) begin
       rel_d = !busreq;
       if (!busreq && rel_q) begin
-        gnt_d  = 1'b0;
-        back_d = 1'b1;
+        gnt_d     = 1'b0;
+        back_d[0] = 1'b1;
       end
     end
   end
@@ -413,7 +415,7 @@ module z8000_bus_unit
       ue1_q       <= 1'b0;
       brq_q       <= 1'b0;
       gnt_q       <= 1'b0;
-      back_q      <= 1'b0;
+      back_q      <= 2'b00;
       rel_q       <= 1'b0;
       tw_q        <= 1'b0;
       wait_q      <= 1'b1;

@@ -291,7 +291,7 @@ fourth automatic wait, Low 3 clocks), the EPU and STOP vectors (fetch FIRST,
 then refresh until STOP samples High), `TestRefresh*` (refresh keeps R/W,
 B/W, N/S from the previous transaction, never asserts /DS), `TestG78_*`,
 `TestBusReq*` + `TestBusSpec_BusRequestTiming` (sampled at a machine-cycle
-boundary, /BUSACK High one clock after release, CPU resumes two after),
+boundary, /BUSACK High one clock after release, the next T1 two clocks after that),
 `TestBusSpec_HaltInternalOpsAndTwoSampleExit`,
 `TestBusSpec_AbortedIF1RunsInProgramMode`, the Z8003/Z8004 vectors
 (ABORT/SAT/TSET), `TestSysCall*`, `TestPrivTrap*`.
