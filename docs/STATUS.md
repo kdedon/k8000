@@ -22,7 +22,7 @@
 | CPU hand-written programs | `make test-cpu-programs` | non-segmented 14 of 14, segmented 33 of 33 (register overlaps with address or source registers: LDA, POP, POPL, PUSH, PUSHL, EX, LDL, LDM, LDI, CPI, CPSI, INI, OUTI) |
 | CPU read data late in T3 | `make test-cpu-late-read` | PASS, segmented Z8001; memory and I/O drive the word only between T3's rise and fall: fetches, operands, a byte, IN, a cross-segment CALL and RET with refresh on, MREQ with /MI High and Low (the other level at the T3 rise and fall; /MO checked on the rise ending T3), the VI acknowledge, a read with two waits; at 2, 3 and 2,3,4 master clocks per CLK half, only in the master clock before the fall at 3 and 3,4,5, one kind of read at a time, plus normal memory and turbo; fails on any CPU simulation check; both mixed clockings fail as they must |
 | CPU cycle counts | `make test-cpu-cycles` | PASS, Z8002 45 of 45, segmented Z8001 38 of 38 (SS and SL direct and indexed addresses, CALL, RET, long words) |
-| MMU vectors | `make test-mmu` | 77 of 77, every record exact |
+| MMU vectors | `make test-mmu` | 79 of 79, every record exact |
 | MMU timing | `make test-mmu-timing` | 22 of 22 |
 | MMU DMASYNC hand-back | `make test-mmu-dmasync` | 210 of 210 at master:CLK 1, 2, 3, 5, 8 |
 | CPU and MMU on one CLK | `make test-cpu-mmu-clk` | PASS at master:CLK 2:1, 3:1, 4:1, 5:1, 7:1 and 2,3,2,4 (49 PA checks each, plus PA checks in every /AS-Low master clock), and 1:1 with both CLK pulses every master clock (94) |
@@ -75,6 +75,7 @@ utilization in those files, boundary flops included.
   as CLK falls in T3 (#12). Closes 48 MHz with its ROMs in logic.
 - MMU: translation, all 22 commands, violations and the segment trap
   acknowledge (one AD line per MMU, for several MMUs on one bus), DMASYNC.
+  The access that sets FATL or SWW asserts /SEGT.
   A23:8 drive from the /AS fall (AC #28). A system top resolves several MMUs
   per AD bit with `data_drive[n]`.
 - CIO: bus interface (one access per /AS), ports A/B/C with the input,
@@ -140,7 +141,7 @@ utilization in those files, boundary flops included.
 | CPU hand-written programs | 2 files: 14 non-segmented, 33 segmented tests | silicon schema; final state reasoned or the RTL's order, not captured |
 | CPU silicon | 2 files: 1202 non-segmented, 1072 segmented tests | captured on a Z8001 (MIT, `silicon/LICENSE`); 848 coverage captures not converted; DIV case 3 destination and S masked |
 | CPU cycle counts | 45 + 38 segmented | Z8002 35 `exact`, 10 `approx`; Z8001 35 `exact`, 3 `approx` |
-| MMU | 77 | |
+| MMU | 79 | |
 | FPU | 1382 pin + 20 Data Processor + 474 system + decode digests | 1 `X unsupported`; dp 15 MB, queue sweeps 18 MB |
 | CIO | 138 | 53 `X partial` |
 | SCC | 181 | 128 pure pin-seam (`F POKES 0`) |

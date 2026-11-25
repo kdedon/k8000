@@ -3,8 +3,8 @@
 ## Scope
 
 RTL `rtl/k8010_mmu/z8010_mmu.sv`; replay harness `tb/k8010_mmu/tb_mmu.cpp`
-with `tb/k8010_mmu/mmu_access.h`; vectors `vectors/k8010_mmu/*.vec` (77
-files from 54 tests); make fragment `mk/k8010_mmu.mk`.
+with `tb/k8010_mmu/mmu_access.h`; vectors `vectors/k8010_mmu/*.vec` (79
+files from 56 tests); make fragment `mk/k8010_mmu.mk`.
 
 Sources: z8010_mmu.pdf = Zilog Z8010 MMU Product Specification 00-2046-03
 (pp.559-575; same text and AC table in the October 1988 Z8000 Family Data
@@ -92,7 +92,7 @@ Pokes, applied through `mmu_access.h` before the next `T`:
 
 ## What is covered
 
-All 54 tests record (77 files). Three use `P ACK` (TestStackSegmentBounds,
+All 56 tests record (79 files). Three use `P ACK` (TestStackSegmentBounds,
 TestTrapAcknowledge, TestMSTISNFrozenAtViolation); TestSegTrapAcknowledgeID
 and TestSegTrapAcknowledge_ShortCycle run a real acknowledge cycle.
 
@@ -114,7 +114,7 @@ second violation (FATL), acknowledge and reset.
 | 1 | reset: /CS Low sets MSEN | TestReset.000 |
 | 2 | strobe capture, the open latch while /AS is Low, translate at the /AS rise, MSEN/URS/MST/NMS gating, pass-through vs translate, PA = {base, 8'h0} + offset, PA dropped at the /DS rise | TestBasicTranslation, TestPhysicalAddress16BitBase, TestISNCapture, TestExecOnly.001, TestMMU_URS_SingleMMU.000/.002, TestMMU_DIRWBoundsCheck.000/.001/.004/.005, TestNMSBehavior.*, TestMSTMode.*, TestMultipleMMU_SN6Select.*, TestDualMMUWithMST.*, TestPassThroughMSENonlyAfterCSLowReset |
 | 3 | violation checks, trap pending and /SEGT, /SUP held to the /DS rise, VTR/VSN (7-bit)/VOFF/BCSR capture, REF/CHG update, PA still driven on a violation; while a trap is pending only the first-word fetch goes unchecked | TestOutOfBounds, TestCPUInhibit, TestExecOnly.000, TestSROProtection.*, TestMMU_DIRWBoundsCheck.002/.003, TestSUPnHeldUntilDSRises, TestChangedFlag, TestTrapPendingWordFetchStillChecked, TestStackSegmentBounds, TestTrapAcknowledge |
-| 4 | write warnings (PWW without suppress), FATL/SWW rules, capture once plus overflow, ISN freeze | TestWriteWarning, TestWriteWarningNoSuppress, TestViolationCapturedOnce, TestMMU_SWW_StackPushDuringTrap, TestMMU_FATL_*, TestMSTISNFrozenAtViolation |
+| 4 | write warnings (PWW without suppress), FATL/SWW rules, capture once plus overflow, ISN freeze | TestWriteWarning, TestWriteWarningNoSuppress, TestViolationCapturedOnce, TestMMU_SWW_StackPushDuringTrap, TestMMU_FATL_* (the access setting FATL or SWW still traps), TestMSTISNFrozenAtViolation |
 | 5 | suppress until the next ST = 1101; segment-trap acknowledge: decided at the /AS rise of ST = 0100, /SEGT released at the third CLK rise from it (row 1), AD line 8+ID driven 1/0 while /DS is Low, float at the /DS rise | TestG79_1_SuppressUntilInstructionEnd, TestSegTrapAcknowledgeID, TestSegTrapAcknowledge_ShortCycle, TestSegTrapAcknowledge_NotOurs.000, TestSEGTInvariant_TrapPendingMirror |
 | 6 | DMASYNC: two or more Low samples, then High at a CLK rise; suppress only (held to the /DS rise), PA driven, URS/MST gating, TRNS pass-through; hand-back at the /DS rise or the second DMASYNC-High sample, releasing /SUP; a DMASYNC-Low sample frees the /AS latch for the next cycle | TestDMASYNCTranslation, TestDMASYNCViolationSuppressOnly, TestDMAInhibitInDMA, TestDMASYNC_*, tb_mmu_dmasync |
 | 7 | command engine: /CS and ST = 0011 at the /AS rise, command code from AD15:8, executed at the first /DS-Low sample (write byte from AD15:8; read byte driven while /DS is Low, float at the /DS rise); SAR/DSC; the 22 commands (0x0D = Limit + increment, 0x0E = Attribute + increment); 0x11 releases /SEGT and /SUP; 0x15/0x16 set all 64 inhibit bits | TestMMU_AttrWrite_PreservesAllBits.*, TestMMU_SARWrite_ResetsDSC_BaseField, TestMMU_LimitWrite_IncSAR, TestMMU_AttrWrite_IncSAR, TestMMU_DescriptorWrite_Cmd0F_Block, TestCmd_ReadControlRegisters, TestCmd_ReadDescriptorFields, TestCmd_ReadStatusRegisters, TestCmd_ResetSWWandFATL, TestCmd_SetAllInhibitFlags, TestCmd_WriteWithCSReleasedBeforeDS, TestCmd_AccessWithMSENClear |
@@ -147,11 +147,11 @@ silent; the reading taken is stated.
 | 15 | reset state | p.570: reset clears Mode, VTR and DSC; MSEN = 1 if /CS Low; "All other registers are undefined"; AD/PA 3-stated; /SUP, /SEGT not driven; MSEN = 0 -> no response to addresses, commands still work | SPEC + OPEN | the F records of TestReset, TestPassThroughMSENonlyAfterCSLowReset and TestCmd_AccessWithMSENClear hold zeros for the undefined SAR and status registers and the pre-reset contents for descriptors: this implementation's choice, not a silicon claim. Reset also clears the DMA, command and acknowledge latches |
 | 16 | MSEN = 0 / TRNS = 0 | p.564: MSEN clear -> address lines 3-stated; TRNS clear -> {0, SN[6:0], offset} without checks; URS/MST gating still applies | SPEC | TestPassThroughMSENonlyAfterCSLowReset, TestCmd_AccessWithMSENClear |
 | 17 | /SUP on violations | p.571 "asserted during the current bus cycle when any access violation except write warning occurs"; p.564 write warning "no Suppress signal"; FATL: "Suppress signals are generated on this and subsequent CPU violations" | SPEC | TestWriteWarningNoSuppress, TestMMU_FATL_* |
-| 18 | VTR layout and flag rules | Fig.8 p.564 (FATL SWW PWW EXCV CPUIV SLV SYSV RDV); p.564-565 | SPEC | layout, capture once, FATL/SWW rules and inhibits |
+| 18 | VTR layout and flag rules | Fig.8 p.564 (FATL SWW PWW EXCV CPUIV SLV SYSV RDV); p.564-565: FATL and SWW inhibit trap requests on "subsequent" accesses; p.565 the SWW-setting warning "a Segment Trap Request is generated" | SPEC | layout, capture once, FATL/SWW rules and inhibits. The access that sets FATL or SWW asserts /SEGT; after FATL none does, after SWW only system stack warnings do not. TestMMU_FATL_TrapRequest (RDV, acknowledge, normal-mode access to a system-only segment: /SEGT, VTR 81: the FATL access records FATL only, as an Olivetti M40 diagnostic for the real chip requires), TestMMU_FATL_AfterSWW (VTR E0). VSN/VOFF/BCSR keep the first violation |
 | 19 | VTR priority with several conditions at once | p.564 defines each flag independently | OPEN | one flag per access, order CPUI > SLV > RD > SYS > EXC; parallel comparators in silicon may set every applicable flag. No vector has a multi-flag access |
 | 20 | VSN width | Fig.8 p.564: 0 + 7-bit segment number | SPEC | VSN = SN[6:0]; TestCmd_ReadStatusRegisters reads 0x62 |
 | 21 | BCSR layout | Fig.8 p.564: bits 3:0 status, bit 4 R/W, bit 5 N/S, bits 7:6 = 0 | SPEC | reads 0x28 for a normal-mode write with ST = 1000 |
-| 22 | ISN/IOFF capture | p.564 "address of the last instruction fetched before the first accessing violation" | SPEC | captured on ST = 1101 first-word fetches, frozen with the captured violation, resumed after 0x11. "Instruction fetched" is read as the first word only |
+| 22 | ISN/IOFF capture | p.564 "address of the last instruction fetched before the first accessing violation"; p.564 distinguishes "an access violation" from "a warning condition" | SPEC + OPEN | captured on ST = 1101 first-word fetches, frozen with the captured violation, resumed after 0x11. "Instruction fetched" is read as the first word only. OPEN: a write warning also freezes them; read literally only an access violation does |
 | 23 | command table (22 opcodes) | p.566 tables; UM010401 Table 3-6 (0x0D = Limit, 0x0E = Attribute) | SPEC | read side, 0x11/0x13-0x16, SAR increment "at the end of the field", DSC order base high, base low, limit, attribute |
 | 24 | SAR write (0x01) resets DSC | p.566 "first the high-order byte is selected and then the low-order byte" | OPEN | DSC reset on a SAR write; TestMMU_SARWrite_ResetsDSC_BaseField's F DSC/DESC rows encode it |
 | 25 | read of a write-only or unlisted opcode | p.566 lists write-only 0x11/0x13-0x16 and read-only 0x02-0x07 | OPEN | drives nothing; no vector reads one |
@@ -160,8 +160,7 @@ silent; the reading taken is stated.
 
 ## Known gaps
 
-* Rows 6, 14 (long DMASYNC High), 15 (undefined reset values), 19, 24, 25:
-  OPEN; row 1 INFERRED.
+* Rows 6, 14 (long DMASYNC High), 15 (undefined reset values), 19, 22 (ISN after a warning), 24, 25: OPEN; row 1 INFERRED.
 * Not vectorized: all 256 command codes x read/write x random descriptors;
   open-drain wire-OR of two chips (the tb drives one; `.000`/`.001` replay
   each chip separately); multi-flag violations (row 19).

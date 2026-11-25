@@ -285,13 +285,17 @@ module z8010_mmu (
   logic fatl;
   assign fatl = viol_captured & (viol | latched_ns);
   // SWW: a system stack push into the warning page while a flag is set.
+  logic sys_stack_warn;
   logic sww;
-  assign sww = ~viol & ~latched_ns & stack & (|viol_type[5:0]) & ~fatl;
-  // Once FATL or SWW is set no further trap requests are made.
+  assign sys_stack_warn = ~viol & ~latched_ns & stack;
+  assign sww = sys_stack_warn & (|viol_type[5:0]) & ~fatl;
+  // The access that sets FATL or SWW still requests a trap. Once FATL is set
+  // nothing does; once SWW is set, system stack warnings do not. An access
+  // that sets or meets FATL adds no flag beside it.
   logic       req;
   logic [7:0] vt_next;
-  assign req     = ~viol_type[7] & ~viol_type[6] & ~fatl;
-  assign vt_next = (viol_captured ? (viol_type | vbit) : vbit) | {fatl, sww, 6'b0};
+  assign req     = ~viol_type[7] & ~(viol_type[6] & sys_stack_warn);
+  assign vt_next = (viol_captured ? (viol_type | (fatl ? 8'h00 : vbit)) : vbit) | {fatl, sww, 6'b0};
 
   // ---- command port: opcode and /CS at the /AS rise, data while /DS is Low -----
   logic [7:0] cmd;
